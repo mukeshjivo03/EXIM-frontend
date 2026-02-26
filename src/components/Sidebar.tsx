@@ -1,18 +1,63 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { CircleUser, LogOut } from "lucide-react";
+import {
+  CircleUser,
+  LogOut,
+  Home,
+  Users,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Mail,
+  Shield,
+  User,
+  RefreshCw,
+  Truck,
+  ScrollText,
+  Droplets,
+  Container,
+  Gauge,
+} from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
 import { logout as logoutApi } from "@/api/auth";
 
-const adminLinks = [
-  { to: "/admin/users", label: "Users" },
+const ROLE_LABELS: Record<string, string> = {
+  ADM: "Admin",
+  FTR: "Factory",
+  MNG: "Manager",
+};
+
+const stockLinks = [
+  { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
+  { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
+  { to: "/stock/tank-data", label: "Tank Data", icon: Container },
 ];
 
-export default function Sidebar() {
-  const { role, name, clearAuth } = useAuth();
+const adminLinks = [
+  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/sync-product-data", label: "Sync Product Data", icon: RefreshCw },
+  { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
+  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
+];
+
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { role, name, email, clearAuth } = useAuth();
   const navigate = useNavigate();
   const isAdmin = role === "ADM";
+  const [profileOpen, setProfileOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -25,64 +70,169 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-14 bottom-12 w-56 border-r bg-background/95 dark:bg-card/95 backdrop-blur-sm flex flex-col">
-      <nav className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              isActive
-                ? "bg-accent text-accent-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-            }`
-          }
-        >
-          Home
-        </NavLink>
-
-        {isAdmin && (
-          <>
-            <Separator className="my-3" />
-
-            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Administration
-            </span>
-
-            {adminLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </>
-        )}
-      </nav>
-
-      <div className="border-t p-3">
-        <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-          <CircleUser className="h-5 w-5 shrink-0 text-muted-foreground" />
-          <span className="truncate text-sm font-medium flex-1">{name}</span>
+    <>
+      <aside
+        className={`fixed left-0 top-14 bottom-12 border-r glass-sidebar flex flex-col transition-all duration-300 ${
+          collapsed ? "w-16" : "w-56"
+        }`}
+      >
+        {/* Toggle button */}
+        <div className={`flex p-2 ${collapsed ? "justify-center" : "justify-end"}`}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle}>
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-      </div>
-    </aside>
+
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1 px-2 flex-1 overflow-y-auto">
+          <NavLink
+            to="/"
+            end
+            title="Home"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              } ${collapsed ? "justify-center px-0" : ""}`
+            }
+          >
+            <Home className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Home</span>}
+          </NavLink>
+
+          {isAdmin && (
+            <>
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Stock
+                </span>
+              )}
+
+              {stockLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Administration
+                </span>
+              )}
+
+              {adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+            </>
+          )}
+        </nav>
+
+        {/* Bottom section: profile + logout */}
+        <div className="border-t p-2">
+          <button
+            onClick={() => setProfileOpen(true)}
+            className={`flex w-full items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-left hover:bg-muted transition-colors ${
+              collapsed ? "justify-center px-0" : ""
+            }`}
+          >
+            <CircleUser className="h-5 w-5 shrink-0 text-muted-foreground" />
+            {!collapsed && (
+              <span className="truncate text-sm font-medium flex-1">{name}</span>
+            )}
+          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`mt-2 w-full gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50 ${
+              collapsed ? "justify-center px-0" : "justify-start"
+            }`}
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Profile dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Profile</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-3 py-2">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <span className="text-2xl font-semibold">
+                {name?.charAt(0).toUpperCase() ?? "U"}
+              </span>
+            </div>
+            <h3 className="text-lg font-semibold">{name ?? "Unknown"}</h3>
+            <Badge variant="secondary">{ROLE_LABELS[role ?? ""] ?? role ?? "—"}</Badge>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3 py-1">
+            <div className="flex items-center gap-3 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-muted-foreground text-xs">Name</p>
+                <p className="font-medium">{name ?? "—"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-muted-foreground text-xs">Email</p>
+                <p className="font-medium">{email ?? "—"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-muted-foreground text-xs">Role</p>
+                <p className="font-medium">{ROLE_LABELS[role ?? ""] ?? role ?? "—"}</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

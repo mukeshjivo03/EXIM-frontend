@@ -5,8 +5,9 @@ type Role = "ADM" | "FTR" | "MNG";
 interface AuthContextValue {
   role: Role | null;
   name: string | null;
+  email: string | null;
   isLoggedIn: boolean;
-  setAuth: (name: string, role: Role) => void;
+  setAuth: (name: string, role: Role, email: string) => void;
   clearAuth: () => void;
 }
 
@@ -21,12 +22,14 @@ function getStoredRole(): Role | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(getStoredRole);
   const [name, setName] = useState<string | null>(localStorage.getItem("user_name"));
+  const [email, setEmail] = useState<string | null>(localStorage.getItem("user_email"));
 
   const isLoggedIn = !!localStorage.getItem("access_token") && role !== null;
 
-  function setAuth(name: string, role: Role) {
+  function setAuth(name: string, role: Role, email: string) {
     setName(name);
     setRole(role);
+    setEmail(email);
   }
 
   function clearAuth() {
@@ -34,12 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_role");
     localStorage.removeItem("user_name");
+    localStorage.removeItem("user_email");
     setRole(null);
     setName(null);
+    setEmail(null);
   }
 
   return (
-    <AuthContext.Provider value={{ role, name, isLoggedIn, setAuth, clearAuth }}>
+    <AuthContext.Provider value={{ role, name, email, isLoggedIn, setAuth, clearAuth }}>
       {children}
     </AuthContext.Provider>
   );

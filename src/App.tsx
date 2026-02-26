@@ -5,6 +5,14 @@ import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import UsersPage from "@/pages/UsersPage";
+import SyncProductDataPage from "@/pages/SyncProductDataPage";
+import SyncVendorDataPage from "@/pages/SyncVendorDataPage";
+import SyncLogsPage from "@/pages/SyncLogsPage";
+import TankItemsPage from "@/pages/TankItemsPage";
+import TankDataPage from "@/pages/TankDataPage";
+import TankMonitoringPage from "@/pages/TankMonitoringPage";
+import HomePage from "@/pages/HomePage";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   return (
@@ -14,7 +22,31 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/" element={<p className="p-8 text-lg">Welcome — you are logged in.</p>} />
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/stock/tank-items"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <TankItemsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/tank-monitoring"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <TankMonitoringPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/tank-data"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <TankDataPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin/users"
               element={
@@ -23,10 +55,35 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/sync-product-data"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <SyncProductDataPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sync-vendor-data"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <SyncVendorDataPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sync-logs"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <SyncLogsPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    <Toaster richColors position="bottom-right" />
     </ThemeProvider>
   );
 }

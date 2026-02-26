@@ -78,7 +78,7 @@ export default function UsersPage() {
     setError("");
     try {
       const data = await getUsers();
-      setUsers(data);
+      setUsers(data.sort((a, b) => a.id - b.id));
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);
@@ -119,12 +119,15 @@ export default function UsersPage() {
           role: form.role,
         };
         if (form.password) payload.password = form.password;
-        await updateUser(editingUser.id, payload);
+        const updated = await updateUser(editingUser.id, payload);
+        setUsers((prev) =>
+          prev.map((u) => (u.id === editingUser.id ? updated : u))
+        );
       } else {
         await createUser(form);
+        fetchUsers();
       }
       setDialogOpen(false);
-      fetchUsers();
     } catch (err) {
       if (err instanceof AxiosError) {
         const data = err.response?.data;
@@ -164,14 +167,14 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>
           <p className="text-sm text-muted-foreground">Manage user accounts and roles</p>
         </div>
-        <Button onClick={openCreate}>Create User</Button>
+        <Button onClick={openCreate} className="btn-press">Create User</Button>
       </div>
 
       {/* Error */}
