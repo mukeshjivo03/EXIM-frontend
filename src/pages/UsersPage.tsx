@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
+import { Trash2, Pencil, UsersRound } from "lucide-react";
 
 import {
   getUsers,
@@ -12,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -182,50 +185,95 @@ export default function UsersPage() {
         <p className="text-sm text-destructive">{error}</p>
       )}
 
-      {/* Table */}
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No users found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((user, i) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{i + 1}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell className="w-28">{ROLE_LABELS[user.role] ?? user.role}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
-                        Edit
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(user)}>
-                        Delete
-                      </Button>
-                    </TableCell>
+      {/* Table Card */}
+      <Card className="card-hover shimmer-hover">
+        <CardHeader>
+          <CardTitle>User Accounts</CardTitle>
+          <CardDescription>{users.length} registered users</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-16">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <UsersRound className="h-10 w-10 stroke-1" />
+                          <p className="text-sm font-medium">No users found</p>
+                          <p className="text-xs">Create a user to get started.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user, i) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{i + 1}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell className="w-28">{ROLE_LABELS[user.role] ?? user.role}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={() => openEdit(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteTarget(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

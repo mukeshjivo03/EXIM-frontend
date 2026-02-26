@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -194,6 +195,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Profile</DialogTitle>
+            <DialogDescription>Your account details</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col items-center gap-3 py-2">

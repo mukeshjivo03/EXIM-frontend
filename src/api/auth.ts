@@ -19,5 +19,5 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 
 export async function logout(): Promise<void> {
   const refresh = localStorage.getItem("refresh_token");
-  await api.post("/account/logout/", { refresh });
+  await api.post("/account/logout/", { refresh_token: refresh });
 }

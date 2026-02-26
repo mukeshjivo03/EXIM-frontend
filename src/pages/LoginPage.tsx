@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import CargoShipBackground from "@/components/CargoShipBackground";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -45,81 +44,55 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen">
-      {/* Animated background */}
-      <CargoShipBackground />
+    <div className="flex min-h-screen items-center justify-center bg-[#1a291a] px-4">
+      <div className="login-card w-full max-w-lg rounded-2xl border border-white/10 bg-[#223322] p-12 py-14 shadow-lg">
+        {/* Header */}
+        <div className="text-center space-y-3 mb-10">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-100">
+            JIVO EXIM
+          </h1>
+          <p className="text-gray-400">Sign in to your account</p>
+        </div>
 
-      {/* Magic UI floating orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-        <div
-          className="orb w-[300px] h-[300px] top-[10%] left-[5%] opacity-30"
-          style={{ background: "oklch(0.488 0.243 264.376)", animationDelay: "0s" }}
-        />
-        <div
-          className="orb w-[200px] h-[200px] top-[60%] left-[20%] opacity-20"
-          style={{ background: "oklch(0.696 0.17 162.48)", animationDelay: "-4s" }}
-        />
-        <div
-          className="orb w-[250px] h-[250px] top-[30%] right-[10%] opacity-25"
-          style={{ background: "oklch(0.627 0.265 303.9)", animationDelay: "-8s" }}
-        />
-      </div>
-
-      {/* Login form */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 md:justify-start md:pl-16 md:pr-0">
-        <div className="login-glass w-full max-w-xl rounded-2xl shadow-2xl p-12 py-20 animate-page">
-          {/* Header */}
-          <div className="text-center space-y-3 mb-10">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              JIVO EXIM
-            </h1>
-            <p className="text-lg text-muted-foreground">Sign in to your account</p>
+        <form onSubmit={handleSubmit} className="space-y-7">
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-sm font-medium text-gray-300">Username</Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              className="h-11 login-input bg-[#1a291a] border-white/10 text-gray-100 placeholder:text-gray-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-lg">Username</Label>
-              <div className="input-glow rounded-md">
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  className="h-12 text-lg bg-background/50"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium text-gray-300">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              className="h-11 login-input bg-[#1a291a] border-white/10 text-gray-100 placeholder:text-gray-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-lg">Password</Label>
-              <div className="input-glow rounded-md">
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  className="h-12 text-lg bg-background/50"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+          {error && (
+            <p className="text-sm text-red-400">{error}</p>
+          )}
 
-            {error && (
-              <p className="text-base text-destructive">{error}</p>
-            )}
-
-            <Button
-              type="submit"
-              className="btn-press w-full h-12 text-lg"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </div>
+          <Button
+            type="submit"
+            className="w-full h-11 text-[15px] btn-press"
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
       </div>
     </div>
   );

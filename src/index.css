@@ -47,71 +47,71 @@
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --background: oklch(0.97 0.008 145);
+    --foreground: oklch(0.18 0.04 145);
+    --card: oklch(0.985 0.005 145);
+    --card-foreground: oklch(0.18 0.04 145);
+    --popover: oklch(0.985 0.005 145);
+    --popover-foreground: oklch(0.18 0.04 145);
+    --primary: oklch(0.36 0.08 145);
+    --primary-foreground: oklch(0.985 0.01 145);
+    --secondary: oklch(0.94 0.015 145);
+    --secondary-foreground: oklch(0.22 0.04 145);
+    --muted: oklch(0.94 0.012 145);
+    --muted-foreground: oklch(0.50 0.03 145);
+    --accent: oklch(0.92 0.02 145);
+    --accent-foreground: oklch(0.22 0.04 145);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
+    --border: oklch(0.90 0.015 145);
+    --input: oklch(0.90 0.015 145);
+    --ring: oklch(0.45 0.06 145);
+    --chart-1: oklch(0.50 0.1 145);
     --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-3: oklch(0.646 0.222 41.116);
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: oklch(0.96 0.01 145);
+    --sidebar-foreground: oklch(0.18 0.04 145);
+    --sidebar-primary: oklch(0.36 0.08 145);
+    --sidebar-primary-foreground: oklch(0.985 0.01 145);
+    --sidebar-accent: oklch(0.93 0.015 145);
+    --sidebar-accent-foreground: oklch(0.22 0.04 145);
+    --sidebar-border: oklch(0.90 0.015 145);
+    --sidebar-ring: oklch(0.45 0.06 145);
 }
 
 .dark {
-    --background: oklch(0.14 0.02 260);
-    --foreground: oklch(0.985 0.005 260);
-    --card: oklch(0.19 0.025 260);
-    --card-foreground: oklch(0.985 0.005 260);
-    --popover: oklch(0.19 0.025 260);
-    --popover-foreground: oklch(0.985 0.005 260);
-    --primary: oklch(0.922 0.01 260);
-    --primary-foreground: oklch(0.205 0.02 260);
-    --secondary: oklch(0.25 0.02 260);
-    --secondary-foreground: oklch(0.985 0.005 260);
-    --muted: oklch(0.25 0.02 260);
-    --muted-foreground: oklch(0.65 0.02 260);
-    --accent: oklch(0.25 0.025 260);
-    --accent-foreground: oklch(0.985 0.005 260);
+    --background: oklch(0.14 0.025 150);
+    --foreground: oklch(0.96 0.008 145);
+    --card: oklch(0.19 0.03 150);
+    --card-foreground: oklch(0.96 0.008 145);
+    --popover: oklch(0.19 0.03 150);
+    --popover-foreground: oklch(0.96 0.008 145);
+    --primary: oklch(0.55 0.1 145);
+    --primary-foreground: oklch(0.14 0.03 150);
+    --secondary: oklch(0.24 0.03 150);
+    --secondary-foreground: oklch(0.96 0.008 145);
+    --muted: oklch(0.24 0.025 150);
+    --muted-foreground: oklch(0.62 0.03 145);
+    --accent: oklch(0.25 0.035 150);
+    --accent-foreground: oklch(0.96 0.008 145);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(0.32 0.03 260);
-    --input: oklch(0.30 0.025 260);
-    --ring: oklch(0.50 0.04 260);
-    --chart-1: oklch(0.488 0.243 264.376);
+    --border: oklch(0.30 0.03 150);
+    --input: oklch(0.28 0.03 150);
+    --ring: oklch(0.45 0.06 145);
+    --chart-1: oklch(0.55 0.1 145);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.16 0.025 260);
-    --sidebar-foreground: oklch(0.985 0.005 260);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0.005 260);
-    --sidebar-accent: oklch(0.25 0.025 260);
-    --sidebar-accent-foreground: oklch(0.985 0.005 260);
-    --sidebar-border: oklch(0.32 0.03 260);
-    --sidebar-ring: oklch(0.50 0.04 260);
+    --sidebar: oklch(0.16 0.03 150);
+    --sidebar-foreground: oklch(0.96 0.008 145);
+    --sidebar-primary: oklch(0.55 0.1 145);
+    --sidebar-primary-foreground: oklch(0.96 0.008 145);
+    --sidebar-accent: oklch(0.24 0.035 150);
+    --sidebar-accent-foreground: oklch(0.96 0.008 145);
+    --sidebar-border: oklch(0.30 0.03 150);
+    --sidebar-ring: oklch(0.45 0.06 145);
 }
 
 @layer base {
@@ -123,13 +123,120 @@
     }
 }
 
-@keyframes sail {
-  0% {
-    transform: translateX(110vw);
-  }
-  100% {
-    transform: translateX(-2800px);
-  }
+/* ── Hero Banner: Industrial Cargo Ship ──────────────────────── */
+
+/* Overcast steel-blue sky */
+.banner-sky {
+  background: linear-gradient(180deg, #8FA4B8 0%, #6A8499 30%, #4A7294 60%, #2C5A7B 100%);
+}
+.dark .banner-sky {
+  background: linear-gradient(180deg, #0A141E 0%, #121F2D 30%, #182B3D 60%, #1E3345 100%);
+}
+
+/* Warm horizon glow where sky meets water */
+.banner-horizon {
+  background: linear-gradient(180deg, transparent 0%, rgba(210,170,120,0.12) 70%, rgba(210,170,120,0.06) 100%);
+}
+.dark .banner-horizon {
+  background: linear-gradient(180deg, transparent 0%, rgba(80,100,130,0.12) 70%, rgba(60,80,110,0.06) 100%);
+}
+
+/* Dark overlay on left for text readability */
+.banner-text-overlay {
+  background: linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.18) 50%, transparent 100%);
+}
+
+/* Atmospheric haze bands */
+.banner-haze {
+  position: absolute;
+  width: 100%;
+  pointer-events: none;
+  opacity: 0.25;
+}
+.banner-haze-1 {
+  height: 2px;
+  top: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+}
+.banner-haze-2 {
+  height: 1px;
+  top: 44%;
+  background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.2), transparent 80%);
+}
+.dark .banner-haze { opacity: 0.08; }
+
+/* Ship sailing — slow, majestic pace for a heavy vessel */
+@keyframes shipSail {
+  0%   { transform: translateX(calc(100vw + 80px)); }
+  100% { transform: translateX(-520px); }
+}
+.ship-sail {
+  animation: shipSail 32s linear infinite;
+}
+
+/* Ship bobbing — minimal for a large cargo vessel */
+@keyframes shipBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-3px) rotate(-0.2deg); }
+  50%      { transform: translateY(2px) rotate(0.15deg); }
+  75%      { transform: translateY(-1px) rotate(-0.1deg); }
+}
+.ship-bob {
+  animation: shipBob 5s ease-in-out infinite;
+}
+
+/* Industrial exhaust smoke */
+@keyframes shipSmoke {
+  0%   { opacity: 0.35; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-30px, -40px) scale(2.8); }
+}
+.ship-smoke {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: shipSmoke 3.5s ease-out infinite;
+}
+.ship-smoke.smoke-1 { animation-delay: 0s; }
+.ship-smoke.smoke-2 { animation-delay: 1.2s; }
+.ship-smoke.smoke-3 { animation-delay: 2.4s; }
+
+/* Ocean wave horizontal scroll */
+@keyframes oceanWaveScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ocean-wave-back  { animation: oceanWaveScroll 16s linear infinite; }
+.ocean-wave-mid   { animation: oceanWaveScroll 12s linear infinite; }
+.ocean-wave-front { animation: oceanWaveScroll 9s  linear infinite; }
+
+/* Deep industrial water colors */
+.wave-fill-back  { fill: rgba(35, 75, 110, 0.4); }
+.wave-fill-mid   { fill: rgba(25, 60, 95, 0.6); }
+.wave-fill-front { fill: rgba(18, 45, 72, 0.85); }
+.dark .wave-fill-back  { fill: rgba(12, 28, 48, 0.5); }
+.dark .wave-fill-mid   { fill: rgba(8, 22, 40, 0.7); }
+.dark .wave-fill-front { fill: rgba(5, 15, 30, 0.92); }
+
+/* ── Login Card ──────────────────────────────────────────────── */
+
+/* Fade-scale entrance */
+@keyframes loginEntrance {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.login-card {
+  animation: loginEntrance 0.5s ease-out;
+  transition: box-shadow 0.3s ease;
+}
+.login-card:hover {
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,0.4);
+}
+
+/* Input focus ring + lift */
+.login-input {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.login-input:focus {
+  box-shadow: 0 0 0 3px oklch(0.488 0.243 264.376 / 0.15);
 }
 
 /* ── Global: Uiverse.io / Magic UI / DaisyUI inspired enhancements ── */
@@ -204,7 +311,7 @@
   background: var(--primary);
 }
 .dark .sidebar-link-active::before {
-  background: oklch(0.488 0.243 264.376);
+  background: oklch(0.50 0.1 145);
   box-shadow: 0 0 8px oklch(0.488 0.243 264.376 / 0.5);
 }
 
@@ -213,39 +320,6 @@
   transform: scale(0.97);
 }
 
-/* Login glassmorphism card (Magic UI) */
-.login-glass {
-  background: rgba(255,255,255,0.75);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.3);
-}
-.dark .login-glass {
-  background: rgba(15,23,42,0.6);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-/* Input focus glow (Uiverse.io) */
-.input-glow:focus-within {
-  box-shadow: 0 0 0 3px oklch(0.488 0.243 264.376 / 0.2);
-}
-
-/* Floating orbs for login bg (Magic UI) */
-@keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(30px, -40px) scale(1.1); }
-  50% { transform: translate(-20px, -60px) scale(0.95); }
-  75% { transform: translate(40px, -20px) scale(1.05); }
-}
-.orb {
-  border-radius: 50%;
-  filter: blur(60px);
-  animation: floatOrb 12s ease-in-out infinite;
-  position: absolute;
-  pointer-events: none;
-}
 
 /* Stat card shimmer on hover (Magic UI) */
 @keyframes shimmer {
