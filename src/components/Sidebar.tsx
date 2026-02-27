@@ -44,7 +44,8 @@ const stockLinks = [
 
 const adminLinks = [
   { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/sync-product-data", label: "Sync Product Data", icon: RefreshCw },
+  { to: "/admin/sync-raw-material-data", label: "Sync Raw Material", icon: RefreshCw },
+  { to: "/admin/sync-finished-goods-data", label: "Sync Finished Goods", icon: RefreshCw },
   { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
 ];

@@ -44,15 +44,16 @@ export async function updateTankItem(tankItemCode: string, color: string, tankIt
 // ── Tank (Tank Data) ────────────────────────────────────────────
 
 export interface Tank {
-  id: number;
-  tank_number: number;
+  tank_code: string;
+  item_code: string | null;
   tank_capacity: string;
   current_capacity: string | null;
-  item_code: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TankPayload {
-  tank_number: number;
   tank_capacity: string;
   current_capacity: string | null;
   item_code: string | null;
@@ -68,13 +69,13 @@ export async function createTank(data: TankPayload): Promise<Tank> {
   return res.data;
 }
 
-export async function deleteTank(tankNumber: number): Promise<void> {
-  await api.delete(`/tank/${tankNumber}/`);
+export async function deleteTank(tankCode: string): Promise<void> {
+  await api.delete(`/tank/${tankCode}/`);
 }
 
 export async function updateTank(
-  tankNumber: number,
+  tankCode: string,
   data: { current_capacity: string | null; item_code: string | null }
 ): Promise<void> {
-  await api.put(`/tank/update-capacity/${tankNumber}/`, data);
+  await api.put(`/tank/update-capacity/${tankCode}/`, data);
 }

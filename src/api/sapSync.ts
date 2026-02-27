@@ -45,6 +45,48 @@ export async function deleteItem(itemCode: string): Promise<void> {
   await api.delete(`/item/${itemCode}/`);
 }
 
+// Raw Material Items
+
+export async function getRmItems(): Promise<ItemsResponse> {
+  const res = await api.get<ItemsResponse>("/items/rm/");
+  return { count: res.data.count ?? 0, items: res.data.items ?? [] };
+}
+
+export async function syncRmItems(): Promise<SapItem[]> {
+  const res = await api.get<SyncResponse>("/sap_sync/rm/items/");
+  return res.data.Items ?? [];
+}
+
+export async function syncSingleRmItem(itemCode: string): Promise<SapItem> {
+  const res = await api.get<SapItem>(`/sap_sync/rm/item/${itemCode}/`);
+  return res.data;
+}
+
+export async function deleteRmItem(itemCode: string): Promise<void> {
+  await api.delete(`/item/${itemCode}/`);
+}
+
+// Finished Goods Items
+
+export async function getFgItems(): Promise<ItemsResponse> {
+  const res = await api.get<ItemsResponse>("/items/fg/");
+  return { count: res.data.count ?? 0, items: res.data.items ?? [] };
+}
+
+export async function syncFgItems(): Promise<SapItem[]> {
+  const res = await api.get<SyncResponse>("/sap_sync/fg/items/");
+  return res.data.Items ?? [];
+}
+
+export async function syncSingleFgItem(itemCode: string): Promise<SapItem> {
+  const res = await api.get<SapItem>(`/sap_sync/fg/item/${itemCode}/`);
+  return res.data;
+}
+
+export async function deleteFgItem(itemCode: string): Promise<void> {
+  await api.delete(`/item/${itemCode}/`);
+}
+
 // Vendor / Party types and API
 
 export interface Vendor {

@@ -54,7 +54,7 @@ export default function TankMonitoringPage() {
       setLoading(true);
       try {
         const [t, i] = await Promise.all([getTanks(), getTankItems()]);
-        setTanks((t ?? []).sort((a, b) => a.id - b.id));
+        setTanks(t ?? []);
         setTankItems(i ?? []);
       } catch (err) {
         setError(
@@ -129,12 +129,12 @@ export default function TankMonitoringPage() {
 
             return (
               <div
-                key={tank.id}
+                key={tank.tank_code}
                 className="tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3"
               >
                 {/* Tank Number */}
                 <h3 className="font-bold text-base tracking-wide">
-                  Tank {tank.tank_number}
+                  {tank.tank_code}
                 </h3>
 
                 {/* Item Code with color dot */}

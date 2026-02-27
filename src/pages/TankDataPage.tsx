@@ -71,7 +71,6 @@ export default function TankDataPage() {
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [tankNumber, setTankNumber] = useState("");
   const [tankCapacity, setTankCapacity] = useState("");
   const [currentCapacity, setCurrentCapacity] = useState("");
   const [selectedItemCode, setSelectedItemCode] = useState("");
@@ -103,7 +102,7 @@ export default function TankDataPage() {
         getTanks(),
         getTankItems(),
       ]);
-      setTanks((tanksData ?? []).sort((a, b) => a.id - b.id));
+      setTanks(tanksData ?? []);
       setTankItems((itemsData ?? []).sort((a, b) => a.id - b.id));
     } catch (err) {
       if (err instanceof AxiosError) {
@@ -123,8 +122,6 @@ export default function TankDataPage() {
   // ── Create ──────────────────────────────────────────────
 
   async function openCreateDialog() {
-    const maxNumber = tanks.reduce((max, t) => Math.max(max, t.tank_number), 0);
-    setTankNumber(String(maxNumber + 1));
     setTankCapacity("");
     setCurrentCapacity("");
     setSelectedItemCode("");
@@ -158,11 +155,6 @@ export default function TankDataPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    const num = Number(tankNumber);
-    if (!tankNumber.trim() || isNaN(num) || num <= 0) {
-      toast.error("Valid tank number is required.");
-      return;
-    }
     if (!tankCapacity.trim() || isNaN(Number(tankCapacity)) || Number(tankCapacity) <= 0) {
       toast.error("Valid tank capacity is required.");
       return;
@@ -174,13 +166,12 @@ export default function TankDataPage() {
 
     setSubmitting(true);
     try {
-      await createTank({
-        tank_number: num,
+      const created = await createTank({
         tank_capacity: tankCapacity.trim(),
         current_capacity: currentCapacity.trim() || null,
         item_code: selectedItemCode || null,
       });
-      toast.success(`Tank #${num} created successfully.`);
+      toast.success(`Tank "${created.tank_code}" created successfully.`);
       setCreateOpen(false);
       await fetchData();
     } catch (err) {
@@ -200,15 +191,15 @@ export default function TankDataPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteTank(deleteTarget.tank_number);
+      await deleteTank(deleteTarget.tank_code);
       setTanks((prev) => {
-        const next = prev.filter((t) => t.id !== deleteTarget.id);
+        const next = prev.filter((t) => t.tank_code !== deleteTarget.tank_code);
         const maxPage = Math.max(1, Math.ceil(next.length / perPage));
         setPage((p) => Math.min(p, maxPage));
         return next;
       });
       setDeleteTarget(null);
-      toast.success(`Tank #${deleteTarget.tank_number} deleted.`);
+      toast.success(`Tank "${deleteTarget.tank_code}" deleted.`);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error(err.response?.data?.detail ?? err.message);
@@ -253,18 +244,18 @@ export default function TankDataPage() {
     }
     setEditing(true);
     try {
-      await updateTank(editTarget.tank_number, {
+      await updateTank(editTarget.tank_code, {
         current_capacity: editCurrentCapacity.trim() || null,
         item_code: editItemCode || null,
       });
       setTanks((prev) =>
         prev.map((t) =>
-          t.id === editTarget.id
+          t.tank_code === editTarget.tank_code
             ? { ...t, current_capacity: editCurrentCapacity.trim() || null, item_code: editItemCode || null }
             : t
         )
       );
-      toast.success(`Tank #${editTarget.tank_number} updated.`);
+      toast.success(`Tank "${editTarget.tank_code}" updated.`);
       setEditTarget(null);
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
@@ -274,7 +265,6 @@ export default function TankDataPage() {
         } else if (data.detail) {
           toast.error(data.detail);
         } else {
-          // Handle field-level errors like { item_code: ["This field is required."] }
           const messages = Object.entries(data)
             .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
             .join("; ");
@@ -330,7 +320,7 @@ export default function TankDataPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -374,8 +364,8 @@ export default function TankDataPage() {
                     paginatedTanks.map((tank) => {
                       const pct = fillPercent(tank);
                       return (
-                        <TableRow key={tank.id}>
-                          <TableCell className="font-medium">{tank.tank_number}</TableCell>
+                        <TableRow key={tank.tank_code}>
+                          <TableCell className="font-medium">{tank.tank_code}</TableCell>
                           <TableCell>{tank.item_code ?? "—"}</TableCell>
                           <TableCell>{tank.tank_capacity} L</TableCell>
                           <TableCell>{tank.current_capacity ? `${tank.current_capacity} L` : "—"}</TableCell>
@@ -483,20 +473,9 @@ export default function TankDataPage() {
               <Container className="h-5 w-5" />
               Create Tank
             </DialogTitle>
-            <DialogDescription>Add a new tank to the system</DialogDescription>
+            <DialogDescription>Add a new tank. Tank code will be auto-generated.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="tank-number">Tank Number *</Label>
-              <Input
-                id="tank-number"
-                type="number"
-                min={1}
-                placeholder="e.g. 1"
-                value={tankNumber}
-                onChange={(e) => setTankNumber(e.target.value)}
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="tank-capacity">Tank Capacity (L) *</Label>
               <Input
@@ -548,7 +527,7 @@ export default function TankDataPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={submitting || !tankNumber.trim() || !tankCapacity.trim() || !!capacityError}
+                disabled={submitting || !tankCapacity.trim() || !!capacityError}
               >
                 {submitting ? "Creating..." : "Create"}
               </Button>
@@ -564,7 +543,7 @@ export default function TankDataPage() {
             <DialogTitle>Delete Tank</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete{" "}
-              <strong>Tank #{deleteTarget?.tank_number}</strong>? This action cannot be
+              <strong>{deleteTarget?.tank_code}</strong>? This action cannot be
               undone.
             </DialogDescription>
           </DialogHeader>
@@ -585,14 +564,14 @@ export default function TankDataPage() {
           <DialogHeader>
             <DialogTitle>Edit Tank</DialogTitle>
             <DialogDescription>
-              Update <strong>Tank #{editTarget?.tank_number}</strong>
+              Update <strong>{editTarget?.tank_code}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label>Tank Number</Label>
+              <Label>Tank Code</Label>
               <Input
-                value={editTarget?.tank_number ?? ""}
+                value={editTarget?.tank_code ?? ""}
                 disabled
                 className="disabled:opacity-70"
               />

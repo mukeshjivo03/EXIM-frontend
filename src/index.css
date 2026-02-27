@@ -165,13 +165,14 @@
 }
 .dark .banner-haze { opacity: 0.08; }
 
-/* Ship sailing — slow, majestic pace for a heavy vessel */
+/* Ship sailing — brisk pace with short pause before reappearing */
 @keyframes shipSail {
-  0%   { transform: translateX(calc(100vw + 80px)); }
-  100% { transform: translateX(-520px); }
+  0%    { transform: translateX(calc(100vw + 20px)); }
+  5%    { transform: translateX(calc(100vw + 20px)); }
+  100%  { transform: translateX(-340px); }
 }
 .ship-sail {
-  animation: shipSail 32s linear infinite;
+  animation: shipSail 18s linear infinite;
 }
 
 /* Ship bobbing — minimal for a large cargo vessel */

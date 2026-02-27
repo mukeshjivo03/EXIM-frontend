@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Trash2, ChevronLeft, ChevronRight, PackageOpen } from "lucide-react";
 
-import { getItems, syncItems, syncSingleItem, deleteItem, type SapItem } from "@/api/sapSync";
+import { getFgItems, syncFgItems, syncSingleFgItem, deleteFgItem, type SapItem } from "@/api/sapSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function SyncProductDataPage() {
+export default function SyncFinishedGoodsDataPage() {
   const [items, setItems] = useState<SapItem[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,14 +52,14 @@ export default function SyncProductDataPage() {
     setLoading(true);
     setError("");
     try {
-      const { count: c, items: data } = await getItems();
+      const { count: c, items: data } = await getFgItems();
       setItems(data ?? []);
       setCount(c);
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);
       } else {
-        setError("Failed to load items");
+        setError("Failed to load finished goods items");
       }
     } finally {
       setLoading(false);
@@ -72,22 +72,22 @@ export default function SyncProductDataPage() {
     function onItemsUpdated() {
       fetchItems();
     }
-    window.addEventListener("items-updated", onItemsUpdated);
-    return () => window.removeEventListener("items-updated", onItemsUpdated);
+    window.addEventListener("fg-items-updated", onItemsUpdated);
+    return () => window.removeEventListener("fg-items-updated", onItemsUpdated);
   }, []);
 
   async function handleSyncAll() {
     setSyncingAll(true);
     setError("");
     try {
-      const data = await syncItems();
+      const data = await syncFgItems();
       setItems(data ?? []);
-      toast.success(`All items synced. ${(data ?? []).length} items loaded.`);
+      toast.success(`All finished goods synced. ${(data ?? []).length} items loaded.`);
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);
       } else {
-        setError("Failed to sync product data");
+        setError("Failed to sync finished goods data");
       }
     } finally {
       setSyncingAll(false);
@@ -104,7 +104,7 @@ export default function SyncProductDataPage() {
     setSyncingOne(true);
     setError("");
     try {
-      await syncSingleItem(code);
+      await syncSingleFgItem(code);
       toast.success(`Item "${code}" synced successfully.`);
       setItemCode("");
       await fetchItems();
@@ -124,7 +124,7 @@ export default function SyncProductDataPage() {
     const deletedName = deleteTarget.item_name;
     setDeleting(true);
     try {
-      await deleteItem(deleteTarget.item_code);
+      await deleteFgItem(deleteTarget.item_code);
       setItems((prev) => {
         const next = prev.filter((item) => item.id !== deleteTarget.id);
         const maxPage = Math.max(1, Math.ceil(next.length / perPage));
@@ -151,9 +151,9 @@ export default function SyncProductDataPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Sync Product Data</h1>
+          <h1 className="text-2xl font-bold">Sync Finished Goods Data</h1>
           <p className="text-sm text-muted-foreground">
-            Sync product data from SAP and manage items
+            Sync finished goods data from SAP and manage items
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function SyncProductDataPage() {
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <CardTitle>Product Items</CardTitle>
+          <CardTitle>Finished Goods Items</CardTitle>
           <CardDescription>{count} items synced from SAP</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -235,7 +235,7 @@ export default function SyncProductDataPage() {
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <PackageOpen className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No items found</p>
-                          <p className="text-xs">Sync product data from SAP to see items here.</p>
+                          <p className="text-xs">Sync finished goods data from SAP to see items here.</p>
                         </div>
                       </TableCell>
                     </TableRow>

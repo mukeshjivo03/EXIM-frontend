@@ -4,7 +4,6 @@ import {
   Container,
   Gauge,
   Users,
-  RefreshCw,
   Truck,
   ScrollText,
 } from "lucide-react";
@@ -15,7 +14,6 @@ const quickLinks = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },
   { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts" },
-  { to: "/admin/sync-product-data", label: "Sync Products", icon: RefreshCw, desc: "SAP product sync" },
   { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync" },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history" },
 ];

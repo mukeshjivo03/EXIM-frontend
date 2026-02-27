@@ -5,8 +5,9 @@ import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import UsersPage from "@/pages/UsersPage";
-import SyncProductDataPage from "@/pages/SyncProductDataPage";
 import SyncVendorDataPage from "@/pages/SyncVendorDataPage";
+import SyncRawMaterialDataPage from "@/pages/SyncRawMaterialDataPage";
+import SyncFinishedGoodsDataPage from "@/pages/SyncFinishedGoodsDataPage";
 import SyncLogsPage from "@/pages/SyncLogsPage";
 import TankItemsPage from "@/pages/TankItemsPage";
 import TankDataPage from "@/pages/TankDataPage";
@@ -56,10 +57,18 @@ function App() {
               }
             />
             <Route
-              path="/admin/sync-product-data"
+              path="/admin/sync-raw-material-data"
               element={
                 <ProtectedRoute allowedRoles={["ADM"]}>
-                  <SyncProductDataPage />
+                  <SyncRawMaterialDataPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sync-finished-goods-data"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <SyncFinishedGoodsDataPage />
                 </ProtectedRoute>
               }
             />
