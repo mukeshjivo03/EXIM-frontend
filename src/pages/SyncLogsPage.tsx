@@ -62,7 +62,7 @@ export default function SyncLogsPage() {
     setError("");
     try {
       const data = await getSyncLogs();
-      setLogs(data ?? []);
+      setLogs((data ?? []).sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()));
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);

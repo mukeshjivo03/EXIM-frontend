@@ -12,6 +12,7 @@ import SyncLogsPage from "@/pages/SyncLogsPage";
 import TankItemsPage from "@/pages/TankItemsPage";
 import TankDataPage from "@/pages/TankDataPage";
 import TankMonitoringPage from "@/pages/TankMonitoringPage";
+import StockStatusPage from "@/pages/StockStatusPage";
 import HomePage from "@/pages/HomePage";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -24,6 +25,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<HomePage />} />
+            <Route
+              path="/stock/stock-status"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <StockStatusPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/stock/tank-items"
               element={

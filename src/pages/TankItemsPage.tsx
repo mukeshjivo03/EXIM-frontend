@@ -324,7 +324,7 @@ export default function TankItemsPage() {
                     </TableRow>
                   ) : (
                     paginatedItems.map((item, i) => (
-                      <TableRow key={item.id}>
+                      <TableRow key={`${item.id}-${i}`}>
                         <TableCell className="font-medium">
                           {(page - 1) * perPage + i + 1}
                         </TableCell>

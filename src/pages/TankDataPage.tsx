@@ -175,8 +175,18 @@ export default function TankDataPage() {
       setCreateOpen(false);
       await fetchData();
     } catch (err) {
-      if (err instanceof AxiosError) {
-        toast.error(err.response?.data?.detail ?? err.message);
+      if (err instanceof AxiosError && err.response?.data) {
+        const data = err.response.data;
+        if (typeof data === "string") {
+          toast.error(data);
+        } else if (data.detail) {
+          toast.error(data.detail);
+        } else {
+          const messages = Object.entries(data)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .join("; ");
+          toast.error(messages || err.message);
+        }
       } else {
         toast.error("Failed to create tank.");
       }
@@ -515,7 +525,7 @@ export default function TankDataPage() {
                 <SelectContent>
                   {tankItems.map((item) => (
                     <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
-                      {item.tank_item_code} — {item.tank_item_name}
+                      {item.tank_item_code} - {item.tank_item_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -611,7 +621,7 @@ export default function TankDataPage() {
                 <SelectContent>
                   {tankItems.map((item) => (
                     <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
-                      {item.tank_item_code} — {item.tank_item_name}
+                      {item.tank_item_code} - {item.tank_item_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

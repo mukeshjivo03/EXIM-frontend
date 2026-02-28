@@ -62,8 +62,13 @@ export async function syncSingleRmItem(itemCode: string): Promise<SapItem> {
   return res.data;
 }
 
+export async function getRmItem(itemCode: string): Promise<SapItem> {
+  const res = await api.get<SapItem>(`/item/rm/${itemCode}/`);
+  return res.data;
+}
+
 export async function deleteRmItem(itemCode: string): Promise<void> {
-  await api.delete(`/item/${itemCode}/`);
+  await api.delete(`/item/rm/${itemCode}/`);
 }
 
 // Finished Goods Items
@@ -83,8 +88,13 @@ export async function syncSingleFgItem(itemCode: string): Promise<SapItem> {
   return res.data;
 }
 
+export async function getFgItem(itemCode: string): Promise<SapItem> {
+  const res = await api.get<SapItem>(`/item/fg/${itemCode}/`);
+  return res.data;
+}
+
 export async function deleteFgItem(itemCode: string): Promise<void> {
-  await api.delete(`/item/${itemCode}/`);
+  await api.delete(`/item/fg/${itemCode}/`);
 }
 
 // Vendor / Party types and API

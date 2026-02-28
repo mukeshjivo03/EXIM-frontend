@@ -16,6 +16,7 @@ import {
   Droplets,
   Container,
   Gauge,
+  ClipboardList,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const stockLinks = [
+  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },

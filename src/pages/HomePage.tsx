@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import {
+  ClipboardList,
   Droplets,
   Container,
   Gauge,
@@ -10,6 +11,7 @@ import {
 import { Link } from "react-router-dom";
 
 const quickLinks = [
+  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses" },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals" },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },

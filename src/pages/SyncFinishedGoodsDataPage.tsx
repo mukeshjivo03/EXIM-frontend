@@ -53,7 +53,7 @@ export default function SyncFinishedGoodsDataPage() {
     setError("");
     try {
       const { count: c, items: data } = await getFgItems();
-      setItems(data ?? []);
+      setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       setCount(c);
     } catch (err) {
       if (err instanceof AxiosError) {
@@ -81,7 +81,7 @@ export default function SyncFinishedGoodsDataPage() {
     setError("");
     try {
       const data = await syncFgItems();
-      setItems(data ?? []);
+      setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       toast.success(`All finished goods synced. ${(data ?? []).length} items loaded.`);
     } catch (err) {
       if (err instanceof AxiosError) {

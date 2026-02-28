@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/context/ThemeContext";
-import { syncSingleItem, getVendor, deleteItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
+import { getRmItem, getFgItem, getVendor, deleteRmItem, deleteFgItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
 import { getTankItem, deleteTankItem, type TankItem } from "@/api/tank";
 
 export default function Navbar() {
@@ -22,7 +22,8 @@ export default function Navbar() {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [item, setItem] = useState<SapItem | null>(null);
+  const [rmItem, setRmItem] = useState<SapItem | null>(null);
+  const [fgItem, setFgItem] = useState<SapItem | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [tankItem, setTankItem] = useState<TankItem | null>(null);
   const [searchError, setSearchError] = useState("");
@@ -34,34 +35,34 @@ export default function Navbar() {
 
     setSearching(true);
     setSearchError("");
-    setItem(null);
+    setRmItem(null);
+    setFgItem(null);
     setVendor(null);
     setTankItem(null);
 
     const results = await Promise.allSettled([
-      syncSingleItem(code),
+      getRmItem(code),
+      getFgItem(code),
       getVendor(code),
       getTankItem(code),
     ]);
 
-    const itemResult = results[0];
-    const vendorResult = results[1];
-    const tankResult = results[2];
+    const foundRm = results[0].status === "fulfilled" ? results[0].value : null;
+    const foundFg = results[1].status === "fulfilled" ? results[1].value : null;
+    const foundVendor = results[2].status === "fulfilled" ? results[2].value : null;
+    const foundTank = results[3].status === "fulfilled" ? results[3].value : null;
 
-    const foundItem = itemResult.status === "fulfilled" ? itemResult.value : null;
-    const foundVendor = vendorResult.status === "fulfilled" ? vendorResult.value : null;
-    const foundTank = tankResult.status === "fulfilled" ? tankResult.value : null;
-
-    if (!foundItem && !foundVendor && !foundTank) {
+    if (!foundRm && !foundFg && !foundVendor && !foundTank) {
       let msg = "No item, vendor, or tank item found for this code";
-      const firstErr = itemResult.status === "rejected" ? itemResult.reason : null;
+      const firstErr = results[0].status === "rejected" ? results[0].reason : null;
       if (firstErr instanceof AxiosError && firstErr.response?.status !== 404) {
         msg = firstErr.response?.data?.detail ?? firstErr.message;
       }
       setSearchError(msg);
     }
 
-    setItem(foundItem);
+    setRmItem(foundRm);
+    setFgItem(foundFg);
     setVendor(foundVendor);
     setTankItem(foundTank);
     setModalOpen(true);
@@ -72,19 +73,40 @@ export default function Navbar() {
     if (e.key === "Enter") handleSearch();
   }
 
-  async function handleDeleteItem() {
-    if (!item) return;
+  const hasAnyResult = rmItem || fgItem || vendor || tankItem;
+
+  async function handleDeleteRmItem() {
+    if (!rmItem) return;
     setDeleting(true);
     try {
-      await deleteItem(item.item_code);
-      setItem(null);
-      window.dispatchEvent(new Event("items-updated"));
-      if (!vendor && !tankItem) closeModal();
+      await deleteRmItem(rmItem.item_code);
+      setRmItem(null);
+      window.dispatchEvent(new Event("rm-items-updated"));
+      if (!fgItem && !vendor && !tankItem) closeModal();
     } catch (err) {
       if (err instanceof AxiosError) {
         setSearchError(err.response?.data?.detail ?? err.message);
       } else {
-        setSearchError("Failed to delete item");
+        setSearchError("Failed to delete raw material item");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleDeleteFgItem() {
+    if (!fgItem) return;
+    setDeleting(true);
+    try {
+      await deleteFgItem(fgItem.item_code);
+      setFgItem(null);
+      window.dispatchEvent(new Event("fg-items-updated"));
+      if (!rmItem && !vendor && !tankItem) closeModal();
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        setSearchError(err.response?.data?.detail ?? err.message);
+      } else {
+        setSearchError("Failed to delete finished goods item");
       }
     } finally {
       setDeleting(false);
@@ -98,7 +120,7 @@ export default function Navbar() {
       await deleteVendor(vendor.card_code);
       setVendor(null);
       window.dispatchEvent(new Event("vendors-updated"));
-      if (!item && !tankItem) closeModal();
+      if (!rmItem && !fgItem && !tankItem) closeModal();
     } catch (err) {
       if (err instanceof AxiosError) {
         setSearchError(err.response?.data?.detail ?? err.message);
@@ -117,7 +139,7 @@ export default function Navbar() {
       await deleteTankItem(tankItem.tank_item_code);
       setTankItem(null);
       window.dispatchEvent(new Event("tank-items-updated"));
-      if (!item && !vendor) closeModal();
+      if (!rmItem && !fgItem && !vendor) closeModal();
     } catch (err) {
       if (err instanceof AxiosError) {
         setSearchError(err.response?.data?.detail ?? err.message);
@@ -131,10 +153,59 @@ export default function Navbar() {
 
   function closeModal() {
     setModalOpen(false);
-    setItem(null);
+    setRmItem(null);
+    setFgItem(null);
     setVendor(null);
     setTankItem(null);
     setSearchError("");
+  }
+
+  // Reusable item section renderer
+  function renderItemSection(label: string, item: SapItem, onDelete: () => void) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={onDelete}
+            disabled={deleting}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <p className="text-muted-foreground text-xs">Item Code</p>
+            <p className="font-medium">{item.item_code}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Item Name</p>
+            <p className="font-medium">{item.item_name}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Category</p>
+            <p className="font-medium">{item.category}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Brand</p>
+            <p className="font-medium">{item.u_brand}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Variety</p>
+            <p className="font-medium">{item.u_variety}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Unit</p>
+            <p className="font-medium">{item.u_unit}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -184,52 +255,13 @@ export default function Navbar() {
             <p className="text-sm text-destructive">{searchError}</p>
           )}
 
-          {item && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Item
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDeleteItem}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground text-xs">Item Code</p>
-                  <p className="font-medium">{item.item_code}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Item Name</p>
-                  <p className="font-medium">{item.item_name}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Category</p>
-                  <p className="font-medium">{item.category}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Brand</p>
-                  <p className="font-medium">{item.u_brand}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Variety</p>
-                  <p className="font-medium">{item.u_variety}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Unit</p>
-                  <p className="font-medium">{item.u_unit}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          {rmItem && renderItemSection("Raw Material", rmItem, handleDeleteRmItem)}
 
-          {item && vendor && <Separator />}
+          {rmItem && (fgItem || vendor || tankItem) && <Separator />}
+
+          {fgItem && renderItemSection("Finished Goods", fgItem, handleDeleteFgItem)}
+
+          {fgItem && (vendor || tankItem) && <Separator />}
 
           {vendor && (
             <div className="space-y-3">
@@ -272,7 +304,7 @@ export default function Navbar() {
             </div>
           )}
 
-          {(item || vendor) && tankItem && <Separator />}
+          {(rmItem || fgItem || vendor) && tankItem && <Separator />}
 
           {tankItem && (
             <div className="space-y-3">
@@ -319,6 +351,10 @@ export default function Navbar() {
                 </div>
               </div>
             </div>
+          )}
+
+          {!hasAnyResult && !searchError && (
+            <p className="text-sm text-muted-foreground text-center py-4">No results found.</p>
           )}
         </DialogContent>
       </Dialog>
