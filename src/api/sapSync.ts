@@ -13,6 +13,11 @@ export interface SapItem {
   u_brand: string;
   u_unit: string;
   u_sub_group: string;
+  total_trans_value: string;
+  total_in_qty: string;
+  total_out_qty: string;
+  total_qty: string;
+  rate: string;
 }
 
 interface SyncResponse {
@@ -47,9 +52,39 @@ export async function deleteItem(itemCode: string): Promise<void> {
 
 // Raw Material Items
 
-export async function getRmItems(): Promise<ItemsResponse> {
-  const res = await api.get<ItemsResponse>("/items/rm/");
-  return { count: res.data.count ?? 0, items: res.data.items ?? [] };
+export async function getRmItems(varieties?: string[]): Promise<ItemsResponse> {
+  const params = new URLSearchParams();
+  if (varieties?.length) {
+    for (const v of varieties) params.append("variety", v);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/items/rm/", { params });
+  const d = res.data;
+  return {
+    count: d.Items_processed ?? d.count ?? 0,
+    items: d.Items ?? d.items ?? [],
+  };
+}
+
+export interface RmSummary {
+  total_count: number;
+  total_qty: string;
+  avg_rate: string;
+  total_trans_value: string;
+}
+
+export async function getRmSummary(varieties?: string[]): Promise<RmSummary> {
+  const params = new URLSearchParams();
+  if (varieties?.length) {
+    for (const v of varieties) params.append("variety", v);
+  }
+  const res = await api.get<{ summary: RmSummary }>("/items/rm/summary/", { params });
+  return res.data.summary;
+}
+
+export async function getRmVarieties(): Promise<string[]> {
+  const res = await api.get<{ varieties: string[] }>("/items/rm/varieties/");
+  return res.data.varieties ?? [];
 }
 
 export async function syncRmItems(): Promise<SapItem[]> {

@@ -51,10 +51,17 @@ export interface StockInsightsSummary {
   total_value: number;
   total_qty: number;
   total_count: number;
+  avg_price_per_kg: number;
+  avg_price_per_ltr: number;
 }
 
 export interface StockInsights {
   summary: StockInsightsSummary;
+}
+
+export async function getStockSummary(): Promise<StockInsights> {
+  const res = await api.get<StockInsights>("/stock-status/stock-summary/");
+  return res.data;
 }
 
 export async function getStockInsights(filters?: StockStatusFilters): Promise<StockInsights> {

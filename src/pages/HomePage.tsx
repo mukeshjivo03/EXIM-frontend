@@ -7,6 +7,8 @@ import {
   Users,
   Truck,
   ScrollText,
+  Package,
+  Boxes,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -16,6 +18,8 @@ const quickLinks = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },
   { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts" },
+  { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync" },
+  { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync" },
   { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync" },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history" },
 ];

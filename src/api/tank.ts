@@ -79,3 +79,35 @@ export async function updateTank(
 ): Promise<void> {
   await api.put(`/tank/update-capacity/${tankCode}/`, data);
 }
+
+// ── Tank Summary ─────────────────────────────────────────────
+
+export interface TankSummary {
+  total_tank_capacity: number;
+  current_stock: number;
+  utilisation_rate: number;
+  tank_count: number;
+  item_count: number;
+}
+
+export async function getTankSummary(): Promise<TankSummary> {
+  const res = await api.get<{ summary: TankSummary }>("/tank/tank-summary/");
+  return res.data.summary;
+}
+
+// ── Item-wise Tank Summary ───────────────────────────────────
+
+export interface ItemWiseTankSummary {
+  color: string;
+  tank_item_code: string;
+  tank_item_name: string;
+  quantity_in_liters: number;
+  total_capacity: number;
+  tank_count: number;
+  tank_numbers: string[];
+}
+
+export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary[]> {
+  const res = await api.get<ItemWiseTankSummary[]>("/tank/item-wise-summary/");
+  return res.data ?? [];
+}

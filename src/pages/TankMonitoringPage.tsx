@@ -1,9 +1,26 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
-import { Droplets } from "lucide-react";
+import {
+  Droplets,
+  Gauge,
+  Warehouse,
+  BarChart3,
+  Container,
+  Package,
+} from "lucide-react";
 
-import { getTanks, getTankItems, type Tank, type TankItem } from "@/api/tank";
+import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary } from "@/api/tank";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 function formatCapacity(value: string | number): string {
   return Number(value).toLocaleString();
@@ -48,6 +65,9 @@ export default function TankMonitoringPage() {
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [itemSummary, setItemSummary] = useState<ItemWiseTankSummary[]>([]);
+  const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
+  const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -67,7 +87,30 @@ export default function TankMonitoringPage() {
       }
     }
     fetchData();
+    fetchItemSummary();
+    fetchTankSummary();
   }, []);
+
+  async function fetchTankSummary() {
+    try {
+      const data = await getTankSummary();
+      setTankSummary(data);
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function fetchItemSummary() {
+    setItemSummaryLoading(true);
+    try {
+      const data = await getItemWiseTankSummary();
+      setItemSummary(data);
+    } catch {
+      // non-critical
+    } finally {
+      setItemSummaryLoading(false);
+    }
+  }
 
   const colorMap = new Map(
     tankItems.map((i) => [i.tank_item_code, i.color])
@@ -85,6 +128,104 @@ export default function TankMonitoringPage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Tank Summary Cards */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Tank Summary
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Gauge className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Quantity</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {tankSummary.current_stock.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Warehouse className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Capacity</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {tankSummary.total_tank_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Container className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Tanks</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{tankSummary.tank_count}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Products</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{tankSummary.item_count}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Fill Rate</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{tankSummary.utilisation_rate}%</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Loading skeleton */}
       {loading ? (
@@ -153,7 +294,22 @@ export default function TankMonitoringPage() {
                 </p>
 
                 {/* ─── Industrial Tank Visual ─── */}
-                <div className="relative flex flex-col items-center my-1">
+                <div className="relative flex items-start gap-2 my-1">
+                  {/* Level gauge (outside, left side) */}
+                  <div className="relative z-10 flex flex-col items-center" style={{ marginTop: 27, height: 190 }}>
+                    {/* Percentage label */}
+                    <span className="text-[9px] font-bold text-muted-foreground mb-1">{pct}%</span>
+                    {/* Gauge track */}
+                    <div className="relative flex-1 w-[5px] rounded-full border border-border/50 bg-muted overflow-hidden">
+                      <div
+                        className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000"
+                        style={{ height: `${pct}%`, backgroundColor: fillHex }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tank structure */}
+                  <div className="relative flex flex-col items-center">
                   {/* Glow behind tank */}
                   {pct > 0 && (
                     <div
@@ -175,14 +331,6 @@ export default function TankMonitoringPage() {
                     {/* Reinforcement bands */}
                     <div className="absolute top-[28%] left-0 right-0 h-[4px] tank-band z-20" />
                     <div className="absolute top-[62%] left-0 right-0 h-[4px] tank-band z-20" />
-
-                    {/* Level gauge (left side) */}
-                    <div className="absolute top-3 bottom-3 left-[7px] w-[5px] rounded-full border border-border/50 bg-black/15 z-20 overflow-hidden">
-                      <div
-                        className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000"
-                        style={{ height: `${pct}%`, backgroundColor: fillHex }}
-                      />
-                    </div>
 
                     {/* Liquid fill */}
                     <div
@@ -250,6 +398,7 @@ export default function TankMonitoringPage() {
 
                   {/* Base plate */}
                   <div className="relative z-10 w-[140px] h-[4px] rounded-b-sm tank-base" />
+                  </div>
                 </div>
 
                 {/* Fill progress bar */}
@@ -273,6 +422,94 @@ export default function TankMonitoringPage() {
           })}
         </div>
       )}
+
+      {/* Item-wise Tank Summary */}
+      <Card className="card-hover shimmer-hover">
+        <CardHeader>
+          <CardTitle>Item-wise Tank Summary</CardTitle>
+          <CardDescription>{itemSummary.length} items</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {itemSummaryLoading ? (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Color</TableHead>
+                      <TableHead>Item Code</TableHead>
+                      <TableHead>Quantity (Liters)</TableHead>
+                      <TableHead>Capacity (Liters)</TableHead>
+                      <TableHead>Tank Count</TableHead>
+                      <TableHead>Tank Numbers</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : itemSummary.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+                <Droplets className="h-10 w-10 stroke-1" />
+                <p className="text-sm font-medium">No item summary available</p>
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Color</TableHead>
+                      <TableHead>Item Code</TableHead>
+                      <TableHead>Quantity (Liters)</TableHead>
+                      <TableHead>Capacity (Liters)</TableHead>
+                      <TableHead>Tank Count</TableHead>
+                      <TableHead>Tank Numbers</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {itemSummary.map((item) => (
+                      <TableRow key={item.tank_item_code}>
+                        <TableCell>
+                          <div
+                            className="h-5 w-5 rounded-full border border-border"
+                            style={{ backgroundColor: item.color }}
+                            title={item.color}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{item.tank_item_code}</TableCell>
+                        <TableCell>
+                          {item.quantity_in_liters.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {item.total_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>{item.tank_count}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {item.tank_numbers.map((tn) => (
+                              <Badge key={tn} variant="secondary" className="text-xs">
+                                {tn}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 }

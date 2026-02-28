@@ -8,6 +8,9 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Gauge,
+  Warehouse,
+  BarChart3,
 } from "lucide-react";
 
 import {
@@ -16,8 +19,10 @@ import {
   deleteTank,
   updateTank,
   getTankItems,
+  getTankSummary,
   type Tank,
   type TankItem,
+  type TankSummary,
 } from "@/api/tank";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +73,7 @@ export default function TankDataPage() {
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -115,8 +121,18 @@ export default function TankDataPage() {
     }
   }
 
+  async function fetchTankSummary() {
+    try {
+      const data = await getTankSummary();
+      setTankSummary(data);
+    } catch {
+      // non-critical
+    }
+  }
+
   useEffect(() => {
     fetchData();
+    fetchTankSummary();
   }, []);
 
   // ── Create ──────────────────────────────────────────────
@@ -306,6 +322,70 @@ export default function TankDataPage() {
 
       {/* Error */}
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Tank Summary */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Tank Summary
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Warehouse className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Tank Capacity</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {tankSummary.total_tank_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Gauge className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Current Stock</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {tankSummary.current_stock.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Utilisation Rate</p>
+                  {!tankSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{tankSummary.utilisation_rate}%</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">

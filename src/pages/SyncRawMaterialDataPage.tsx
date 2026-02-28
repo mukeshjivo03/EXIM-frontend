@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { Trash2, ChevronLeft, ChevronRight, PackageOpen } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight, PackageOpen, Filter, X, Hash, IndianRupee, Scale, TrendingUp } from "lucide-react";
 
-import { getRmItems, syncRmItems, syncSingleRmItem, deleteRmItem, type SapItem } from "@/api/sapSync";
+import { getRmItems, getRmVarieties, getRmSummary, syncRmItems, syncSingleRmItem, deleteRmItem, type SapItem, type RmSummary } from "@/api/sapSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
@@ -44,15 +53,22 @@ export default function SyncRawMaterialDataPage() {
   const totalPages = Math.max(1, Math.ceil(items.length / perPage));
   const paginatedItems = items.slice((page - 1) * perPage, page * perPage);
 
+  // Filter
+  const [varieties, setVarieties] = useState<string[]>([]);
+  const [fVarieties, setFVarieties] = useState<string[]>([]);
+
+  // Summary
+  const [summary, setSummary] = useState<RmSummary | null>(null);
+
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<SapItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  async function fetchItems() {
+  async function fetchItems(selectedVarieties?: string[]) {
     setLoading(true);
     setError("");
     try {
-      const { count: c, items: data } = await getRmItems();
+      const { count: c, items: data } = await getRmItems(selectedVarieties?.length ? selectedVarieties : undefined);
       setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       setCount(c);
     } catch (err) {
@@ -66,11 +82,32 @@ export default function SyncRawMaterialDataPage() {
     }
   }
 
+  async function fetchSummary(selectedVarieties?: string[]) {
+    try {
+      const data = await getRmSummary(selectedVarieties?.length ? selectedVarieties : undefined);
+      setSummary(data);
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function loadVarieties() {
+    try {
+      const data = await getRmVarieties();
+      setVarieties(data);
+    } catch {
+      // non-critical
+    }
+  }
+
   useEffect(() => {
     fetchItems();
+    fetchSummary();
+    loadVarieties();
 
     function onItemsUpdated() {
-      fetchItems();
+      fetchItems(fVarieties.length ? fVarieties : undefined);
+      fetchSummary(fVarieties.length ? fVarieties : undefined);
     }
     window.addEventListener("rm-items-updated", onItemsUpdated);
     return () => window.removeEventListener("rm-items-updated", onItemsUpdated);
@@ -83,6 +120,7 @@ export default function SyncRawMaterialDataPage() {
       const data = await syncRmItems();
       setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       toast.success(`All raw materials synced. ${(data ?? []).length} items loaded.`);
+      fetchSummary(fVarieties.length ? fVarieties : undefined);
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);
@@ -108,6 +146,7 @@ export default function SyncRawMaterialDataPage() {
       toast.success(`Item "${code}" synced successfully.`);
       setItemCode("");
       await fetchItems();
+      fetchSummary(fVarieties.length ? fVarieties : undefined);
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail ?? err.message);
@@ -175,6 +214,162 @@ export default function SyncRawMaterialDataPage() {
       {/* Error */}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {/* Filters */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Filters
+        </h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-end gap-4 flex-wrap">
+              <div className="space-y-1.5 min-w-[180px] flex-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Filter className="h-3 w-3" /> Variety
+                </Label>
+                <Select value="__pick__" onValueChange={(v) => {
+                  if (v === "__pick__") return;
+                  const next = fVarieties.includes(v)
+                    ? fVarieties.filter((x) => x !== v)
+                    : [...fVarieties, v];
+                  setFVarieties(next);
+                  setPage(1);
+                  fetchItems(next.length ? next : undefined);
+                  fetchSummary(next.length ? next : undefined);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {fVarieties.length === 0
+                        ? "All Varieties"
+                        : `${fVarieties.length} selected`}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__pick__" disabled>Select varieties</SelectItem>
+                    {varieties.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {fVarieties.includes(v) ? `✓ ${v}` : v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fVarieties.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {fVarieties.map((v) => (
+                      <Badge key={v} variant="secondary" className="text-xs gap-1 cursor-pointer" onClick={() => {
+                        const next = fVarieties.filter((x) => x !== v);
+                        setFVarieties(next);
+                        setPage(1);
+                        fetchItems(next.length ? next : undefined);
+                        fetchSummary(next.length ? next : undefined);
+                      }}>
+                        {v}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                {fVarieties.length > 0 && (
+                  <Button variant="ghost" size="sm" className="gap-1" onClick={() => {
+                    setFVarieties([]);
+                    setPage(1);
+                    fetchItems();
+                    fetchSummary();
+                  }}>
+                    <X className="h-4 w-4" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Cards */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Summary
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Hash className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Count</p>
+                  {!summary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{summary.total_count}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Quantity (LTR)</p>
+                  {!summary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {Number(summary.total_qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Rate / LTR</p>
+                  {!summary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      &#8377; {Number(summary.avg_rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <IndianRupee className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Trans Value</p>
+                  {!summary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      &#8377; {Number(summary.total_trans_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
@@ -190,10 +385,12 @@ export default function SyncRawMaterialDataPage() {
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead>Brand</TableHead>
                     <TableHead>Variety</TableHead>
                     <TableHead>Unit</TableHead>
+                    <TableHead className="text-right">Total Quantity (LTR)</TableHead>
+                    <TableHead className="text-right">Rate / LTR</TableHead>
+                    <TableHead className="text-right">Total Trans Value</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -203,10 +400,12 @@ export default function SyncRawMaterialDataPage() {
                       <TableCell><Skeleton className="h-4 w-6" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
                     </TableRow>
                   ))}
@@ -221,17 +420,19 @@ export default function SyncRawMaterialDataPage() {
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead>Brand</TableHead>
                     <TableHead>Variety</TableHead>
                     <TableHead>Unit</TableHead>
+                    <TableHead className="text-right">Total Quantity (LTR)</TableHead>
+                    <TableHead className="text-right">Rate / LTR</TableHead>
+                    <TableHead className="text-right">Total Trans Value</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-16">
+                      <TableCell colSpan={10} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <PackageOpen className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No items found</p>
@@ -245,10 +446,18 @@ export default function SyncRawMaterialDataPage() {
                         <TableCell className="font-medium">{(page - 1) * perPage + i + 1}</TableCell>
                         <TableCell>{item.item_code}</TableCell>
                         <TableCell>{item.item_name}</TableCell>
-                        <TableCell>{item.category}</TableCell>
                         <TableCell>{item.u_brand}</TableCell>
                         <TableCell>{item.u_variety}</TableCell>
                         <TableCell>{item.u_unit}</TableCell>
+                        <TableCell className="text-right">
+                          {Number(item.total_qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {Number(item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {Number(item.total_trans_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"

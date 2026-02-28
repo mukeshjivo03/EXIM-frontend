@@ -17,11 +17,14 @@ import {
   X,
   Hash,
   Scale,
+  Weight,
+  Droplets,
 } from "lucide-react";
 
 import {
   getStockStatuses,
   getStockStatus,
+  getStockSummary,
   getStockInsights,
   createStockStatus,
   updateStockStatus,
@@ -113,6 +116,7 @@ export default function StockStatusPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
   // insights summary
+  const [overallSummary, setOverallSummary] = useState<StockInsightsSummary | null>(null);
   const [summary, setSummary] = useState<StockInsightsSummary | null>(null);
 
   // filters
@@ -176,8 +180,18 @@ export default function StockStatusPage() {
     }
   }
 
+  async function fetchOverallSummary() {
+    try {
+      const data = await getStockSummary();
+      setOverallSummary(data.summary);
+    } catch {
+      // non-critical, keep whatever was loaded before
+    }
+  }
+
   useEffect(() => {
     fetchList();
+    fetchOverallSummary();
     loadDropdowns();
   }, []);
 
@@ -429,7 +443,113 @@ export default function StockStatusPage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {/* Stock Status Summary */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Stock Status Summary
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Hash className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Count</p>
+                  {!overallSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">{overallSummary.total_count}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <IndianRupee className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Value</p>
+                  {!overallSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      &#8377; {overallSummary.total_value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Quantity</p>
+                  {!overallSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      {overallSummary.total_qty.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Weight className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Price / KG</p>
+                  {!overallSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      &#8377; {overallSummary.avg_price_per_kg.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-md bg-primary/10 p-2">
+                  <Droplets className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Price / LTR</p>
+                  {!overallSummary ? (
+                    <Skeleton className="h-6 w-24 mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold">
+                      &#8377; {overallSummary.avg_price_per_ltr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Filters */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Filters
+        </h2>
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-end gap-4 flex-wrap">
@@ -498,9 +618,31 @@ export default function StockStatusPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Filtered Summary */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Filtered Summary
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-primary/10 p-2">
+                <Hash className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Count</p>
+                {loading ? (
+                  <Skeleton className="h-6 w-24 mt-1" />
+                ) : (
+                  <p className="text-xl font-bold">{summary?.total_count ?? 0}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -543,19 +685,41 @@ export default function StockStatusPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="rounded-md bg-primary/10 p-2">
-                <Hash className="h-5 w-5 text-primary" />
+                <Weight className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Count</p>
+                <p className="text-xs text-muted-foreground">Avg Price / KG</p>
                 {loading ? (
                   <Skeleton className="h-6 w-24 mt-1" />
                 ) : (
-                  <p className="text-xl font-bold">{summary?.total_count ?? 0}</p>
+                  <p className="text-xl font-bold">
+                    &#8377; {(summary?.avg_price_per_kg ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 )}
               </div>
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-primary/10 p-2">
+                <Droplets className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Avg Price / LTR</p>
+                {loading ? (
+                  <Skeleton className="h-6 w-24 mt-1" />
+                ) : (
+                  <p className="text-xl font-bold">
+                    &#8377; {(summary?.avg_price_per_ltr ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        </div>
       </div>
 
       {/* Table Card */}
