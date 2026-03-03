@@ -108,7 +108,7 @@ export default function TankDataPage() {
         getTanks(),
         getTankItems(),
       ]);
-      setTanks(tanksData ?? []);
+      setTanks((tanksData ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
       setTankItems((itemsData ?? []).sort((a, b) => a.id - b.id));
     } catch (err) {
       if (err instanceof AxiosError) {
@@ -332,8 +332,8 @@ export default function TankDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Warehouse className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Warehouse className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Tank Capacity</p>
@@ -351,8 +351,8 @@ export default function TankDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Gauge className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Gauge className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Current Stock</p>
@@ -370,8 +370,8 @@ export default function TankDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Utilisation Rate</p>

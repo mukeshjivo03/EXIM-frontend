@@ -17,6 +17,7 @@ import {
   Container,
   Gauge,
   ClipboardList,
+  IndianRupee,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -42,6 +44,10 @@ const stockLinks = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },
+];
+
+const commodityLinks = [
+  { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee },
 ];
 
 const adminLinks = [
@@ -62,6 +68,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
   const isAdmin = role === "ADM";
   const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -162,6 +169,32 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {!collapsed && <span>{link.label}</span>}
                 </NavLink>
               ))}
+
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Commodity Price
+                </span>
+              )}
+
+              {commodityLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
             </>
           )}
         </nav>
@@ -185,7 +218,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             className={`mt-2 w-full gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50 ${
               collapsed ? "justify-center px-0" : "justify-start"
             }`}
-            onClick={handleLogout}
+            onClick={() => setLogoutOpen(true)}
           >
             <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Logout</span>}
@@ -236,6 +269,32 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Logout confirmation dialog */}
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to log out?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setLogoutOpen(false);
+                handleLogout();
+              }}
+            >
+              Logout
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

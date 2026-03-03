@@ -452,8 +452,8 @@ export default function StockStatusPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Hash className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Hash className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Count</p>
@@ -469,8 +469,8 @@ export default function StockStatusPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <IndianRupee className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <IndianRupee className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Value</p>
@@ -488,8 +488,8 @@ export default function StockStatusPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Scale className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Scale className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Quantity</p>
@@ -507,8 +507,8 @@ export default function StockStatusPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Weight className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Weight className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Avg Price / KG</p>
@@ -526,8 +526,8 @@ export default function StockStatusPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Droplets className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Droplets className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Avg Price / LTR</p>
@@ -629,8 +629,8 @@ export default function StockStatusPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
-                <Hash className="h-5 w-5 text-primary" />
+              <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                <Hash className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Count</p>
@@ -646,8 +646,8 @@ export default function StockStatusPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
-                <IndianRupee className="h-5 w-5 text-primary" />
+              <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                <IndianRupee className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Value</p>
@@ -665,8 +665,8 @@ export default function StockStatusPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
-                <Scale className="h-5 w-5 text-primary" />
+              <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                <Scale className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Quantity</p>
@@ -684,8 +684,8 @@ export default function StockStatusPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
-                <Weight className="h-5 w-5 text-primary" />
+              <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                <Weight className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Avg Price / KG</p>
@@ -703,8 +703,8 @@ export default function StockStatusPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
-                <Droplets className="h-5 w-5 text-primary" />
+              <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                <Droplets className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Avg Price / LTR</p>

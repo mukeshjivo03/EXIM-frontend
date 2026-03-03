@@ -113,25 +113,46 @@ export default function SyncRawMaterialDataPage() {
     return () => window.removeEventListener("rm-items-updated", onItemsUpdated);
   }, []);
 
-  async function handleSyncAll() {
-    setSyncingAll(true);
-    setError("");
-    try {
-      const data = await syncRmItems();
-      setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
-      toast.success(`All raw materials synced. ${(data ?? []).length} items loaded.`);
-      fetchSummary(fVarieties.length ? fVarieties : undefined);
-    } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to sync raw material data");
-      }
-    } finally {
-      setSyncingAll(false);
+  // async function handleSyncAll() {
+  //   setSyncingAll(true);
+  //   setError("");
+  //   try {
+  //     const data = await syncRmItems();
+  //     setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
+  //     toast.success(`All raw materials synced. ${(data ?? []).length} items loaded.`);
+  //     fetchSummary(fVarieties.length ? fVarieties : undefined);
+  //   } catch (err) {
+  //     if (err instanceof AxiosError) {
+  //       setError(err.response?.data?.detail ?? err.message);
+  //     } else {
+  //       setError("Failed to sync raw material data");
+  //     }
+  //   } finally {
+  //     setSyncingAll(false);
+  //   }
+  // }
+async function handleSyncAll() {
+  setSyncingAll(true);
+  setError("");
+  try {
+    const data = await syncRmItems();
+    toast.success(`All raw materials synced. ${(data ?? []).length} items processed.`);
+    
+    // 1. Refetch the data using your standard GET API
+    await fetchItems(fVarieties.length ? fVarieties : undefined); 
+    // 2. Refetch the summary
+    await fetchSummary(fVarieties.length ? fVarieties : undefined);
+    
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      setError(err.response?.data?.detail ?? err.message);
+    } else {
+      setError("Failed to sync raw material data");
     }
+  } finally {
+    setSyncingAll(false);
   }
-
+}
   async function handleSyncOne() {
     if (!itemCode.trim()) return;
     const code = itemCode.trim();
@@ -296,8 +317,8 @@ export default function SyncRawMaterialDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Hash className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Hash className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Count</p>
@@ -313,8 +334,8 @@ export default function SyncRawMaterialDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Scale className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Scale className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Quantity (LTR)</p>
@@ -332,8 +353,8 @@ export default function SyncRawMaterialDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Avg Rate / LTR</p>
@@ -351,8 +372,8 @@ export default function SyncRawMaterialDataPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <IndianRupee className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <IndianRupee className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Trans Value</p>

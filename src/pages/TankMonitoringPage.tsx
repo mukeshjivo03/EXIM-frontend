@@ -74,7 +74,7 @@ export default function TankMonitoringPage() {
       setLoading(true);
       try {
         const [t, i] = await Promise.all([getTanks(), getTankItems()]);
-        setTanks(t ?? []);
+        setTanks((t ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
         setTankItems(i ?? []);
       } catch (err) {
         setError(
@@ -138,8 +138,8 @@ export default function TankMonitoringPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Gauge className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Gauge className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Quantity</p>
@@ -157,8 +157,8 @@ export default function TankMonitoringPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Warehouse className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Warehouse className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Capacity</p>
@@ -176,8 +176,8 @@ export default function TankMonitoringPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Container className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Container className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Tanks</p>
@@ -193,8 +193,8 @@ export default function TankMonitoringPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Products</p>
@@ -210,8 +210,8 @@ export default function TankMonitoringPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/10 p-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
+                  <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Fill Rate</p>

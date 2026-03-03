@@ -44,8 +44,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#1a291a] px-4">
-      <div className="login-card w-full max-w-lg rounded-2xl border border-white/10 bg-[#223322] p-12 py-14 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-[#0f172a] px-4">
+      <div className="login-card w-full max-w-lg rounded-2xl border border-white/10 bg-[#1e293b] p-12 py-14 shadow-lg">
         {/* Header */}
         <div className="text-center space-y-3 mb-10">
           <h1 className="text-4xl font-bold tracking-tight text-gray-100">
@@ -61,7 +61,7 @@ export default function LoginPage() {
               id="username"
               type="text"
               placeholder="Enter your username"
-              className="h-11 login-input bg-[#1a291a] border-white/10 text-gray-100 placeholder:text-gray-500"
+              className="h-11 login-input bg-[#0f172a] border-white/10 text-gray-100 placeholder:text-gray-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -74,7 +74,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               placeholder="Enter your password"
-              className="h-11 login-input bg-[#1a291a] border-white/10 text-gray-100 placeholder:text-gray-500"
+              className="h-11 login-input bg-[#0f172a] border-white/10 text-gray-100 placeholder:text-gray-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
