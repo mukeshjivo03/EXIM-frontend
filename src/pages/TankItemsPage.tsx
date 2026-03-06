@@ -18,11 +18,19 @@ import {
   updateTankItem,
   type TankItem,
 } from "@/api/tank";
+import { getRmItems, type SapItem } from "@/api/sapSync";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
@@ -109,6 +117,10 @@ export default function TankItemsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TankItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Raw material items for dropdown
+  const [rmItems, setRmItems] = useState<SapItem[]>([]);
+  const [rmLoading, setRmLoading] = useState(false);
+
   // Edit dialog
   const [editTarget, setEditTarget] = useState<TankItem | null>(null);
   const [editColor, setEditColor] = useState("");
@@ -141,6 +153,16 @@ export default function TankItemsPage() {
     window.addEventListener("tank-items-updated", onTankItemsUpdated);
     return () => window.removeEventListener("tank-items-updated", onTankItemsUpdated);
   }, []);
+
+  // Fetch raw material items when create dialog opens
+  useEffect(() => {
+    if (!createOpen) return;
+    setRmLoading(true);
+    getRmItems()
+      .then((res) => setRmItems(res.items))
+      .catch(() => toast.error("Failed to load raw material items"))
+      .finally(() => setRmLoading(false));
+  }, [createOpen]);
 
   // Create
   async function handleCreate(e: React.FormEvent) {
@@ -188,14 +210,13 @@ export default function TankItemsPage() {
     setDeleting(true);
     try {
       await deleteTankItem(deleteTarget.tank_item_code);
-      setItems((prev) => {
-        const next = prev.filter((i) => i.id !== deleteTarget.id);
-        const maxPage = Math.max(1, Math.ceil(next.length / perPage));
-        setPage((p) => Math.min(p, maxPage));
-        return next;
-      });
       setDeleteTarget(null);
       toast.success(`Tank item "${name}" deleted.`);
+      await fetchItems();
+      setPage((p) => {
+        const maxPage = Math.max(1, Math.ceil((items.length - 1) / perPage));
+        return Math.min(p, maxPage);
+      });
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error(err.response?.data?.detail ?? err.message);
@@ -438,13 +459,28 @@ export default function TankItemsPage() {
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="tank-item-code">Tank Item Code *</Label>
-              <Input
-                id="tank-item-code"
-                placeholder="e.g. RM00GDN"
+              <Label>Tank Item Code *</Label>
+              <Select
                 value={tankItemCode}
-                onChange={(e) => setTankItemCode(e.target.value)}
-              />
+                onValueChange={(value) => {
+                  setTankItemCode(value);
+                  const match = rmItems.find((rm) => rm.item_code === value);
+                  if (match && !tankItemName.trim()) {
+                    setTankItemName(match.item_name);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={rmLoading ? "Loading..." : "Select raw material item code"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rmItems.map((rm) => (
+                    <SelectItem key={rm.item_code} value={rm.item_code}>
+                      {rm.item_code} — {rm.item_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="tank-item-name">Tank Item Name</Label>
