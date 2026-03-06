@@ -478,7 +478,7 @@ export default function StockStatusPage() {
                     <Skeleton className="h-6 w-24 mt-1" />
                   ) : (
                     <p className="text-xl font-bold">
-                      &#8377; {overallSummary.total_value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      &#8377; {(overallSummary.total_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
                 </div>
@@ -497,7 +497,7 @@ export default function StockStatusPage() {
                     <Skeleton className="h-6 w-24 mt-1" />
                   ) : (
                     <p className="text-xl font-bold">
-                      {overallSummary.total_qty.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG
+                      {(overallSummary.total_qty ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG
                     </p>
                   )}
                 </div>
@@ -516,7 +516,7 @@ export default function StockStatusPage() {
                     <Skeleton className="h-6 w-24 mt-1" />
                   ) : (
                     <p className="text-xl font-bold">
-                      &#8377; {overallSummary.avg_price_per_kg.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      &#8377; {(overallSummary.avg_price_per_kg ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
                 </div>
@@ -535,7 +535,7 @@ export default function StockStatusPage() {
                     <Skeleton className="h-6 w-24 mt-1" />
                   ) : (
                     <p className="text-xl font-bold">
-                      &#8377; {overallSummary.avg_price_per_ltr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      &#8377; {(overallSummary.avg_price_per_ltr ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
                 </div>

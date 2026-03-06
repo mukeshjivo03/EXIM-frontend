@@ -37,7 +37,7 @@ export async function getItems(): Promise<ItemsResponse> {
 }
 
 export async function syncItems(): Promise<SapItem[]> {
-  const res = await api.get<SyncResponse>("/sap_sync/items/");
+  const res = await api.get<SyncResponse>("/sap-sync/items/");
   return res.data.Items ?? [];
 }
 
@@ -171,6 +171,77 @@ export async function getVendor(vendorCode: string): Promise<Vendor> {
 
 export async function deleteVendor(vendorCode: string): Promise<void> {
   await api.delete(`/party/${vendorCode}/`);
+}
+
+// Purchase Orders (Domestic Contracts)
+
+export interface PO {
+  id: number;
+  po_number: string;
+  po_date: string | null;
+  status: string;
+  product_code: string;
+  product_name: string;
+  vendor: string;
+  contract_qty: string | null;
+  contract_rate: string | null;
+  contract_value: string | null;
+  load_qty: string | null;
+  unload_qty: string | null;
+  allowance: string | null;
+  transporter: string | null;
+  vehicle_no: string | null;
+  bilty_no: string | null;
+  bilty_date: string | null;
+  grpo_no: string;
+  grpo_date: string | null;
+  invoice_no: string;
+  basic_amount: string | null;
+  landed_cost: string | null;
+  net_amount: string | null;
+}
+
+export async function getPOs(): Promise<PO[]> {
+  const res = await api.get<PO[]>("/pos/");
+  return res.data ?? [];
+}
+
+export async function syncPOs(): Promise<void> {
+  await api.get("/sap-sync/po/");
+}
+
+export async function syncSinglePO(grpoNo: string): Promise<PO[]> {
+  const res = await api.get<PO[]>(`/sap-sync/po/${grpoNo}/`);
+  return res.data ?? [];
+}
+
+export async function updatePO(id: number, data: Partial<PO>): Promise<PO> {
+  const res = await api.patch<PO>(`/po/${id}/`, data);
+  return res.data;
+}
+
+export async function deletePO(id: number): Promise<void> {
+  await api.delete(`/po/${id}/`);
+}
+
+// Balance Sheet
+
+export interface BalanceEntry {
+  CardCode: string;
+  CardName: string;
+  Balance: number;
+  "Last Transaction Date": string | null;
+  "Last Transanction Amount": number;
+}
+
+export async function syncBalanceSheet(): Promise<BalanceEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/balance-sheet/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  // Handle wrapped responses e.g. { entries: [...] } or { data: [...] } or { balance_sheet: [...] }
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
 }
 
 // Sync Logs

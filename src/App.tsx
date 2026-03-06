@@ -14,6 +14,10 @@ import TankItemsPage from "@/pages/TankItemsPage";
 import TankDataPage from "@/pages/TankDataPage";
 import TankMonitoringPage from "@/pages/TankMonitoringPage";
 import StockStatusPage from "@/pages/StockStatusPage";
+import StockDashboardPage from "@/pages/StockDashboardPage";
+import DashboardPage from "@/pages/DashboardPage";
+import EximAccountPage from "@/pages/EximAccountPage";
+import DomesticContractsPage from "@/pages/DomesticContractsPage";
 import DailyPricePage from "@/pages/DailyPricePage";
 import HomePage from "@/pages/HomePage";
 import { Toaster } from "@/components/ui/sonner";
@@ -108,6 +112,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/stock-dashboard" element={<StockDashboardPage />} />
+            <Route path="/exim-account" element={<EximAccountPage />} />
+            <Route path="/domestic-contracts" element={<DomesticContractsPage />} />
           </Route>
         </Routes>
         </DailyPriceProvider>

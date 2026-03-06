@@ -18,6 +18,10 @@ import {
   Gauge,
   ClipboardList,
   IndianRupee,
+  LayoutDashboard,
+  BarChart3,
+  Scale,
+  FileText,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +52,14 @@ const stockLinks = [
 
 const commodityLinks = [
   { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee },
+];
+
+const accountsLinks = [
+  { to: "/exim-account", label: "Dr/Cr Outstanding", icon: Scale },
+];
+
+const contractsLinks = [
+  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText },
 ];
 
 const adminLinks = [
@@ -115,6 +127,34 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Home className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Home</span>}
           </NavLink>
+          <NavLink
+            to="/dashboard"
+            title="Dashboard"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              } ${collapsed ? "justify-center px-0" : ""}`
+            }
+          >
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Dashboard</span>}
+          </NavLink>
+          <NavLink
+            to="/stock-dashboard"
+            title="Stock Dashboard"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              } ${collapsed ? "justify-center px-0" : ""}`
+            }
+          >
+            <BarChart3 className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Stock Dashboard</span>}
+          </NavLink>
 
           {isAdmin && (
             <>
@@ -153,6 +193,58 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               )}
 
               {adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Accounts
+                </span>
+              )}
+
+              {accountsLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Contracts
+                </span>
+              )}
+
+              {contractsLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
