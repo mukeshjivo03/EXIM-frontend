@@ -1,16 +1,123 @@
-# React + Vite
+# EXIM Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web-based dashboard for managing EXIM (Export-Import) operations, SAP data synchronization, stock monitoring, and commodity pricing.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** with TypeScript
+- **Vite 7** for build tooling
+- **Tailwind CSS 4** for styling
+- **shadcn/ui** (Radix UI) for component primitives
+- **Recharts** for data visualization (bar, line, and pie charts)
+- **Axios** for API communication with JWT auth (access + refresh tokens)
+- **React Router v7** for client-side routing
+- **Sonner** for toast notifications
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 18+
+- npm or yarn
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Installation
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:5173` (accessible on the local network via `--host`).
+
+### Production Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Project Structure
+
+```
+src/
+├── api/                  # Axios API client & endpoint modules
+│   ├── client.ts         # Axios instance with JWT interceptors
+│   ├── auth.ts           # Login / token endpoints
+│   ├── users.ts          # User management
+│   ├── sapSync.ts        # SAP sync (vendors, raw materials, finished goods, logs)
+│   ├── stockStatus.ts    # Stock status CRUD
+│   ├── tank.ts           # Tank items & tank data
+│   ├── dailyPrice.ts     # Daily commodity pricing
+│   └── dashboard.ts      # Dashboard & stock dashboard data
+├── components/
+│   ├── ui/               # shadcn/ui primitives (Button, Card, Dialog, etc.)
+│   ├── Layout.tsx         # App shell with Sidebar + Navbar
+│   ├── Sidebar.tsx        # Collapsible navigation sidebar
+│   ├── Navbar.tsx         # Top navigation bar
+│   ├── Footer.tsx         # App footer
+│   ├── Pagination.tsx     # Reusable pagination component
+│   ├── SummaryCard.tsx    # Reusable metric summary card
+│   └── ProtectedRoute.tsx # Role-based route guard
+├── context/
+│   ├── AuthContext.tsx    # Authentication state & JWT handling
+│   ├── ThemeContext.tsx   # Light/dark theme toggle
+│   └── DailyPriceContext.tsx # Daily price shared state
+├── lib/
+│   ├── errors.ts         # Shared error extraction & toast helpers
+│   ├── formatters.ts     # Number, date, and currency formatters (Indian locale)
+│   └── utils.ts          # Tailwind class merge utility
+├── pages/
+│   ├── HomePage.tsx              # Landing page with quick access links
+│   ├── LoginPage.tsx             # Authentication page
+│   ├── DashboardPage.tsx         # Main analytics dashboard with charts
+│   ├── StockDashboardPage.tsx    # Stock overview across statuses & vendors
+│   ├── StockStatusPage.tsx       # Stock status management (CRUD)
+│   ├── TankItemsPage.tsx         # Tank item configuration
+│   ├── TankDataPage.tsx          # Tank data entry & history
+│   ├── TankMonitoringPage.tsx    # Live tank monitoring with charts
+│   ├── DailyPricePage.tsx        # Commodity price tracking & trends
+│   ├── DomesticContractsPage.tsx # Domestic contract management
+│   ├── EximAccountPage.tsx       # EXIM account details & CSV export
+│   ├── SyncRawMaterialDataPage.tsx    # SAP raw material sync
+│   ├── SyncFinishedGoodsDataPage.tsx  # SAP finished goods sync
+│   ├── SyncVendorDataPage.tsx         # SAP vendor sync
+│   ├── SyncLogsPage.tsx               # Sync operation logs
+│   └── UsersPage.tsx                  # User administration
+├── App.tsx               # Route definitions & providers
+└── main.tsx              # Entry point
+```
+
+## Key Features
+
+- **Authentication** — JWT-based login with automatic token refresh and role-based access control (Admin vs. regular users)
+- **SAP Integration** — Sync vendors, raw materials, and finished goods from SAP with detailed sync logs
+- **Stock Management** — Track stock statuses, tank items, and tank data with CRUD operations
+- **Tank Monitoring** — Real-time tank level visualization with bar and pie charts
+- **Analytics Dashboard** — Balance trends, daily price charts, and commodity comparisons
+- **Daily Pricing** — Track and compare commodity prices with multi-line trend charts
+- **Domestic Contracts** — View and manage domestic contract data
+- **EXIM Accounts** — Account overview with CSV export functionality
+- **Dark Mode** — Full light/dark theme support
+- **Responsive Design** — Works across desktop and mobile with a collapsible sidebar
+
+## Scripts
+
+| Command           | Description                    |
+| ----------------- | ------------------------------ |
+| `npm run dev`     | Start dev server with HMR      |
+| `npm run build`   | Production build via Vite       |
+| `npm run preview` | Preview the production build    |
+| `npm run lint`    | Run ESLint                      |
