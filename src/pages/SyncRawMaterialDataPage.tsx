@@ -310,39 +310,39 @@ async function handleSyncAll() {
 
       {/* Summary Cards */}
       <div>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Summary
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Hash className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Hash className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Count</p>
+                  <p className="text-sm text-muted-foreground">Total Count</p>
                   {!summary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">{summary.total_count}</p>
+                    <p className="text-2xl font-bold mt-0.5">{summary.total_count}</p>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Scale className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Scale className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Quantity (LTR)</p>
+                  <p className="text-sm text-muted-foreground">Total Quantity (LTR)</p>
                   {!summary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold mt-0.5">
                       {Number(summary.total_qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
@@ -351,17 +351,17 @@ async function handleSyncAll() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Avg Rate / LTR</p>
+                  <p className="text-sm text-muted-foreground">Avg Rate / LTR</p>
                   {!summary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold mt-0.5">
                       &#8377; {Number(summary.avg_rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
@@ -370,17 +370,17 @@ async function handleSyncAll() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <IndianRupee className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <IndianRupee className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Trans Value</p>
+                  <p className="text-sm text-muted-foreground">Total Trans Value</p>
                   {!summary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold mt-0.5">
                       &#8377; {Number(summary.total_trans_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}

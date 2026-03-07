@@ -173,22 +173,22 @@ export default function TankMonitoringPage() {
 
       {/* Tank Summary Cards */}
       <div>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Tank Summary
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Gauge className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Gauge className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Quantity</p>
+                  <p className="text-sm text-muted-foreground">Total Quantity</p>
                   {!tankSummary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold mt-0.5">
                       {tankSummary.current_stock.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
                     </p>
                   )}
@@ -197,17 +197,17 @@ export default function TankMonitoringPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Warehouse className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Warehouse className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Capacity</p>
+                  <p className="text-sm text-muted-foreground">Total Capacity</p>
                   {!tankSummary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold mt-0.5">
                       {tankSummary.total_tank_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
                     </p>
                   )}
@@ -216,51 +216,51 @@ export default function TankMonitoringPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Container className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Container className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Tanks</p>
+                  <p className="text-sm text-muted-foreground">Total Tanks</p>
                   {!tankSummary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">{tankSummary.tank_count}</p>
+                    <p className="text-2xl font-bold mt-0.5">{tankSummary.tank_count}</p>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Products</p>
+                  <p className="text-sm text-muted-foreground">Total Products</p>
                   {!tankSummary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">{tankSummary.item_count}</p>
+                    <p className="text-2xl font-bold mt-0.5">{tankSummary.item_count}</p>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-orange-50 dark:bg-orange-900/50 p-2">
-                  <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="pt-6 pb-5 px-5">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
+                  <BarChart3 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Fill Rate</p>
+                  <p className="text-sm text-muted-foreground">Fill Rate</p>
                   {!tankSummary ? (
-                    <Skeleton className="h-6 w-24 mt-1" />
+                    <Skeleton className="h-7 w-24 mt-1" />
                   ) : (
-                    <p className="text-xl font-bold">{tankSummary.utilisation_rate}%</p>
+                    <p className="text-2xl font-bold mt-0.5">{tankSummary.utilisation_rate}%</p>
                   )}
                 </div>
               </div>

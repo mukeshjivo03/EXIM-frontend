@@ -174,7 +174,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-accent text-accent-foreground shadow-sm"
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     } ${collapsed ? "justify-center px-0" : ""}`
                   }
@@ -200,7 +200,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-accent text-accent-foreground shadow-sm"
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     } ${collapsed ? "justify-center px-0" : ""}`
                   }
@@ -226,7 +226,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-accent text-accent-foreground shadow-sm"
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     } ${collapsed ? "justify-center px-0" : ""}`
                   }
@@ -252,7 +252,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-accent text-accent-foreground shadow-sm"
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     } ${collapsed ? "justify-center px-0" : ""}`
                   }
@@ -278,7 +278,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-accent text-accent-foreground shadow-sm"
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     } ${collapsed ? "justify-center px-0" : ""}`
                   }
