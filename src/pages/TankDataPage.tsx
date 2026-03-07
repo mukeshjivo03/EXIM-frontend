@@ -596,13 +596,14 @@ export default function TankDataPage() {
             <div className="space-y-2">
               <Label>Item Code</Label>
               <Select
-                value={selectedItemCode}
-                onValueChange={setSelectedItemCode}
+                value={selectedItemCode || "__none__"}
+                onValueChange={(v) => setSelectedItemCode(v === "__none__" ? "" : v)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a tank item (optional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">None</SelectItem>
                   {tankItems.map((item) => (
                     <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
                       {item.tank_item_code} - {item.tank_item_name}
@@ -692,13 +693,14 @@ export default function TankDataPage() {
             <div className="space-y-2">
               <Label>Item Code</Label>
               <Select
-                value={editItemCode}
-                onValueChange={setEditItemCode}
+                value={editItemCode || "__none__"}
+                onValueChange={(v) => setEditItemCode(v === "__none__" ? "" : v)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a tank item (optional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">None</SelectItem>
                   {tankItems.map((item) => (
                     <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
                       {item.tank_item_code} - {item.tank_item_name}

@@ -111,3 +111,28 @@ export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary[]> {
   const res = await api.get<ItemWiseTankSummary[]>("/tank/item-wise-summary/");
   return res.data ?? [];
 }
+
+// ── Tank Rate Breakdown ─────────────────────────────────────
+
+export interface RateBreakdownEntry {
+  rate: number;
+  qty: number;
+  percentage: number;
+  vendor: string;
+}
+
+export interface TankRateBreakdown {
+  tank_code: string;
+  item_code: string;
+  item_name: string;
+  color: string;
+  tank_capacity: number;
+  current_capacity: number;
+  rate_breakdown: RateBreakdownEntry[];
+  weighted_avg_rate: number;
+}
+
+export async function getTankRates(): Promise<TankRateBreakdown[]> {
+  const res = await api.get<TankRateBreakdown[]>("/tank/tank-rates/");
+  return res.data ?? [];
+}
