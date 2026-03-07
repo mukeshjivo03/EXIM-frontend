@@ -9,8 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function fmtNum(n: number) {
-  return n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+type Unit = "KG" | "MTS" | "LTR";
+
+const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MT", LTR: "Liters" };
+
+/** Conversion factor from KG to target unit */
+function convertUnit(kg: number, unit: Unit): number {
+  if (unit === "MTS") return kg / 1000;
+  if (unit === "LTR") return kg * 1.1; // approx oil density ~0.91 kg/L → 1 kg ≈ 1.1 L
+  return kg;
+}
+
+function fmtNum(n: number, unit: Unit = "KG") {
+  const val = convertUnit(n, unit);
+  return val.toLocaleString("en-IN", {
+    minimumFractionDigits: unit === "MTS" ? 2 : 0,
+    maximumFractionDigits: unit === "MTS" ? 2 : 0,
+  });
 }
 
 /* ── helpers ─────────────────────────────────────────────────── */
@@ -38,6 +53,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function StockDashboardPage() {
   const [data, setData] = useState<StockDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [unit, setUnit] = useState<Unit>("KG");
 
   async function fetchData() {
     setLoading(true);
@@ -66,10 +82,27 @@ export default function StockDashboardPage() {
           <h1 className="text-2xl font-bold">Stock Dashboard</h1>
           <p className="text-sm text-muted-foreground">Overview of raw material stock across statuses and vendors</p>
         </div>
-        <Button variant="outline" className="btn-press gap-2" onClick={fetchData} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border rounded-md overflow-hidden">
+            {(["KG", "MTS", "LTR"] as Unit[]).map((u) => (
+              <button
+                key={u}
+                onClick={() => setUnit(u)}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  unit === u
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {UNIT_LABELS[u]}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" className="btn-press gap-2" onClick={fetchData} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* ── Summary Cards ── */}
@@ -82,7 +115,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.in_factory_total)} units` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.in_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -93,7 +126,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.outside_factory_total)} units` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.outside_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -168,14 +201,14 @@ export default function StockDashboardPage() {
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums border-r text-base">
                         {item.in_factory > 0 ? (
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtNum(item.in_factory)}</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtNum(item.in_factory, unit)}</span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums border-r text-base">
                         {item.outside_factory > 0 ? (
-                          <span className="text-amber-600 dark:text-amber-400 font-semibold">{fmtNum(item.outside_factory)}</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">{fmtNum(item.outside_factory, unit)}</span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -185,7 +218,7 @@ export default function StockDashboardPage() {
                         return (
                           <td key={key} className="px-5 py-4 text-right tabular-nums border-r last:border-r-0 text-base">
                             {val > 0 ? (
-                              <span className="font-semibold">{fmtNum(val)}</span>
+                              <span className="font-semibold">{fmtNum(val, unit)}</span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
@@ -193,7 +226,7 @@ export default function StockDashboardPage() {
                         );
                       })}
                       <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/20 text-base">
-                        {fmtNum(item.total)}
+                        {fmtNum(item.total, unit)}
                       </td>
                     </tr>
                   ))}
@@ -204,18 +237,18 @@ export default function StockDashboardPage() {
                       Total
                     </td>
                     <td className="px-5 py-4 text-right tabular-nums border-r text-blue-600 dark:text-blue-400">
-                      {fmtNum(data.totals.in_factory)}
+                      {fmtNum(data.totals.in_factory, unit)}
                     </td>
                     <td className="px-5 py-4 text-right tabular-nums border-r text-amber-600 dark:text-amber-400">
-                      {fmtNum(data.totals.outside_factory)}
+                      {fmtNum(data.totals.outside_factory, unit)}
                     </td>
                     {colKeys.map((key) => (
                       <td key={key} className="px-5 py-4 text-right tabular-nums border-r last:border-r-0">
-                        {fmtNum(data.totals.status_vendor_totals[key] ?? 0)}
+                        {fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}
                       </td>
                     ))}
                     <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/60 text-primary text-lg">
-                      {fmtNum(data.totals.grand_total)}
+                      {fmtNum(data.totals.grand_total, unit)}
                     </td>
                   </tr>
                 </tbody>

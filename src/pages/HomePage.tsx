@@ -9,14 +9,24 @@ import {
   ScrollText,
   Package,
   Boxes,
+  LayoutDashboard,
+  BarChart3,
+  BookOpen,
+  FileText,
+  TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const quickLinks = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics" },
+  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses" },
   { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses" },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals" },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },
+  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText, desc: "Purchase orders" },
+  { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance" },
+  { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices" },
   { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts" },
   { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync" },
   { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync" },

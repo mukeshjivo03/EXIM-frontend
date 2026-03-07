@@ -188,11 +188,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
               {!collapsed && (
                 <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Administration
+                  Commodity Price
                 </span>
               )}
 
-              {adminLinks.map((link) => (
+              {commodityLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -266,11 +266,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
               {!collapsed && (
                 <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Commodity Price
+                  Administration
                 </span>
               )}
 
-              {commodityLinks.map((link) => (
+              {adminLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
