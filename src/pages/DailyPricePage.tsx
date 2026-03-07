@@ -377,7 +377,7 @@ export default function DailyPricePage() {
         </CardHeader>
         <CardContent>
           {trendsLoading ? (
-            <Skeleton className="h-[350px] w-full rounded-md" />
+            <Skeleton className="h-[500px] w-full rounded-md" />
           ) : !trends || trends.datasets.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
               <TrendingUp className="h-10 w-10 stroke-1" />
@@ -385,34 +385,90 @@ export default function DailyPricePage() {
               <p className="text-xs">Save prices for multiple days to see trends.</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <ResponsiveContainer width="100%" height={500}>
+              <LineChart data={chartData} margin={{ top: 20, right: 40, left: 30, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   tickLine={false}
                   axisLine={false}
+                  padding={{ left: 10, right: 10 }}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${v}`}
+                  domain={[(dataMin: number) => Math.floor(dataMin - 5), (dataMax: number) => Math.ceil(dataMax + 5)]}
+                  width={70}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "13px",
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div
+                        className="bg-card border border-border"
+                        style={{
+                          borderRadius: 8,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                          minWidth: 180,
+                          maxWidth: 280,
+                          overflow: "hidden",
+                          opacity: 1,
+                        }}
+                      >
+                        <div
+                          className="bg-muted border-b border-border text-foreground"
+                          style={{
+                            padding: "8px 14px",
+                            fontWeight: 700,
+                            fontSize: 14,
+                          }}
+                        >
+                          {label}
+                        </div>
+                        <div style={{ padding: "6px 0" }}>
+                          {payload.map((entry, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 12,
+                                padding: "4px 14px",
+                                fontSize: 14,
+                                color: "inherit",
+                              }}
+                            >
+                              <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+                                <span
+                                  style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "50%",
+                                    backgroundColor: entry.color,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {entry.name}
+                                </span>
+                              </span>
+                              <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                                {entry.value != null ? `₹${Number(entry.value).toFixed(2)}` : "—"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
                   }}
-                  formatter={(value: number | undefined, name?: string) =>
-                    value != null ? [`₹${value.toFixed(2)}`, name ?? ""] : ["—", name ?? ""]
-                  }
-                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                  wrapperStyle={{ zIndex: 50, opacity: "1 !important" }}
+                  allowEscapeViewBox={{ x: false, y: false }}
                 />
-                <Legend wrapperStyle={{ fontSize: "13px", paddingTop: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "14px", paddingTop: "24px" }} />
                 {trends.datasets.map((ds, i) => (
                   <Line
                     key={ds.label}

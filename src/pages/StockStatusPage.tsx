@@ -242,7 +242,7 @@ export default function StockStatusPage() {
       });
       toast.success("Stock status created.");
       setCreateOpen(false);
-      await fetchList(currentFilters());
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
         const data = err.response.data;
@@ -360,7 +360,7 @@ export default function StockStatusPage() {
         toast.success("Stock status updated.");
       }
       setEditData(null);
-      await fetchList(currentFilters());
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
         const data = err.response.data;
@@ -391,7 +391,7 @@ export default function StockStatusPage() {
       await softDeleteStockStatus(deleteData);
       toast.success("Stock status deleted.");
       setDeleteData(null);
-      await fetchList(currentFilters());
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
     } catch {
       toast.error("Failed to delete stock status.");
     } finally {

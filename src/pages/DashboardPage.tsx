@@ -398,52 +398,55 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {trendsLoading ? (
-            <div className="flex items-center justify-center h-72 text-muted-foreground text-sm animate-pulse">Loading…</div>
+            <div className="flex items-center justify-center h-[500px] text-muted-foreground text-sm animate-pulse">Loading…</div>
           ) : priceChartData.length === 0 ? (
-            <div className="flex items-center justify-center h-72 text-muted-foreground text-sm">No price data available</div>
+            <div className="flex items-center justify-center h-[500px] text-muted-foreground text-sm">No price data available</div>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={500}>
               <BarChart
                 data={priceChartData}
-                margin={{ top: 8, right: 16, left: 8, bottom: 40 }}
-                barCategoryGap="20%"
-                barGap={2}
+                margin={{ top: 20, right: 40, left: 30, bottom: 60 }}
+                barCategoryGap="25%"
+                barGap={3}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 13 }}
                   tickLine={false}
                   axisLine={false}
                   angle={-40}
                   textAnchor="end"
                   interval="preserveStartEnd"
+                  padding={{ left: 10, right: 10 }}
                 />
                 <YAxis
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 13 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${v}`}
-                  domain={([dataMin, dataMax]: readonly [number, number]): [number, number] => {
-                    const pad = (dataMax - dataMin) * 0.08 || 5;
-                    return [Math.floor(dataMin - pad), Math.ceil(dataMax + pad)];
-                  }}
+                  width={70}
+                  domain={[(dataMin: number) => Math.floor(dataMin - 5), (dataMax: number) => Math.ceil(dataMax + 5)]}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     return (
-                      <div className="rounded-lg border bg-card shadow-lg px-4 py-3 text-sm min-w-[160px]">
-                        <p className="font-semibold mb-2 text-xs text-muted-foreground">{label}</p>
-                        {payload.map((p) => (
-                          <div key={p.dataKey as string} className="flex items-center justify-between gap-4 py-0.5">
-                            <span className="flex items-center gap-1.5">
-                              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                              <span className="text-xs">{p.dataKey}</span>
-                            </span>
-                            <span className="font-bold text-xs">₹{(p.value as number).toFixed(2)}</span>
-                          </div>
-                        ))}
+                      <div className="rounded-lg border bg-card shadow-lg min-w-[200px] max-w-[300px] overflow-hidden">
+                        <div className="bg-muted border-b border-border px-4 py-2">
+                          <p className="font-bold text-sm text-foreground">{label}</p>
+                        </div>
+                        <div className="px-4 py-2">
+                          {payload.map((p) => (
+                            <div key={p.dataKey as string} className="flex items-center justify-between gap-4 py-1">
+                              <span className="flex items-center gap-2 overflow-hidden">
+                                <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                                <span className="text-sm truncate">{p.dataKey}</span>
+                              </span>
+                              <span className="font-semibold text-sm whitespace-nowrap">₹{(p.value as number).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     );
                   }}
@@ -456,7 +459,7 @@ export default function DashboardPage() {
                     fill={PRICE_COLORS[i % PRICE_COLORS.length]}
                     fillOpacity={0.85}
                     radius={[3, 3, 0, 0]}
-                    maxBarSize={20}
+                    maxBarSize={24}
                   />
                 ))}
               </BarChart>
@@ -480,21 +483,21 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {balanceLoading ? (
-            <div className="flex items-center justify-center h-80 text-muted-foreground text-sm animate-pulse">Loading…</div>
+            <div className="flex items-center justify-center h-[550px] text-muted-foreground text-sm animate-pulse">Loading…</div>
           ) : barData.length === 0 ? (
-            <div className="flex items-center justify-center h-80 text-muted-foreground text-sm">No balance data available</div>
+            <div className="flex items-center justify-center h-[550px] text-muted-foreground text-sm">No balance data available</div>
           ) : (
-            <ResponsiveContainer width="100%" height={420}>
+            <ResponsiveContainer width="100%" height={550}>
               <BarChart
                 data={barData}
                 layout="vertical"
-                margin={{ top: 8, right: 60, left: 8, bottom: 8 }}
-                barCategoryGap="20%"
+                margin={{ top: 20, right: 70, left: 20, bottom: 20 }}
+                barCategoryGap="30%"
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 13 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${Math.abs(v) >= 10000000 ? (Math.abs(v) / 10000000).toFixed(2) + "Cr" : fmtNum(Math.abs(v))}`}
@@ -502,14 +505,14 @@ export default function DashboardPage() {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={160}
-                  tick={{ fontSize: 12 }}
+                  width={180}
+                  tick={{ fontSize: 13 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <ReferenceLine x={0} stroke="hsl(var(--border))" strokeWidth={2} />
                 <Tooltip content={<BarTooltip />} cursor={{ fill: "hsl(var(--accent))", opacity: 0.4 }} />
-                <Bar dataKey="balance" radius={[0, 4, 4, 0]} maxBarSize={28}>
+                <Bar dataKey="balance" radius={[0, 4, 4, 0]} maxBarSize={34}>
                   {barData.map((entry, i) => (
                     <Cell
                       key={i}
@@ -524,13 +527,13 @@ export default function DashboardPage() {
 
           {/* Legend */}
           {!balanceLoading && barData.length > 0 && (
-            <div className="flex items-center justify-center gap-6 mt-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded bg-green-500" />
+            <div className="flex items-center justify-center gap-8 mt-4 text-sm text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-3.5 w-3.5 rounded bg-green-500" />
                 Receivable (Party owes to company)
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded bg-red-500" />
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-3.5 w-3.5 rounded bg-red-500" />
                 Payable (company owes to party)
               </span>
             </div>
