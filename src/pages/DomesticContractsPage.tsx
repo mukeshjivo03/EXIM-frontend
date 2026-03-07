@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
   RefreshCw,
   Eye,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   FileCheck,
   Package,
   Truck,
@@ -18,6 +15,9 @@ import {
 } from "lucide-react";
 
 import { syncPOs, syncSinglePO, getPOs, deletePO, updatePO, type PO } from "@/api/sapSync";
+import { fmtDecimal, fmtDate } from "@/lib/formatters";
+import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { Pagination } from "@/components/Pagination";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,23 +44,6 @@ import {
 } from "@/components/ui/dialog";
 
 /* ── helpers ──────────────────────────────────────────────── */
-
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function fmtNum(val: string | null) {
-  if (!val) return "—";
-  return Number(val).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
 
 function statusLabel(s: string) {
   if (s === "C") return "Closed";
@@ -169,11 +152,7 @@ export default function DomesticContractsPage() {
       const data = await getPOs();
       setRows(data.sort((a, b) => b.id - a.id));
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load contracts");
-      }
+      setError(getErrorMessage(err, "Failed to load contracts"));
     } finally {
       setLoading(false);
     }
@@ -192,11 +171,7 @@ export default function DomesticContractsPage() {
       toast.success("Sync complete. Loading contracts...");
       await fetchList();
     } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? err.response?.data?.detail ?? err.message
-          : "Sync failed";
-      toast.error(msg);
+      toastApiError(err, "Sync failed");
     } finally {
       setSyncing(false);
     }
@@ -218,11 +193,7 @@ export default function DomesticContractsPage() {
         toast.success(`Synced GRPO ${grpo} — ${details.length} record(s)`);
       }
     } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? err.response?.data?.detail ?? err.message
-          : "Sync failed";
-      toast.error(msg);
+      toastApiError(err, "Sync failed");
     } finally {
       setSingleSyncing(false);
     }
@@ -285,12 +256,7 @@ export default function DomesticContractsPage() {
       setEditData(null);
       await fetchList();
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data;
-        toast.error(data.detail ?? JSON.stringify(data));
-      } else {
-        toast.error("Failed to update contract.");
-      }
+      toastApiError(err, "Failed to update contract.");
     } finally {
       setEditing(false);
     }
@@ -393,9 +359,9 @@ export default function DomesticContractsPage() {
                         <TableCell className="max-w-[200px] truncate" title={row.product_name}>{row.product_name}</TableCell>
                         <TableCell className="max-w-[180px] truncate" title={row.vendor}>{row.vendor}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(row.grpo_date)}</TableCell>
-                        <TableCell>{fmtNum(row.contract_qty)}</TableCell>
-                        <TableCell>₹{fmtNum(row.contract_rate)}</TableCell>
-                        <TableCell className="font-medium">₹{fmtNum(row.contract_value)}</TableCell>
+                        <TableCell>{row.contract_qty ? fmtDecimal(row.contract_qty) : "—"}</TableCell>
+                        <TableCell>₹{row.contract_rate ? fmtDecimal(row.contract_rate) : "—"}</TableCell>
+                        <TableCell className="font-medium">₹{row.contract_value ? fmtDecimal(row.contract_value) : "—"}</TableCell>
                         <TableCell>
                           <Badge variant={statusVariant(row.status)}>{statusLabel(row.status)}</Badge>
                         </TableCell>
@@ -511,9 +477,9 @@ export default function DomesticContractsPage() {
                         <TableCell className="max-w-[200px] truncate" title={row.product_name}>{row.product_name}</TableCell>
                         <TableCell className="max-w-[180px] truncate" title={row.vendor}>{row.vendor}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(row.grpo_date)}</TableCell>
-                        <TableCell>{fmtNum(row.contract_qty)}</TableCell>
-                        <TableCell>₹{fmtNum(row.contract_rate)}</TableCell>
-                        <TableCell className="font-medium">₹{fmtNum(row.contract_value)}</TableCell>
+                        <TableCell>{row.contract_qty ? fmtDecimal(row.contract_qty) : "—"}</TableCell>
+                        <TableCell>₹{row.contract_rate ? fmtDecimal(row.contract_rate) : "—"}</TableCell>
+                        <TableCell className="font-medium">₹{row.contract_value ? fmtDecimal(row.contract_value) : "—"}</TableCell>
                         <TableCell>
                           <Badge variant={statusVariant(row.status)}>
                             {statusLabel(row.status)}
@@ -556,57 +522,14 @@ export default function DomesticContractsPage() {
           )}
 
           {/* Pagination */}
-          {!loading && filteredRows.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, filteredRows.length)} of {filteredRows.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p as number)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={filteredRows.length}
+              perPage={perPage}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>
@@ -640,9 +563,9 @@ export default function DomesticContractsPage() {
                   <div><p className="text-xs text-muted-foreground">Product Code</p><p className="text-sm font-medium">{viewData.product_code}</p></div>
                   <div className="col-span-2"><p className="text-xs text-muted-foreground">Product</p><p className="text-sm font-medium">{viewData.product_name}</p></div>
                   <div className="col-span-2"><p className="text-xs text-muted-foreground">Vendor</p><p className="text-sm font-medium">{viewData.vendor}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Contract Qty</p><p className="text-sm font-medium">{fmtNum(viewData.contract_qty)} MTS</p></div>
-                  <div><p className="text-xs text-muted-foreground">Contract Rate</p><p className="text-sm font-medium">₹ {fmtNum(viewData.contract_rate)}/MTS</p></div>
-                  <div className="col-span-2"><p className="text-xs text-muted-foreground">Contract Value</p><p className="text-base font-semibold">₹ {fmtNum(viewData.contract_value)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Contract Qty</p><p className="text-sm font-medium">{viewData.contract_qty ? fmtDecimal(viewData.contract_qty) : "—"} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Contract Rate</p><p className="text-sm font-medium">₹ {viewData.contract_rate ? fmtDecimal(viewData.contract_rate) : "—"}/MTS</p></div>
+                  <div className="col-span-2"><p className="text-xs text-muted-foreground">Contract Value</p><p className="text-base font-semibold">₹ {viewData.contract_value ? fmtDecimal(viewData.contract_value) : "—"}</p></div>
                 </div>
               </div>
 
@@ -655,8 +578,8 @@ export default function DomesticContractsPage() {
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Loading Details</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
-                  <div><p className="text-xs text-muted-foreground">Load Qty</p><p className="text-sm font-medium">{fmtNum(viewData.load_qty)} MTS</p></div>
-                  <div><p className="text-xs text-muted-foreground">Unload Qty</p><p className="text-sm font-medium">{fmtNum(viewData.unload_qty)} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Load Qty</p><p className="text-sm font-medium">{viewData.load_qty ? fmtDecimal(viewData.load_qty) : "—"} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Unload Qty</p><p className="text-sm font-medium">{viewData.unload_qty ? fmtDecimal(viewData.unload_qty) : "—"} MTS</p></div>
                   <div><p className="text-xs text-muted-foreground">Allowance</p><p className="text-sm font-medium">{viewData.allowance ?? "—"}</p></div>
                 </div>
               </div>
@@ -703,16 +626,16 @@ export default function DomesticContractsPage() {
                 <div className="pl-6 space-y-2">
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Basic Amount</p>
-                    <p className="text-sm font-medium">₹ {fmtNum(viewData.basic_amount)}</p>
+                    <p className="text-sm font-medium">₹ {viewData.basic_amount ? fmtDecimal(viewData.basic_amount) : "—"}</p>
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Landed Cost</p>
-                    <p className="text-sm font-medium">₹ {fmtNum(viewData.landed_cost)}</p>
+                    <p className="text-sm font-medium">₹ {viewData.landed_cost ? fmtDecimal(viewData.landed_cost) : "—"}</p>
                   </div>
                   <Separator className="my-1" />
                   <div className="flex justify-between items-center">
                     <p className="text-sm font-semibold">Net Amount</p>
-                    <p className="text-base font-bold">₹ {fmtNum(viewData.net_amount)}</p>
+                    <p className="text-base font-bold">₹ {viewData.net_amount ? fmtDecimal(viewData.net_amount) : "—"}</p>
                   </div>
                 </div>
               </div>

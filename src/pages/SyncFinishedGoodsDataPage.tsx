@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { Trash2, ChevronLeft, ChevronRight, PackageOpen } from "lucide-react";
+import { Trash2, PackageOpen } from "lucide-react";
 
 import { getFgItems, syncFgItems, syncSingleFgItem, deleteFgItem, type SapItem } from "@/api/sapSync";
+import { getErrorMessage } from "@/lib/errors";
+import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,11 +57,7 @@ export default function SyncFinishedGoodsDataPage() {
       setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       setCount(c);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load finished goods items");
-      }
+      setError(getErrorMessage(err, "Failed to load finished goods items"));
     } finally {
       setLoading(false);
     }
@@ -84,11 +81,7 @@ export default function SyncFinishedGoodsDataPage() {
       setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       toast.success(`All finished goods synced. ${(data ?? []).length} items loaded.`);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to sync finished goods data");
-      }
+      setError(getErrorMessage(err, "Failed to sync finished goods data"));
     } finally {
       setSyncingAll(false);
     }
@@ -109,11 +102,7 @@ export default function SyncFinishedGoodsDataPage() {
       setItemCode("");
       await fetchItems();
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to sync item");
-      }
+      setError(getErrorMessage(err, "Failed to sync item"));
     } finally {
       setSyncingOne(false);
     }
@@ -135,11 +124,7 @@ export default function SyncFinishedGoodsDataPage() {
       setDeleteTarget(null);
       toast.success(`Item "${deletedName}" deleted.`);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to delete item");
-      }
+      setError(getErrorMessage(err, "Failed to delete item"));
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -268,57 +253,8 @@ export default function SyncFinishedGoodsDataPage() {
           )}
 
           {/* Pagination */}
-          {!loading && items.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, items.length)} of {items.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination page={page} totalPages={totalPages} totalItems={items.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>

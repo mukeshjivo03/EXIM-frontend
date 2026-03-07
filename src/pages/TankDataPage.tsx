@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
   Plus,
   Container,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Gauge,
   Warehouse,
   BarChart3,
 } from "lucide-react";
+import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { SummaryCard } from "@/components/SummaryCard";
+import { fmtDecimal } from "@/lib/formatters";
+import { Pagination } from "@/components/Pagination";
 
 import {
   getTanks,
@@ -111,11 +112,7 @@ export default function TankDataPage() {
       setTanks((tanksData ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
       setTankItems((itemsData ?? []).sort((a, b) => a.id - b.id));
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load tank data");
-      }
+      setError(getErrorMessage(err, "Failed to load tank data"));
     } finally {
       setLoading(false);
     }
@@ -191,21 +188,7 @@ export default function TankDataPage() {
       setCreateOpen(false);
       await fetchData();
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data;
-        if (typeof data === "string") {
-          toast.error(data);
-        } else if (data.detail) {
-          toast.error(data.detail);
-        } else {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          toast.error(messages || err.message);
-        }
-      } else {
-        toast.error("Failed to create tank.");
-      }
+      toastApiError(err, "Failed to create tank.");
     } finally {
       setSubmitting(false);
     }
@@ -227,11 +210,7 @@ export default function TankDataPage() {
       setDeleteTarget(null);
       toast.success(`Tank "${deleteTarget.tank_code}" deleted.`);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        toast.error(err.response?.data?.detail ?? err.message);
-      } else {
-        toast.error("Failed to delete tank.");
-      }
+      toastApiError(err, "Failed to delete tank.");
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -284,21 +263,7 @@ export default function TankDataPage() {
       toast.success(`Tank "${editTarget.tank_code}" updated.`);
       setEditTarget(null);
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data;
-        if (typeof data === "string") {
-          toast.error(data);
-        } else if (data.detail) {
-          toast.error(data.detail);
-        } else {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          toast.error(messages || err.message);
-        }
-      } else {
-        toast.error("Failed to update tank.");
-      }
+      toastApiError(err, "Failed to update tank.");
     } finally {
       setEditing(false);
     }
@@ -329,61 +294,9 @@ export default function TankDataPage() {
           Tank Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Warehouse className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Tank Capacity</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {tankSummary.total_tank_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Gauge className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Current Stock</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {tankSummary.current_stock.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <BarChart3 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Utilisation Rate</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{tankSummary.utilisation_rate}%</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryCard icon={Warehouse} label="Total Tank Capacity" value={tankSummary ? `${fmtDecimal(tankSummary.total_tank_capacity)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Gauge} label="Current Stock" value={tankSummary ? `${fmtDecimal(tankSummary.current_stock)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={BarChart3} label="Utilisation Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
         </div>
       </div>
 
@@ -501,56 +414,7 @@ export default function TankDataPage() {
 
           {/* Pagination */}
           {!loading && tanks.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, tanks.length)} of {tanks.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <Pagination page={page} totalPages={totalPages} totalItems={tanks.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>

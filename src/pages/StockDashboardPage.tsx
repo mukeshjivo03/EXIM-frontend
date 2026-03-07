@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw, Factory, PackageOpen, Layers } from "lucide-react";
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
+import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +61,7 @@ export default function StockDashboardPage() {
       const res = await getStockDashboard();
       setData(res);
     } catch (err) {
-      toast.error(err instanceof AxiosError ? (err.response?.data?.detail ?? err.message) : "Failed to load stock dashboard");
+      toast.error(getErrorMessage(err, "Failed to load stock dashboard"));
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function StockDashboardPage() {
   }, []);
 
   /* Derive ordered column keys from totals (preserves server order) */
-  const colKeys = data ? Object.keys(data.totals.status_vendor_totals) : [];
+  const colKeys = useMemo(() => (data ? Object.keys(data.totals.status_vendor_totals) : []), [data]);
 
   return (
     <div className="p-6 space-y-6 animate-page">

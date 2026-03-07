@@ -254,19 +254,19 @@ export default function HomePage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Quick Access
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {quickLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="card-hover shimmer-hover group rounded-xl border bg-card p-5 flex items-start gap-4 no-underline"
+              className="card-hover shimmer-hover group rounded-xl border bg-card px-6 py-5 flex items-center gap-5 no-underline"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
-                <link.icon className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+                <link.icon className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-semibold text-sm text-foreground">{link.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{link.desc}</p>
+                <p className="font-semibold text-base text-foreground">{link.label}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{link.desc}</p>
               </div>
             </Link>
           ))}

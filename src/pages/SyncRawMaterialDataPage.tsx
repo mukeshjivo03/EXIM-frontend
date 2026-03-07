@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { Trash2, ChevronLeft, ChevronRight, PackageOpen, Filter, X, Hash, IndianRupee, Scale, TrendingUp } from "lucide-react";
+import { Trash2, PackageOpen, Filter, X, Hash, IndianRupee, Scale, TrendingUp } from "lucide-react";
 
 import { getRmItems, getRmVarieties, getRmSummary, syncRmItems, syncSingleRmItem, deleteRmItem, type SapItem, type RmSummary } from "@/api/sapSync";
+import { getErrorMessage } from "@/lib/errors";
+import { fmtDecimal } from "@/lib/formatters";
+import { SummaryCard } from "@/components/SummaryCard";
+import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,11 +75,7 @@ export default function SyncRawMaterialDataPage() {
       setItems((data ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
       setCount(c);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load raw material items");
-      }
+      setError(getErrorMessage(err, "Failed to load raw material items"));
     } finally {
       setLoading(false);
     }
@@ -122,11 +121,7 @@ export default function SyncRawMaterialDataPage() {
   //     toast.success(`All raw materials synced. ${(data ?? []).length} items loaded.`);
   //     fetchSummary(fVarieties.length ? fVarieties : undefined);
   //   } catch (err) {
-  //     if (err instanceof AxiosError) {
-  //       setError(err.response?.data?.detail ?? err.message);
-  //     } else {
-  //       setError("Failed to sync raw material data");
-  //     }
+  //     setError(getErrorMessage(err, "Failed to sync raw material data"));
   //   } finally {
   //     setSyncingAll(false);
   //   }
@@ -144,11 +139,7 @@ async function handleSyncAll() {
     await fetchSummary(fVarieties.length ? fVarieties : undefined);
     
   } catch (err) {
-    if (err instanceof AxiosError) {
-      setError(err.response?.data?.detail ?? err.message);
-    } else {
-      setError("Failed to sync raw material data");
-    }
+    setError(getErrorMessage(err, "Failed to sync raw material data"));
   } finally {
     setSyncingAll(false);
   }
@@ -169,11 +160,7 @@ async function handleSyncAll() {
       await fetchItems();
       fetchSummary(fVarieties.length ? fVarieties : undefined);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to sync item");
-      }
+      setError(getErrorMessage(err, "Failed to sync item"));
     } finally {
       setSyncingOne(false);
     }
@@ -195,11 +182,7 @@ async function handleSyncAll() {
       setDeleteTarget(null);
       toast.success(`Item "${deletedName}" deleted.`);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to delete item");
-      }
+      setError(getErrorMessage(err, "Failed to delete item"));
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -314,80 +297,10 @@ async function handleSyncAll() {
           Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Hash className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Count</p>
-                  {!summary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{summary.total_count}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Scale className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Quantity (LTR)</p>
-                  {!summary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {Number(summary.total_qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Rate / LTR</p>
-                  {!summary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      &#8377; {Number(summary.avg_rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <IndianRupee className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Trans Value</p>
-                  {!summary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      &#8377; {Number(summary.total_trans_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={!summary} />
+          <SummaryCard icon={Scale} label="Total Quantity (LTR)" value={summary ? fmtDecimal(summary.total_qty) : ""} loading={!summary} />
+          <SummaryCard icon={TrendingUp} label="Avg Rate / LTR" value={summary ? `₹ ${fmtDecimal(summary.avg_rate)}` : ""} loading={!summary} />
+          <SummaryCard icon={IndianRupee} label="Total Trans Value" value={summary ? `₹ ${fmtDecimal(summary.total_trans_value)}` : ""} loading={!summary} />
         </div>
       </div>
 
@@ -471,13 +384,13 @@ async function handleSyncAll() {
                         <TableCell>{item.u_variety}</TableCell>
                         <TableCell>{item.u_unit}</TableCell>
                         <TableCell className="text-right">
-                          {Number(item.total_qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {fmtDecimal(item.total_qty)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {Number(item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {fmtDecimal(item.rate)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {Number(item.total_trans_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {fmtDecimal(item.total_trans_value)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -498,57 +411,8 @@ async function handleSyncAll() {
           )}
 
           {/* Pagination */}
-          {!loading && items.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, items.length)} of {items.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination page={page} totalPages={totalPages} totalItems={items.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>

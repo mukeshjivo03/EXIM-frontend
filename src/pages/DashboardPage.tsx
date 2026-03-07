@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw, Droplets, BarChart3, Landmark, TrendingUp } from "lucide-react";
 
-import { AxiosError } from "axios";
 import {
   PieChart,
   Pie,
@@ -19,6 +18,8 @@ import {
   type PieLabelRenderProps,
 } from "recharts";
 
+import { fmtNum } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errors";
 import { getCapacityInsights, type CapacityInsight } from "@/api/dashboard";
 import { syncBalanceSheet, type BalanceEntry } from "@/api/sapSync";
 import { getPriceTrends, type PriceTrendsResponse } from "@/api/dailyPrice";
@@ -26,10 +27,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 
 /* ── helpers ───────────────────────────────────────────────── */
-
-function fmtNum(n: number, decimals = 0) {
-  return n.toLocaleString("en-IN", { maximumFractionDigits: decimals });
-}
 
 function truncate(str: string, max = 22) {
   return str.length > max ? str.slice(0, max) + "…" : str;
@@ -140,7 +137,7 @@ export default function DashboardPage() {
       setCapacity(capResult.value);
     } else {
       const err = capResult.reason;
-      toast.error(err instanceof AxiosError ? (err.response?.data?.detail ?? err.message) : "Failed to load capacity data");
+      toast.error(getErrorMessage(err, "Failed to load capacity data"));
     }
     setCapacityLoading(false);
 
@@ -148,7 +145,7 @@ export default function DashboardPage() {
       setBalanceEntries(balResult.value);
     } else {
       const err = balResult.reason;
-      toast.error(err instanceof AxiosError ? (err.response?.data?.detail ?? err.message) : "Failed to load balance data");
+      toast.error(getErrorMessage(err, "Failed to load balance data"));
     }
     setBalanceLoading(false);
 
@@ -158,7 +155,7 @@ export default function DashboardPage() {
       setSelectedLabels(new Set(data.datasets.map((d) => d.label)));
     } else {
       const err = trendResult.reason;
-      toast.error(err instanceof AxiosError ? (err.response?.data?.detail ?? err.message) : "Failed to load price trends");
+      toast.error(getErrorMessage(err, "Failed to load price trends"));
     }
     setTrendsLoading(false);
   }
@@ -189,7 +186,7 @@ export default function DashboardPage() {
     : [];
 
   /* ── top/bottom 5 bar data ── */
-  const barData: BarEntry[] = (() => {
+  const barData = useMemo<BarEntry[]>(() => {
     if (!balanceEntries.length) return [];
     const sorted = [...balanceEntries].sort((a, b) => a.Balance - b.Balance);
     const bottom5 = sorted.slice(0, 5);
@@ -201,10 +198,10 @@ export default function DashboardPage() {
       absBalance: Math.abs(e.Balance),
       isPositive: e.Balance >= 0,
     }));
-  })();
+  }, [balanceEntries]);
 
   /* ── grouped bar chart data (dates × selected commodities) ── */
-  const priceChartData: Record<string, string | number | null>[] = (() => {
+  const priceChartData = useMemo<Record<string, string | number | null>[]>(() => {
     if (!trends) return [];
     return trends.labels.map((date, i) => {
       const row: Record<string, string | number | null> = { date };
@@ -213,7 +210,7 @@ export default function DashboardPage() {
       }
       return row;
     });
-  })();
+  }, [trends, selectedLabels]);
 
   const activeDatasets = trends?.datasets.filter((ds) => selectedLabels.has(ds.label)) ?? [];
 

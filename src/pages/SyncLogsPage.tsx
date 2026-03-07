@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
-import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { getSyncLogs, type SyncLog } from "@/api/sapSync";
+import { fmtDateTime } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errors";
+import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -40,11 +41,6 @@ const STATUS_VARIANT: Record<string, "destructive" | "default" | "secondary" | "
   RUN: "secondary",
 };
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString();
-}
-
 export default function SyncLogsPage() {
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,11 +60,7 @@ export default function SyncLogsPage() {
       const data = await getSyncLogs();
       setLogs((data ?? []).sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()));
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load sync logs");
-      }
+      setError(getErrorMessage(err, "Failed to load sync logs"));
     } finally {
       setLoading(false);
     }
@@ -172,8 +164,8 @@ export default function SyncLogsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{log.triggered_by}</TableCell>
-                        <TableCell>{formatDate(log.started_at)}</TableCell>
-                        <TableCell>{formatDate(log.completed_at)}</TableCell>
+                        <TableCell>{log.started_at ? fmtDateTime(log.started_at) : "—"}</TableCell>
+                        <TableCell>{log.completed_at ? fmtDateTime(log.completed_at) : "—"}</TableCell>
                         <TableCell className="text-right">{log.records_procesed}</TableCell>
                         <TableCell className="text-right">{log.records_created}</TableCell>
                         <TableCell className="text-right">{log.records_updated}</TableCell>
@@ -198,57 +190,8 @@ export default function SyncLogsPage() {
           )}
 
           {/* Pagination */}
-          {!loading && logs.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, logs.length)} of {logs.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination page={page} totalPages={totalPages} totalItems={logs.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>

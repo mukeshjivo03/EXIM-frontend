@@ -60,6 +60,10 @@ export default function LoginPage() {
             <Input
               id="username"
               type="text"
+
+
+
+              
               placeholder="Enter your email"
               className="h-11 login-input bg-[#0f172a] border-white/10 text-gray-100 placeholder:text-gray-500"
               value={email}

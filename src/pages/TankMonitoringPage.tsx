@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
+import { useEffect, useMemo, useState } from "react";
 import {
   Droplets,
   Gauge,
@@ -10,6 +9,9 @@ import {
 } from "lucide-react";
 
 import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankRates, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankRateBreakdown } from "@/api/tank";
+import { getErrorMessage } from "@/lib/errors";
+import { fmtDecimal } from "@/lib/formatters";
+import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -78,11 +80,7 @@ export default function TankMonitoringPage() {
         setTanks((t ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
         setTankItems(i ?? []);
       } catch (err) {
-        setError(
-          err instanceof AxiosError
-            ? (err.response?.data?.detail ?? err.message)
-            : "Failed to load data"
-        );
+        setError(getErrorMessage(err, "Failed to load data"));
       } finally {
         setLoading(false);
       }
@@ -132,8 +130,8 @@ export default function TankMonitoringPage() {
   );
 
   // Aggregate rate data per item for item-wise summary
-  const itemRateMap = new Map<string, { weightedAvg: number; breakdown: { vendor: string; rate: number; qty: number }[] }>();
-  {
+  const itemRateMap = useMemo(() => {
+    const result = new Map<string, { weightedAvg: number; breakdown: { vendor: string; rate: number; qty: number }[] }>();
     const temp = new Map<string, { totalValue: number; totalQty: number; vendors: Map<string, { vendor: string; rate: number; qty: number }> }>();
     for (const tr of tankRates) {
       let entry = temp.get(tr.item_code);
@@ -151,12 +149,13 @@ export default function TankMonitoringPage() {
       }
     }
     for (const [itemCode, entry] of temp) {
-      itemRateMap.set(itemCode, {
+      result.set(itemCode, {
         weightedAvg: entry.totalQty > 0 ? Math.round((entry.totalValue / entry.totalQty) * 100) / 100 : 0,
         breakdown: Array.from(entry.vendors.values()),
       });
     }
-  }
+    return result;
+  }, [tankRates]);
 
   return (
     <div className="p-6 space-y-6 animate-page">
@@ -177,95 +176,11 @@ export default function TankMonitoringPage() {
           Tank Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Gauge className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Quantity</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {tankSummary.current_stock.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Warehouse className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Capacity</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {tankSummary.total_tank_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Container className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Tanks</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{tankSummary.tank_count}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Products</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{tankSummary.item_count}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <BarChart3 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Fill Rate</p>
-                  {!tankSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{tankSummary.utilisation_rate}%</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${fmtDecimal(tankSummary.current_stock)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${fmtDecimal(tankSummary.total_tank_capacity)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Container} label="Total Tanks" value={tankSummary ? tankSummary.tank_count : ""} loading={!tankSummary} />
+          <SummaryCard icon={Package} label="Total Products" value={tankSummary ? tankSummary.item_count : ""} loading={!tankSummary} />
+          <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
         </div>
       </div>
 

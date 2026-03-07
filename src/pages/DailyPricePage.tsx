@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { toastApiError } from "@/lib/errors";
 import { RefreshCw, Save, ExternalLink, PackageOpen, Calendar, TrendingUp } from "lucide-react";
 import {
   LineChart,
@@ -121,11 +121,7 @@ export default function DailyPricePage() {
       setFetched(true);
       toast.success(`Fetched ${res.count} commodity prices`);
     } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? err.response?.data?.detail ?? err.message
-          : "Failed to fetch prices";
-      toast.error(msg);
+      toastApiError(err, "Failed to fetch prices");
     } finally {
       setFetching(false);
     }
@@ -145,11 +141,7 @@ export default function DailyPricePage() {
         toast.info(`No saved prices found for ${date}`);
       }
     } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? err.response?.data?.detail ?? err.message
-          : "Failed to load saved prices";
-      toast.error(msg);
+      toastApiError(err, "Failed to load saved prices");
     } finally {
       setDbLoading(false);
     }
@@ -161,11 +153,7 @@ export default function DailyPricePage() {
       const res = await saveDailyPrices();
       toast.success(res.status);
     } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? err.response?.data?.detail ?? err.message
-          : "Failed to save prices";
-      toast.error(msg);
+      toastApiError(err, "Failed to save prices");
     } finally {
       setSaving(false);
     }

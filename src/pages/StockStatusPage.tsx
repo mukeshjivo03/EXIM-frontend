@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
   Plus,
@@ -7,8 +6,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Package,
   Truck,
   IndianRupee,
@@ -38,6 +35,10 @@ import {
 import { getRmItems, type SapItem } from "@/api/sapSync";
 import { getVendors, type Vendor } from "@/api/sapSync";
 import { useAuth } from "@/context/AuthContext";
+import { fmtDateTime, fmtDecimal } from "@/lib/formatters";
+import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { SummaryCard } from "@/components/SummaryCard";
+import { Pagination } from "@/components/Pagination";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,16 +91,6 @@ function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" 
     default:
       return "outline";
   }
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 /* ── component ────────────────────────────────────────────── */
@@ -170,11 +161,7 @@ export default function StockStatusPage() {
       setRows(data.filter((r) => !r.deleted).sort((a, b) => b.id - a.id));
       setSummary(insights.summary);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load stock statuses");
-      }
+      setError(getErrorMessage(err, "Failed to load stock statuses"));
     } finally {
       setLoading(false);
     }
@@ -244,21 +231,7 @@ export default function StockStatusPage() {
       setCreateOpen(false);
       await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data;
-        if (typeof data === "string") {
-          toast.error(data);
-        } else if (data.detail) {
-          toast.error(data.detail);
-        } else {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          toast.error(messages || "Failed to create stock status.");
-        }
-      } else {
-        toast.error("Failed to create stock status.");
-      }
+      toastApiError(err, "Failed to create stock status.");
     } finally {
       setSubmitting(false);
     }
@@ -362,21 +335,7 @@ export default function StockStatusPage() {
       setEditData(null);
       await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data;
-        if (typeof data === "string") {
-          toast.error(data);
-        } else if (data.detail) {
-          toast.error(data.detail);
-        } else {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          toast.error(messages || "Failed to update stock status.");
-        }
-      } else {
-        toast.error("Failed to update stock status.");
-      }
+      toastApiError(err, "Failed to update stock status.");
     } finally {
       setEditing(false);
     }
@@ -449,99 +408,11 @@ export default function StockStatusPage() {
           Stock Status Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Hash className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Count</p>
-                  {!overallSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">{overallSummary.total_count}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <IndianRupee className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Value</p>
-                  {!overallSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      &#8377; {(overallSummary.total_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Scale className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Quantity</p>
-                  {!overallSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      {(overallSummary.total_qty ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Weight className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Price / KG</p>
-                  {!overallSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      &#8377; {(overallSummary.avg_price_per_kg ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-5 px-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                  <Droplets className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Price / LTR</p>
-                  {!overallSummary ? (
-                    <Skeleton className="h-7 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold mt-0.5">
-                      &#8377; {(overallSummary.avg_price_per_ltr ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryCard icon={Hash} label="Total Count" value={overallSummary?.total_count ?? 0} loading={!overallSummary} />
+          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtDecimal(overallSummary?.total_value ?? 0)}`} loading={!overallSummary} />
+          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtDecimal(overallSummary?.total_qty ?? 0)} KG`} loading={!overallSummary} />
+          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtDecimal(overallSummary?.avg_price_per_kg ?? 0)}`} loading={!overallSummary} />
+          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtDecimal(overallSummary?.avg_price_per_ltr ?? 0)}`} loading={!overallSummary} />
         </div>
       </div>
 
@@ -626,99 +497,11 @@ export default function StockStatusPage() {
           Filtered Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-        <Card>
-          <CardContent className="pt-6 pb-5 px-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                <Hash className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Count</p>
-                {loading ? (
-                  <Skeleton className="h-7 w-24 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5">{summary?.total_count ?? 0}</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 pb-5 px-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                <IndianRupee className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                {loading ? (
-                  <Skeleton className="h-7 w-24 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5">
-                    &#8377; {(summary?.total_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 pb-5 px-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                <Scale className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Quantity</p>
-                {loading ? (
-                  <Skeleton className="h-7 w-24 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5">
-                    {(summary?.total_qty ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 pb-5 px-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                <Weight className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Price / KG</p>
-                {loading ? (
-                  <Skeleton className="h-7 w-24 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5">
-                    &#8377; {(summary?.avg_price_per_kg ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 pb-5 px-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-                <Droplets className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Price / LTR</p>
-                {loading ? (
-                  <Skeleton className="h-7 w-24 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5">
-                    &#8377; {(summary?.avg_price_per_ltr ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={loading} />
+          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtDecimal(summary?.total_value ?? 0)}`} loading={loading} />
+          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtDecimal(summary?.total_qty ?? 0)} KG`} loading={loading} />
+          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtDecimal(summary?.avg_price_per_kg ?? 0)}`} loading={loading} />
+          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtDecimal(summary?.avg_price_per_ltr ?? 0)}`} loading={loading} />
         </div>
       </div>
 
@@ -802,7 +585,7 @@ export default function StockStatusPage() {
                         <TableCell>{row.quantity}</TableCell>
                         <TableCell className="font-medium">{row.total}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {fmtDate(row.created_at)}
+                          {fmtDateTime(row.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
@@ -841,57 +624,8 @@ export default function StockStatusPage() {
           )}
 
           {/* Pagination */}
-          {!loading && rows.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, rows.length)} of {rows.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination page={page} totalPages={totalPages} totalItems={rows.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>
@@ -1132,7 +866,7 @@ export default function StockStatusPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Created At</p>
-                    <p className="text-sm font-medium">{fmtDate(viewData.created_at)}</p>
+                    <p className="text-sm font-medium">{fmtDateTime(viewData.created_at)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Record ID</p>

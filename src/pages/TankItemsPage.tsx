@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
   Check,
@@ -7,9 +6,10 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+
+import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { Pagination } from "@/components/Pagination";
 
 import {
   createTankItem,
@@ -134,11 +134,7 @@ export default function TankItemsPage() {
       const data = await getTankItems();
       setItems((data ?? []).sort((a, b) => a.id - b.id));
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.detail ?? err.message);
-      } else {
-        setError("Failed to load tank items");
-      }
+      setError(getErrorMessage(err, "Failed to load tank items"));
     } finally {
       setLoading(false);
     }
@@ -193,11 +189,7 @@ export default function TankItemsPage() {
       setCreateOpen(false);
       await fetchItems();
     } catch (err) {
-      if (err instanceof AxiosError) {
-        toast.error(err.response?.data?.detail ?? err.message);
-      } else {
-        toast.error("Failed to create tank item.");
-      }
+      toastApiError(err, "Failed to create tank item.");
     } finally {
       setSubmitting(false);
     }
@@ -218,11 +210,7 @@ export default function TankItemsPage() {
         return Math.min(p, maxPage);
       });
     } catch (err) {
-      if (err instanceof AxiosError) {
-        toast.error(err.response?.data?.detail ?? err.message);
-      } else {
-        toast.error("Failed to delete tank item.");
-      }
+      toastApiError(err, "Failed to delete tank item.");
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -251,11 +239,7 @@ export default function TankItemsPage() {
       toast.success(`Tank item "${editTarget.tank_item_name}" updated.`);
       setEditTarget(null);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        toast.error(err.response?.data?.detail ?? err.message);
-      } else {
-        toast.error("Failed to update tank item.");
-      }
+      toastApiError(err, "Failed to update tank item.");
     } finally {
       setEditing(false);
     }
@@ -392,57 +376,14 @@ export default function TankItemsPage() {
           )}
 
           {/* Pagination */}
-          {!loading && items.length > perPage && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, items.length)} of {items.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {(() => {
-                  const pages: (number | "...")[] = [];
-                  const start = Math.max(2, page - 2);
-                  const end = Math.min(totalPages - 1, page + 2);
-                  pages.push(1);
-                  if (start > 2) pages.push("...");
-                  for (let i = start; i <= end; i++) pages.push(i);
-                  if (end < totalPages - 1) pages.push("...");
-                  if (totalPages > 1) pages.push(totalPages);
-                  return pages.map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
-                    ) : (
-                      <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </Button>
-                    )
-                  );
-                })()}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {!loading && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={items.length}
+              perPage={perPage}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>

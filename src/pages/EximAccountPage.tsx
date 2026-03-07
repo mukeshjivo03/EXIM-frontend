@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { RefreshCw, Download, PackageOpen, Users, TrendingUp, TrendingDown, Scale } from "lucide-react";
 
 import { syncBalanceSheet, type BalanceEntry } from "@/api/sapSync";
+import { fmtDecimal, fmtDate } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -14,15 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function fmtDecimal(n: number) {
-  return n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 // Module-level cache — persists across navigation until explicitly re-synced
 let cachedEntries: BalanceEntry[] = [];
@@ -44,7 +36,7 @@ export default function EximAccountPage() {
       setSynced(true);
       toast.success(`Loaded ${sorted.length} outstanding entries`);
     } catch (err) {
-      toast.error(err instanceof AxiosError ? (err.response?.data?.detail ?? err.message) : err instanceof Error ? err.message : "Failed to fetch balance sheet");
+      toast.error(getErrorMessage(err, "Failed to fetch balance sheet"));
     } finally {
       setSyncing(false);
     }
