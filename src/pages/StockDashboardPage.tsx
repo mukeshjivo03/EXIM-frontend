@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 type Unit = "KG" | "MTS" | "LTR";
 
-const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MT", LTR: "Liters" };
+const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" };
 
 /** Conversion factor from KG to target unit */
 function convertUnit(kg: number, unit: Unit): number {

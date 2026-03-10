@@ -62,12 +62,17 @@ const contractsLinks = [
   { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText },
 ];
 
+const licenseLinks = [
+  { to: "/license/advance-license", label: "Advance License", icon: FileText },
+];
+
 const adminLinks = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/sync-raw-material-data", label: "Sync Raw Material", icon: RefreshCw },
   { to: "/admin/sync-finished-goods-data", label: "Sync Finished Goods", icon: RefreshCw },
   { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
+  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
 ];
 
 interface SidebarProps {
@@ -245,6 +250,32 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               )}
 
               {contractsLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+
+              <Separator className="my-3" />
+
+              {!collapsed && (
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  License
+                </span>
+              )}
+
+              {licenseLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}

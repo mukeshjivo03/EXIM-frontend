@@ -10,6 +10,7 @@ import SyncVendorDataPage from "@/pages/SyncVendorDataPage";
 import SyncRawMaterialDataPage from "@/pages/SyncRawMaterialDataPage";
 import SyncFinishedGoodsDataPage from "@/pages/SyncFinishedGoodsDataPage";
 import SyncLogsPage from "@/pages/SyncLogsPage";
+import StockUpdationLogsPage from "@/pages/StockUpdationLogsPage";
 import TankItemsPage from "@/pages/TankItemsPage";
 import TankDataPage from "@/pages/TankDataPage";
 import TankMonitoringPage from "@/pages/TankMonitoringPage";
@@ -19,6 +20,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import EximAccountPage from "@/pages/EximAccountPage";
 import DomesticContractsPage from "@/pages/DomesticContractsPage";
 import DailyPricePage from "@/pages/DailyPricePage";
+import AdvanceLicensePage from "@/pages/AdvanceLicensePage";
+import AdvanceLicenseDetailPage from "@/pages/AdvanceLicenseDetailPage";
 import HomePage from "@/pages/HomePage";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -105,10 +108,34 @@ function App() {
               }
             />
             <Route
+              path="/admin/stock-updation-logs"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <StockUpdationLogsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/commodity/daily-price"
               element={
                 <ProtectedRoute allowedRoles={["ADM"]}>
                   <DailyPricePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/license/advance-license"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <AdvanceLicensePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/license/advance-license/:licenseNo"
+              element={
+                <ProtectedRoute allowedRoles={["ADM"]}>
+                  <AdvanceLicenseDetailPage />
                 </ProtectedRoute>
               }
             />

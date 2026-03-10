@@ -97,6 +97,21 @@ export async function updateStockStatus(id: number, data: Partial<StockStatusPay
   return res.data;
 }
 
+export interface StockLog {
+  id: number;
+  field_name: string;
+  old_value: string;
+  new_value: string;
+  updated_at: string;
+  updated_by: string;
+  stock_id: number;
+}
+
+export async function getStockLogs(): Promise<StockLog[]> {
+  const res = await api.get<StockLog[]>("/stock-status/stock-logs/");
+  return res.data ?? [];
+}
+
 export async function softDeleteStockStatus(record: StockStatus): Promise<StockStatus> {
   const res = await api.put<StockStatus>(`/stock-status/${record.id}/`, {
     item_code: record.item_code,
