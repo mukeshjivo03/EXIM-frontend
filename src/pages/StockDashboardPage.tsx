@@ -5,7 +5,7 @@ import { RefreshCw, Factory, PackageOpen, Layers } from "lucide-react";
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,23 +30,23 @@ function fmtNum(n: number, unit: Unit = "KG") {
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
-const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string }> = {
-  IN_TRANSIT:  { label: "In Transit",  variant: "default",     className: "bg-blue-500 text-white border-blue-500" },
-  PENDING:     { label: "Pending",     variant: "secondary",   className: "bg-amber-500 text-white border-amber-500" },
-  PROCESSING:  { label: "Processing",  variant: "default",     className: "bg-purple-500 text-white border-purple-500" },
-  COMPLETED:   { label: "Completed",   variant: "default",     className: "bg-green-500 text-white border-green-500" },
-  DELIVERED:   { label: "Delivered",   variant: "default",     className: "bg-teal-500 text-white border-teal-500" },
+const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string; headerBg: string }> = {
+  IN_FACTORY:      { label: "In Factory",      variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
+  OUT_SIDE_FACTORY:{ label: "Outside Factory", variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
+  ON_THE_WAY:      { label: "On The Way",      variant: "default",   className: "bg-yellow-500 text-white border-yellow-500",headerBg: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200" },
+  UNDER_LOADING:   { label: "Under Loading",   variant: "default",   className: "bg-yellow-500 text-white border-yellow-500",headerBg: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200" },
+  AT_REFINERY:     { label: "At Refinery",     variant: "default",   className: "bg-pink-500 text-white border-pink-500",    headerBg: "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-200" },
+  OTW_TO_REFINERY: { label: "OTW to Refinery", variant: "default",   className: "bg-pink-500 text-white border-pink-500",    headerBg: "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-200" },
+  ON_THE_SEA:      { label: "On The Sea",      variant: "default",   className: "bg-blue-500 text-white border-blue-500",    headerBg: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200" },
+  IN_CONTRACT:     { label: "In Contract",     variant: "default",   className: "bg-indigo-500 text-white border-indigo-500",headerBg: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200" },
+  KANDLA_STORAGE:  { label: "Kandla Storage",  variant: "default",   className: "bg-orange-500 text-white border-orange-500",headerBg: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" },
+  MUNDRA_PORT:     { label: "Mundra Port",     variant: "default",   className: "bg-orange-500 text-white border-orange-500",headerBg: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" },
+  IN_TRANSIT:      { label: "In Transit",      variant: "default",   className: "bg-blue-500 text-white border-blue-500",    headerBg: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200" },
+  PENDING:         { label: "Pending",         variant: "secondary", className: "bg-amber-500 text-white border-amber-500",  headerBg: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200" },
+  PROCESSING:      { label: "Processing",      variant: "default",   className: "bg-purple-500 text-white border-purple-500",headerBg: "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200" },
+  COMPLETED:       { label: "Completed",       variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
+  DELIVERED:       { label: "Delivered",        variant: "default",   className: "bg-teal-500 text-white border-teal-500",    headerBg: "bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200" },
 };
-
-function StatusBadge({ status }: { status: string }) {
-  const meta = STATUS_META[status];
-  if (!meta) return <Badge variant="outline" className="text-xs px-2 py-0.5">{status}</Badge>;
-  return (
-    <Badge className={`text-xs px-2 py-0.5 font-semibold ${meta.className}`}>
-      {meta.label}
-    </Badge>
-  );
-}
 
 /* ── component ────────────────────────────────────────────────── */
 
@@ -71,8 +71,32 @@ export default function StockDashboardPage() {
     fetchData();
   }, []);
 
-  /* Derive ordered column keys from totals (preserves server order) */
-  const colKeys = useMemo(() => (data ? Object.keys(data.totals.status_vendor_totals) : []), [data]);
+  /* Derive ordered column keys, excluding COMPLETED status */
+  const colKeys = useMemo(
+    () =>
+      data
+        ? Object.keys(data.totals.status_vendor_totals).filter(
+            (key) => !key.startsWith("COMPLETED__")
+          )
+        : [],
+    [data]
+  );
+
+  /* Group colKeys by status for spanning headers */
+  const statusGroups = useMemo(() => {
+    const groups: { status: string; vendors: { key: string; vendor: string }[] }[] = [];
+    const seen = new Map<string, number>();
+    for (const key of colKeys) {
+      const [status, vendor] = key.split("__");
+      if (seen.has(status)) {
+        groups[seen.get(status)!].vendors.push({ key, vendor });
+      } else {
+        seen.set(status, groups.length);
+        groups.push({ status, vendors: [{ key, vendor }] });
+      }
+    }
+    return groups;
+  }, [colKeys]);
 
   return (
     <div className="p-6 space-y-6 animate-page">
@@ -162,32 +186,44 @@ export default function StockDashboardPage() {
           <div className="overflow-x-auto border-y shadow-sm">
               <table className="w-full text-base">
                 <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="sticky left-0 z-10 bg-muted/40 px-5 py-4 text-left font-bold whitespace-nowrap border-r text-base">
+                  {/* Row 1: Status group headers spanning vendor columns */}
+                  <tr className="border-b">
+                    <th rowSpan={2} className="sticky left-0 z-10 bg-muted/40 px-5 py-3 text-left font-bold whitespace-nowrap border-r text-base">
                       Item Code
                     </th>
-                    <th className="px-5 py-4 text-right font-bold whitespace-nowrap border-r text-base">
+                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
                       In Factory
                     </th>
-                    <th className="px-5 py-4 text-right font-bold whitespace-nowrap border-r text-base">
+                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
                       Outside Factory
                     </th>
-                    {colKeys.map((key) => {
-                      const [status, vendor] = key.split("__");
+                    {statusGroups.map((group) => {
+                      const meta = STATUS_META[group.status];
+                      const headerBg = meta?.headerBg ?? "bg-muted/40";
+                      const label = meta?.label ?? group.status.replace(/_/g, " ");
                       return (
-                        <th key={key} className="px-5 py-3 text-center font-medium border-r last:border-r-0 min-w-[180px]">
-                          <div className="flex flex-col items-center gap-1.5">
-                            <StatusBadge status={status} />
-                            <span className="text-xs text-muted-foreground font-normal leading-snug max-w-[160px] truncate" title={vendor}>
-                              {vendor}
-                            </span>
-                          </div>
+                        <th
+                          key={group.status}
+                          colSpan={group.vendors.length}
+                          className={`px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base ${headerBg}`}
+                        >
+                          {label.toUpperCase()}
                         </th>
                       );
                     })}
-                    <th className="px-5 py-4 text-right font-bold whitespace-nowrap border-l bg-muted/60 text-base">
-                      Total
+                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-l bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-base">
+                      TOTAL
                     </th>
+                  </tr>
+                  {/* Row 2: Vendor sub-headers */}
+                  <tr className="border-b bg-muted/20">
+                    {statusGroups.map((group) =>
+                      group.vendors.map(({ key, vendor }) => (
+                        <th key={key} className="px-5 py-2 text-center font-medium border-r last:border-r-0 min-w-[140px] text-xs text-muted-foreground whitespace-nowrap">
+                          {vendor}
+                        </th>
+                      ))
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -226,7 +262,10 @@ export default function StockDashboardPage() {
                         );
                       })}
                       <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/20 text-base">
-                        {fmtNum(item.total, unit)}
+                        {fmtNum(
+                          item.in_factory + item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0),
+                          unit
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -248,7 +287,10 @@ export default function StockDashboardPage() {
                       </td>
                     ))}
                     <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/60 text-primary text-lg">
-                      {fmtNum(data.totals.grand_total, unit)}
+                      {fmtNum(
+                        data.totals.in_factory + data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0),
+                        unit
+                      )}
                     </td>
                   </tr>
                 </tbody>

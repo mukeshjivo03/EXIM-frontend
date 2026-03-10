@@ -42,6 +42,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -688,7 +695,15 @@ export default function DomesticContractsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="e-status">Status</Label>
-                  <Input id="e-status" value={eStatus} onChange={(e) => setEStatus(e.target.value)} />
+                  <Select value={eStatus} onValueChange={setEStatus}>
+                    <SelectTrigger id="e-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="O">Open</SelectItem>
+                      <SelectItem value="C">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="e-product-code">Product Code</Label>

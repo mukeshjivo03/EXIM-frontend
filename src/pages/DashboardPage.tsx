@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Droplets, BarChart3, Landmark, TrendingUp } from "lucide-react";
+import { RefreshCw, Droplets, BarChart3, Landmark, TrendingUp, Calendar } from "lucide-react";
 
 import {
   PieChart,
@@ -15,6 +15,7 @@ import {
   YAxis,
   CartesianGrid,
   ReferenceLine,
+  LabelList,
   type PieLabelRenderProps,
 } from "recharts";
 
@@ -121,6 +122,8 @@ export default function DashboardPage() {
   const [trends, setTrends] = useState<PriceTrendsResponse | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   async function fetchAll() {
     setCapacityLoading(true);
@@ -204,14 +207,18 @@ export default function DashboardPage() {
   /* ── grouped bar chart data (dates × selected commodities) ── */
   const priceChartData = useMemo<Record<string, string | number | null>[]>(() => {
     if (!trends) return [];
-    return trends.labels.map((date, i) => {
-      const row: Record<string, string | number | null> = { date };
-      for (const ds of trends.datasets) {
-        if (selectedLabels.has(ds.label)) row[ds.label] = ds.data[i] ?? null;
-      }
-      return row;
-    });
-  }, [trends, selectedLabels]);
+    return trends.labels
+      .map((date, i) => {
+        if (dateFrom && date < dateFrom) return null;
+        if (dateTo && date > dateTo) return null;
+        const row: Record<string, string | number | null> = { date };
+        for (const ds of trends.datasets) {
+          if (selectedLabels.has(ds.label)) row[ds.label] = ds.data[i] ?? null;
+        }
+        return row;
+      })
+      .filter(Boolean) as Record<string, string | number | null>[];
+  }, [trends, selectedLabels, dateFrom, dateTo]);
 
   const activeDatasets = trends?.datasets.filter((ds) => selectedLabels.has(ds.label)) ?? [];
 
@@ -231,140 +238,133 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* ── Row 1: Tank Capacity ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 card-hover shimmer-hover">
+      {/* ── Row 1: Tank Capacity (25%) + Daily Price Trends (75%) ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <Card className="xl:col-span-1 card-hover shimmer-hover">
           <CardHeader>
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               <div>
                 <CardTitle>Tank Capacity Utilisation</CardTitle>
-                <CardDescription>Current fill level across all tanks</CardDescription>
+                <CardDescription>Current fill level</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {capacityLoading ? (
-              <div className="flex items-center justify-center h-72 text-muted-foreground text-sm animate-pulse">Loading…</div>
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm animate-pulse">Loading…</div>
             ) : !capacity ? (
-              <div className="flex items-center justify-center h-72 text-muted-foreground text-sm">No data available</div>
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">No data available</div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={120}
-                    paddingAngle={3}
-                    dataKey="value"
-                    labelLine={false}
-                    label={CustomPieLabel}
-                    onMouseEnter={(_, i) => setActiveIndex(i)}
-                    onMouseLeave={() => setActiveIndex(null)}
-                    stroke="none"
-                  >
-                    {pieData.map((entry, i) => (
-                      <Cell
-                        key={entry.name}
-                        fill={entry.color}
-                        opacity={activeIndex === null || activeIndex === i ? 1 : 0.45}
-                        style={{ cursor: "pointer", transition: "opacity 0.2s" }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<PieTooltip />} />
-                  <Legend formatter={(v) => <span className="text-sm font-medium">{v}</span>} />
-                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-                    <tspan x="50%" dy="-0.4em" fontSize={22} fontWeight={700} fill="currentColor">
-                      {capacity.filled_percentage.toFixed(1)}%
-                    </tspan>
-                    <tspan x="50%" dy="1.4em" fontSize={12} fill="#94a3b8">utilised</tspan>
-                  </text>
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                      labelLine={false}
+                      label={CustomPieLabel}
+                      onMouseEnter={(_, i) => setActiveIndex(i)}
+                      onMouseLeave={() => setActiveIndex(null)}
+                      stroke="none"
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell
+                          key={entry.name}
+                          fill={entry.color}
+                          opacity={activeIndex === null || activeIndex === i ? 1 : 0.45}
+                          style={{ cursor: "pointer", transition: "opacity 0.2s" }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<PieTooltip />} />
+                    <Legend formatter={(v) => <span className="text-xs font-medium">{v}</span>} />
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+                      <tspan x="50%" dy="-0.4em" fontSize={18} fontWeight={700} fill="currentColor">
+                        {capacity.filled_percentage.toFixed(1)}%
+                      </tspan>
+                      <tspan x="50%" dy="1.4em" fontSize={10} fill="#94a3b8">utilised</tspan>
+                    </text>
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Stat cards inline */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Droplets className="h-3.5 w-3.5" /> Total
+                    </span>
+                    <span className="text-sm font-bold">{fmtNum(capacity.total_capacity)} L</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-full bg-blue-500" /> Filled
+                    </span>
+                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                      {fmtNum(capacity.filled_capacity)} L
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600" /> Empty
+                    </span>
+                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      {fmtNum(capacity.empty_capacity)} L
+                    </span>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <Card className="card-hover flex-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Droplets className="h-4 w-4" />
-                Total Capacity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {capacityLoading ? <div className="h-8 w-24 bg-muted animate-pulse rounded" /> : (
-                <>
-                  <p className="text-3xl font-bold">{capacity ? fmtNum(capacity.total_capacity) : "—"}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Liter</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="card-hover flex-1 border-blue-200 dark:border-blue-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                Filled Capacity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {capacityLoading ? <div className="h-8 w-24 bg-muted animate-pulse rounded" /> : (
-                <>
-                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    {capacity ? fmtNum(capacity.filled_capacity) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Liter &mdash; {capacity?.filled_percentage.toFixed(1)}% of total
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="card-hover flex-1 border-slate-200 dark:border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                <div className="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600" />
-                Empty Capacity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {capacityLoading ? <div className="h-8 w-24 bg-muted animate-pulse rounded" /> : (
-                <>
-                  <p className="text-3xl font-bold text-slate-500 dark:text-slate-400">
-                    {capacity ? fmtNum(capacity.empty_capacity) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Liter &mdash; {capacity?.empty_percentage.toFixed(1)}% of total
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* ── Row 2: Daily Price Trends ── */}
-      <Card className="card-hover shimmer-hover">
+        <Card className="xl:col-span-3 card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle>Daily Price — Factory Rate (₹/Kg)</CardTitle>
-                <CardDescription>
-                  {trends ? `${trends.labels.length} days · Toggle commodities to compare` : "Price trends across dates"}
-                </CardDescription>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle>Daily Price — Factory Rate (₹/Kg)</CardTitle>
+                  <CardDescription>
+                    {trends ? `${trends.labels.length} days · Toggle commodities to compare` : "Price trends across dates"}
+                  </CardDescription>
+                </div>
               </div>
+              {!trendsLoading && trends && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="border rounded px-2 py-1 text-xs bg-background"
+                  />
+                  <span>to</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="border rounded px-2 py-1 text-xs bg-background"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      onClick={() => { setDateFrom(""); setDateTo(""); }}
+                      className="text-xs text-destructive hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             {!trendsLoading && trends && (
-              <div className="flex items-center gap-1.5 flex-wrap justify-end max-w-lg">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   onClick={() => setSelectedLabels(new Set(trends.datasets.map((d) => d.label)))}
                   className="text-xs text-primary underline-offset-2 hover:underline"
@@ -458,13 +458,21 @@ export default function DashboardPage() {
                     fillOpacity={0.85}
                     radius={[3, 3, 0, 0]}
                     maxBarSize={24}
-                  />
+                  >
+                    <LabelList
+                      dataKey={ds.label}
+                      position="top"
+                      formatter={(v: unknown) => (typeof v === "number" ? `₹${v.toFixed(0)}` : "")}
+                      style={{ fontSize: 10, fontWeight: 600, fill: "currentColor" }}
+                    />
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* ── Row 3: Dr/Cr Top 10 Parties ── */}
       <Card className="card-hover shimmer-hover">
@@ -489,7 +497,7 @@ export default function DashboardPage() {
               <BarChart
                 data={barData}
                 layout="vertical"
-                margin={{ top: 20, right: 70, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
                 barCategoryGap="30%"
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
@@ -499,6 +507,7 @@ export default function DashboardPage() {
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${Math.abs(v) >= 10000000 ? (Math.abs(v) / 10000000).toFixed(2) + "Cr" : fmtNum(Math.abs(v))}`}
+                  domain={[(dataMin: number) => dataMin * 1.25, (dataMax: number) => dataMax * 1.25]}
                 />
                 <YAxis
                   type="category"
@@ -518,6 +527,31 @@ export default function DashboardPage() {
                       fillOpacity={0.85}
                     />
                   ))}
+                  <LabelList
+                    dataKey="balance"
+                    content={({ x, y, width, height, value }) => {
+                      const val = value as number;
+                      const isPos = val >= 0;
+                      const label = `${val < 0 ? "-" : ""}₹${fmtNum(Math.abs(val), 0)}`;
+                      const w = width as number;
+                      const barX = x as number;
+                      // For positive bars: label after the right edge; for negative: label before the left edge
+                      const labelX = isPos
+                        ? barX + w + 6
+                        : barX + w - 6;
+                      return (
+                        <text
+                          x={labelX}
+                          y={(y as number) + (height as number) / 2}
+                          textAnchor={isPos ? "start" : "end"}
+                          dominantBaseline="middle"
+                          style={{ fontSize: 11, fontWeight: 600, fill: "currentColor" }}
+                        >
+                          {label}
+                        </text>
+                      );
+                    }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

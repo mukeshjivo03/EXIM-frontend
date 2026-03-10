@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -142,6 +142,23 @@ export default function StockStatusPage() {
   const [deleteData, setDeleteData] = useState<StockStatus | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // all rows (unfiltered) for deriving filter options
+  const [allRows, setAllRows] = useState<StockStatus[]>([]);
+
+  // unique filter options derived from actual data
+  const uniqueStatuses = useMemo(
+    () => [...new Set(allRows.map((r) => r.status))].sort(),
+    [allRows]
+  );
+  const uniqueVendors = useMemo(
+    () => [...new Set(allRows.map((r) => r.vendor_code))].sort(),
+    [allRows]
+  );
+  const uniqueItems = useMemo(
+    () => [...new Set(allRows.map((r) => r.item_code))].sort(),
+    [allRows]
+  );
+
   // pagination
   const [page, setPage] = useState(1);
   const perPage = 20;
@@ -176,9 +193,19 @@ export default function StockStatusPage() {
     }
   }
 
+  async function fetchAllRows() {
+    try {
+      const data = await getStockStatuses();
+      setAllRows(data.filter((r) => !r.deleted));
+    } catch {
+      // non-critical
+    }
+  }
+
   useEffect(() => {
     fetchList();
     fetchOverallSummary();
+    fetchAllRows();
     loadDropdowns();
   }, []);
 
@@ -229,7 +256,7 @@ export default function StockStatusPage() {
       });
       toast.success("Stock status created.");
       setCreateOpen(false);
-      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary(), fetchAllRows()]);
     } catch (err) {
       toastApiError(err, "Failed to create stock status.");
     } finally {
@@ -333,7 +360,7 @@ export default function StockStatusPage() {
         toast.success("Stock status updated.");
       }
       setEditData(null);
-      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary(), fetchAllRows()]);
     } catch (err) {
       toastApiError(err, "Failed to update stock status.");
     } finally {
@@ -350,7 +377,7 @@ export default function StockStatusPage() {
       await softDeleteStockStatus(deleteData);
       toast.success("Stock status deleted.");
       setDeleteData(null);
-      await Promise.all([fetchList(currentFilters()), fetchOverallSummary()]);
+      await Promise.all([fetchList(currentFilters()), fetchOverallSummary(), fetchAllRows()]);
     } catch {
       toast.error("Failed to delete stock status.");
     } finally {
@@ -434,7 +461,7 @@ export default function StockStatusPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">All Statuses</SelectItem>
-                  {STATUS_CHOICES.map((s) => (
+                  {uniqueStatuses.map((s) => (
                     <SelectItem key={s} value={s}>
                       {formatStatus(s)}
                     </SelectItem>
@@ -450,11 +477,14 @@ export default function StockStatusPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">All Vendors</SelectItem>
-                  {vendors.map((v) => (
-                    <SelectItem key={v.card_code} value={v.card_code}>
-                      {v.card_code} - {v.card_name}
-                    </SelectItem>
-                  ))}
+                  {uniqueVendors.map((vc) => {
+                    const v = vendors.find((x) => x.card_code === vc);
+                    return (
+                      <SelectItem key={vc} value={vc}>
+                        {vc}{v ? ` - ${v.card_name}` : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -466,11 +496,14 @@ export default function StockStatusPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">All Items</SelectItem>
-                  {rmItems.map((item) => (
-                    <SelectItem key={item.item_code} value={item.item_code}>
-                      {item.item_code} - {item.item_name}
-                    </SelectItem>
-                  ))}
+                  {uniqueItems.map((ic) => {
+                    const item = rmItems.find((x) => x.item_code === ic);
+                    return (
+                      <SelectItem key={ic} value={ic}>
+                        {ic}{item ? ` - ${item.item_name}` : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
