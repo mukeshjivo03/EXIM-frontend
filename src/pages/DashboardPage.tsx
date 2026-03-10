@@ -152,7 +152,8 @@ export default function DashboardPage() {
     if (trendResult.status === "fulfilled") {
       const data = trendResult.value;
       setTrends(data);
-      setSelectedLabels(new Set(data.datasets.map((d) => d.label)));
+      const defaultLabel = data.datasets.find((d) => d.label.toLowerCase().includes("soya refined") && d.label.toLowerCase().includes("resale"));
+      setSelectedLabels(new Set(defaultLabel ? [defaultLabel.label] : [data.datasets[0]?.label].filter(Boolean)));
     } else {
       const err = trendResult.reason;
       toast.error(getErrorMessage(err, "Failed to load price trends"));
