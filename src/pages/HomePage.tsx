@@ -17,21 +17,32 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const quickLinks = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics" },
-  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses" },
-  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses" },
+interface QuickLink {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  desc: string;
+  /** Roles that can see this link. undefined = all authenticated users */
+  roles?: string[];
+}
+
+const quickLinks: QuickLink[] = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", roles: ["ADM", "MNG"] },
+  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", roles: ["ADM", "MNG"] },
+  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses", roles: ["ADM", "MNG"] },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals" },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },
-  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText, desc: "Purchase orders" },
-  { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance" },
-  { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices" },
-  { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts" },
-  { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync" },
-  { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync" },
-  { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync" },
-  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history" },
+  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText, desc: "Purchase orders", roles: ["ADM", "MNG"] },
+  { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", roles: ["ADM", "MNG"] },
+  { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", roles: ["ADM", "MNG"] },
+  { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", roles: ["ADM", "MNG"] },
+  { to: "/admin/stock-updation-logs", label: "Stock Logs", icon: ScrollText, desc: "Stock update history", roles: ["ADM", "MNG"] },
+  { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts", roles: ["ADM"] },
+  { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync", roles: ["ADM"] },
+  { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync", roles: ["ADM"] },
+  { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync", roles: ["ADM"] },
+  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history", roles: ["ADM"] },
 ];
 
 /* ── Industrial Cargo Ship SVG ──────────────────────────────── */
@@ -255,7 +266,7 @@ export default function HomePage() {
           Quick Access
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {quickLinks.map((link) => (
+          {quickLinks.filter((link) => !link.roles || link.roles.includes(role ?? "")).map((link) => (
             <Link
               key={link.to}
               to={link.to}

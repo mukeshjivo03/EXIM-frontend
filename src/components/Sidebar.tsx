@@ -66,13 +66,16 @@ const licenseLinks = [
   { to: "/license/advance-license", label: "Advance License", icon: FileText },
 ];
 
+const adminManagerLinks = [
+  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
+];
+
 const adminLinks = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/sync-raw-material-data", label: "Sync Raw Material", icon: RefreshCw },
   { to: "/admin/sync-finished-goods-data", label: "Sync Finished Goods", icon: RefreshCw },
   { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
-  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
 ];
 
 interface SidebarProps {
@@ -84,6 +87,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { role, name, email, clearAuth } = useAuth();
   const navigate = useNavigate();
   const isAdmin = role === "ADM";
+  const isAdminOrManager = role === "ADM" || role === "MNG";
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
@@ -132,63 +136,74 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Home className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Home</span>}
           </NavLink>
-          <NavLink
-            to="/dashboard"
-            title="Dashboard"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              } ${collapsed ? "justify-center px-0" : ""}`
-            }
-          >
-            <LayoutDashboard className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Dashboard</span>}
-          </NavLink>
-          <NavLink
-            to="/stock-dashboard"
-            title="Stock Dashboard"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              } ${collapsed ? "justify-center px-0" : ""}`
-            }
-          >
-            <BarChart3 className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Stock Dashboard</span>}
-          </NavLink>
-
-          {isAdmin && (
+          {isAdminOrManager && (
             <>
-              <Separator className="my-3" />
+              <NavLink
+                to="/dashboard"
+                title="Dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  } ${collapsed ? "justify-center px-0" : ""}`
+                }
+              >
+                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                {!collapsed && <span>Dashboard</span>}
+              </NavLink>
+              <NavLink
+                to="/stock-dashboard"
+                title="Stock Dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  } ${collapsed ? "justify-center px-0" : ""}`
+                }
+              >
+                <BarChart3 className="h-4 w-4 shrink-0" />
+                {!collapsed && <span>Stock Dashboard</span>}
+              </NavLink>
+            </>
+          )}
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Stock
-                </span>
-              )}
+          {/* ── Stock section (Tank pages: all roles, Stock Status: ADM|MNG) ── */}
+          <Separator className="my-3" />
 
-              {stockLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
+          {!collapsed && (
+            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Stock
+            </span>
+          )}
 
+          {stockLinks.map((link) => {
+            // Stock Status requires ADM|MNG; Tank pages are for all authenticated users
+            const needsAdmMng = link.to === "/stock/stock-status";
+            if (needsAdmMng && !isAdminOrManager) return null;
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                title={link.label}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  } ${collapsed ? "justify-center px-0" : ""}`
+                }
+              >
+                <link.icon className="h-4 w-4 shrink-0" />
+                {!collapsed && <span>{link.label}</span>}
+              </NavLink>
+            );
+          })}
+
+          {/* ── Commodity Price (ADM | MNG) ── */}
+          {isAdminOrManager && (
+            <>
               <Separator className="my-3" />
 
               {!collapsed && (
@@ -214,7 +229,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {!collapsed && <span>{link.label}</span>}
                 </NavLink>
               ))}
+            </>
+          )}
 
+          {/* ── Accounts (ADM | MNG) ── */}
+          {isAdminOrManager && (
+            <>
               <Separator className="my-3" />
 
               {!collapsed && (
@@ -240,7 +260,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {!collapsed && <span>{link.label}</span>}
                 </NavLink>
               ))}
+            </>
+          )}
 
+          {/* ── Contracts (ADM | MNG) ── */}
+          {isAdminOrManager && (
+            <>
               <Separator className="my-3" />
 
               {!collapsed && (
@@ -266,7 +291,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {!collapsed && <span>{link.label}</span>}
                 </NavLink>
               ))}
+            </>
+          )}
 
+          {/* ── License (ADM | MNG) ── */}
+          {isAdminOrManager && (
+            <>
               <Separator className="my-3" />
 
               {!collapsed && (
@@ -292,7 +322,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {!collapsed && <span>{link.label}</span>}
                 </NavLink>
               ))}
+            </>
+          )}
 
+          {/* ── Administration (ADM | MNG for shared links, ADM only for the rest) ── */}
+          {isAdminOrManager && (
+            <>
               <Separator className="my-3" />
 
               {!collapsed && (
@@ -301,7 +336,25 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </span>
               )}
 
-              {adminLinks.map((link) => (
+              {isAdmin && adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+
+              {adminManagerLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}

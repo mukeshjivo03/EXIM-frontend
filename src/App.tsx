@@ -35,38 +35,87 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<HomePage />} />
+
+            {/* ADM | MNG | FTR — Tank pages (view only for FTR) */}
+            <Route path="/stock/tank-items" element={<TankItemsPage />} />
+            <Route path="/stock/tank-monitoring" element={<TankMonitoringPage />} />
+            <Route path="/stock/tank-data" element={<TankDataPage />} />
+
+            {/* ADM | MNG — Dashboard, Stock, Accounts, Contracts, License, Daily Price */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <StockDashboardPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/stock/stock-status"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
                   <StockStatusPage />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/stock/tank-items"
+              path="/domestic-contracts"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <TankItemsPage />
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <DomesticContractsPage />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/stock/tank-monitoring"
+              path="/license/advance-license"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <TankMonitoringPage />
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <AdvanceLicensePage />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/stock/tank-data"
+              path="/license/advance-license/:licenseNo"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <TankDataPage />
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <AdvanceLicenseDetailPage />
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/exim-account"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <EximAccountPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/commodity/daily-price"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <DailyPricePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/stock-updation-logs"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <StockUpdationLogsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ADM only — User management, Sync operations */}
             <Route
               path="/admin/users"
               element={
@@ -107,42 +156,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin/stock-updation-logs"
-              element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <StockUpdationLogsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/commodity/daily-price"
-              element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <DailyPricePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/license/advance-license"
-              element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <AdvanceLicensePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/license/advance-license/:licenseNo"
-              element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
-                  <AdvanceLicenseDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/stock-dashboard" element={<StockDashboardPage />} />
-            <Route path="/exim-account" element={<EximAccountPage />} />
-            <Route path="/domestic-contracts" element={<DomesticContractsPage />} />
           </Route>
         </Routes>
         </DailyPriceProvider>
