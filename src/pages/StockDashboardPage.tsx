@@ -21,6 +21,7 @@ function convertUnit(kg: number, unit: Unit): number {
   return kg;
 }
 
+
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
