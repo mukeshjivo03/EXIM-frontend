@@ -450,11 +450,13 @@ export default function DashboardPage() {
                   }}
                   cursor={{ fill: "hsl(var(--accent))", opacity: 0.4 }}
                 />
-                {activeDatasets.map((ds, i) => (
+                {activeDatasets.map((ds) => {
+                  const colorIdx = (trends?.datasets.findIndex((d) => d.label === ds.label) ?? 0);
+                  return (
                   <Bar
                     key={ds.label}
                     dataKey={ds.label}
-                    fill={PRICE_COLORS[i % PRICE_COLORS.length]}
+                    fill={PRICE_COLORS[colorIdx % PRICE_COLORS.length]}
                     fillOpacity={0.85}
                     radius={[3, 3, 0, 0]}
                     maxBarSize={24}
@@ -466,7 +468,8 @@ export default function DashboardPage() {
                       style={{ fontSize: 10, fontWeight: 600, fill: "currentColor" }}
                     />
                   </Bar>
-                ))}
+                  );
+                })}
               </BarChart>
             </ResponsiveContainer>
           )}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RefreshCw, Factory, PackageOpen, Layers } from "lucide-react";
 
@@ -28,6 +29,7 @@ function fmtNum(n: number, unit: Unit = "KG") {
   });
 }
 
+
 /* ── helpers ─────────────────────────────────────────────────── */
 
 const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string; headerBg: string }> = {
@@ -51,6 +53,7 @@ const STATUS_META: Record<string, { label: string; variant: "default" | "seconda
 /* ── component ────────────────────────────────────────────────── */
 
 export default function StockDashboardPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<StockDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit>("KG");
@@ -183,19 +186,26 @@ export default function StockDashboardPage() {
             No stock data available
           </div>
         ) : (
-          <div className="overflow-x-auto border-y shadow-sm">
-              <table className="w-full text-base">
+          <div className="border-y shadow-sm overflow-x-auto">
+              <table className="w-full table-fixed text-xs">
+                <colgroup>
+                  <col style={{ width: 110 }} />
+                  <col style={{ width: `${90 / (colKeys.length + 3)}%` }} />
+                  <col style={{ width: `${90 / (colKeys.length + 3)}%` }} />
+                  {colKeys.map((k) => <col key={k} style={{ width: `${90 / (colKeys.length + 3)}%` }} />)}
+                  <col style={{ width: 72 }} />
+                </colgroup>
                 <thead>
-                  {/* Row 1: Status group headers spanning vendor columns */}
+                  {/* Row 1: Status group headers */}
                   <tr className="border-b">
-                    <th rowSpan={2} className="sticky left-0 z-10 bg-muted/40 px-5 py-3 text-left font-bold whitespace-nowrap border-r text-base">
+                    <th rowSpan={2} className="sticky left-0 z-10 bg-muted/40 px-2 py-2 text-left font-bold border-r text-xs">
                       Item Code
                     </th>
-                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
-                      In Factory
+                    <th rowSpan={2} onClick={() => navigate("/stock-dashboard/IN_FACTORY")} className="px-1 py-2 text-center font-bold border-r text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 cursor-pointer hover:brightness-95 select-none leading-tight">
+                      In<br/>Factory
                     </th>
-                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
-                      Outside Factory
+                    <th rowSpan={2} onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")} className="px-1 py-2 text-center font-bold border-r text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 cursor-pointer hover:brightness-95 select-none leading-tight">
+                      Outside<br/>Factory
                     </th>
                     {statusGroups.map((group) => {
                       const meta = STATUS_META[group.status];
@@ -205,13 +215,14 @@ export default function StockDashboardPage() {
                         <th
                           key={group.status}
                           colSpan={group.vendors.length}
-                          className={`px-5 py-3 text-center font-bold whitespace-nowrap border-r text-base ${headerBg}`}
+                          onClick={() => navigate(`/stock-dashboard/${group.status}`)}
+                          className={`px-1 py-2 text-center font-bold border-r text-xs cursor-pointer hover:brightness-95 select-none leading-tight ${headerBg}`}
                         >
                           {label.toUpperCase()}
                         </th>
                       );
                     })}
-                    <th rowSpan={2} className="px-5 py-3 text-center font-bold whitespace-nowrap border-l bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-base">
+                    <th rowSpan={2} className="px-1 py-2 text-center font-bold border-l bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-xs">
                       TOTAL
                     </th>
                   </tr>
@@ -219,8 +230,8 @@ export default function StockDashboardPage() {
                   <tr className="border-b bg-muted/20">
                     {statusGroups.map((group) =>
                       group.vendors.map(({ key, vendor }) => (
-                        <th key={key} className="px-5 py-2 text-center font-medium border-r last:border-r-0 min-w-[140px] text-xs text-muted-foreground whitespace-nowrap">
-                          {vendor}
+                        <th key={key} title={vendor} className="px-2 py-2 text-center font-medium border-r last:border-r-0 text-xs text-muted-foreground overflow-hidden">
+                          <span className="block truncate">{vendor}</span>
                         </th>
                       ))
                     )}
@@ -232,36 +243,36 @@ export default function StockDashboardPage() {
                       key={item.item_code}
                       className={`border-b transition-colors hover:bg-accent/30 ${idx % 2 === 0 ? "" : "bg-muted/20"}`}
                     >
-                      <td className="sticky left-0 z-10 px-5 py-4 font-mono font-semibold whitespace-nowrap border-r bg-card text-base">
+                      <td className="sticky left-0 z-10 px-2 py-1.5 font-mono font-semibold truncate border-r bg-card text-xs">
                         {item.item_code}
                       </td>
-                      <td className="px-5 py-4 text-right tabular-nums border-r text-base">
+                      <td className="px-1 py-1.5 text-center tabular-nums border-r text-xs" title={fmtNum(item.in_factory, unit)}>
                         {item.in_factory > 0 ? (
                           <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtNum(item.in_factory, unit)}</span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground/40">·</span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right tabular-nums border-r text-base">
+                      <td className="px-1 py-1.5 text-center tabular-nums border-r text-xs" title={fmtNum(item.outside_factory, unit)}>
                         {item.outside_factory > 0 ? (
                           <span className="text-amber-600 dark:text-amber-400 font-semibold">{fmtNum(item.outside_factory, unit)}</span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground/40">·</span>
                         )}
                       </td>
                       {colKeys.map((key) => {
                         const val = item.status_data[key] ?? 0;
                         return (
-                          <td key={key} className="px-5 py-4 text-right tabular-nums border-r last:border-r-0 text-base">
+                          <td key={key} className="px-1 py-1.5 text-center tabular-nums border-r last:border-r-0 text-xs" title={val > 0 ? fmtNum(val, unit) : undefined}>
                             {val > 0 ? (
                               <span className="font-semibold">{fmtNum(val, unit)}</span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground/40">·</span>
                             )}
                           </td>
                         );
                       })}
-                      <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/20 text-base">
+                      <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/20 text-xs" title={fmtNum(item.in_factory + item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit)}>
                         {fmtNum(
                           item.in_factory + item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0),
                           unit
@@ -271,22 +282,20 @@ export default function StockDashboardPage() {
                   ))}
 
                   {/* Totals row */}
-                  <tr className="border-t-2 bg-muted/40 font-bold text-base">
-                    <td className="sticky left-0 z-10 px-5 py-4 whitespace-nowrap border-r bg-muted/40">
-                      Total
-                    </td>
-                    <td className="px-5 py-4 text-right tabular-nums border-r text-blue-600 dark:text-blue-400">
+                  <tr className="border-t-2 bg-muted/40 font-bold text-xs">
+                    <td className="sticky left-0 z-10 px-2 py-1.5 border-r bg-muted/40">Total</td>
+                    <td className="px-1 py-1.5 text-center tabular-nums border-r text-blue-600 dark:text-blue-400" title={fmtNum(data.totals.in_factory, unit)}>
                       {fmtNum(data.totals.in_factory, unit)}
                     </td>
-                    <td className="px-5 py-4 text-right tabular-nums border-r text-amber-600 dark:text-amber-400">
+                    <td className="px-1 py-1.5 text-center tabular-nums border-r text-amber-600 dark:text-amber-400" title={fmtNum(data.totals.outside_factory, unit)}>
                       {fmtNum(data.totals.outside_factory, unit)}
                     </td>
                     {colKeys.map((key) => (
-                      <td key={key} className="px-5 py-4 text-right tabular-nums border-r last:border-r-0">
+                      <td key={key} className="px-1 py-1.5 text-center tabular-nums border-r last:border-r-0" title={fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}>
                         {fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}
                       </td>
                     ))}
-                    <td className="px-5 py-4 text-right tabular-nums font-bold border-l bg-muted/60 text-primary text-lg">
+                    <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/60 text-primary" title={fmtNum(data.totals.in_factory + data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0), unit)}>
                       {fmtNum(
                         data.totals.in_factory + data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0),
                         unit

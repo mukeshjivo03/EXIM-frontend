@@ -22,6 +22,7 @@ import DomesticContractsPage from "@/pages/DomesticContractsPage";
 import DailyPricePage from "@/pages/DailyPricePage";
 import AdvanceLicensePage from "@/pages/AdvanceLicensePage";
 import AdvanceLicenseDetailPage from "@/pages/AdvanceLicenseDetailPage";
+import StockDashboardDetailPage from "@/pages/StockDashboardDetailPage";
 import HomePage from "@/pages/HomePage";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -55,6 +56,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
                   <StockDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock-dashboard/:status"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <StockDashboardDetailPage />
                 </ProtectedRoute>
               }
             />

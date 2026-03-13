@@ -80,17 +80,20 @@ src/
 │   ├── formatters.ts     # Number, date, and currency formatters (Indian locale)
 │   └── utils.ts          # Tailwind class merge utility
 ├── pages/
-│   ├── HomePage.tsx              # Landing page with quick access links
-│   ├── LoginPage.tsx             # Authentication page
-│   ├── DashboardPage.tsx         # Main analytics dashboard with charts
-│   ├── StockDashboardPage.tsx    # Stock overview across statuses & vendors
-│   ├── StockStatusPage.tsx       # Stock status management (CRUD)
-│   ├── TankItemsPage.tsx         # Tank item configuration
-│   ├── TankDataPage.tsx          # Tank data entry & history
-│   ├── TankMonitoringPage.tsx    # Live tank monitoring with charts
-│   ├── DailyPricePage.tsx        # Commodity price tracking & trends
-│   ├── DomesticContractsPage.tsx # Domestic contract management
-│   ├── EximAccountPage.tsx       # EXIM account details & CSV export
+│   ├── HomePage.tsx                   # Landing page with quick access links
+│   ├── LoginPage.tsx                  # Authentication page
+│   ├── DashboardPage.tsx              # Main analytics dashboard with charts
+│   ├── StockDashboardPage.tsx         # Stock overview across statuses & vendors
+│   ├── StockStatusPage.tsx            # Stock status management (CRUD)
+│   ├── StockUpdationLogsPage.tsx      # Stock update history logs
+│   ├── TankItemsPage.tsx              # Tank item configuration
+│   ├── TankDataPage.tsx               # Tank data entry & history
+│   ├── TankMonitoringPage.tsx         # Live tank monitoring with charts
+│   ├── DailyPricePage.tsx             # Commodity price tracking & trends
+│   ├── DomesticContractsPage.tsx      # Domestic contract management
+│   ├── EximAccountPage.tsx            # EXIM account details & CSV export
+│   ├── AdvanceLicensePage.tsx         # Advance license list & management
+│   ├── AdvanceLicenseDetailPage.tsx   # Individual advance license detail view
 │   ├── SyncRawMaterialDataPage.tsx    # SAP raw material sync
 │   ├── SyncFinishedGoodsDataPage.tsx  # SAP finished goods sync
 │   ├── SyncVendorDataPage.tsx         # SAP vendor sync
@@ -102,14 +105,16 @@ src/
 
 ## Key Features
 
-- **Authentication** — JWT-based login with automatic token refresh and role-based access control (Admin vs. regular users)
+- **Authentication** — JWT-based login with automatic token refresh and role-based access control (ADM, MNG, FTR roles)
 - **SAP Integration** — Sync vendors, raw materials, and finished goods from SAP with detailed sync logs
-- **Stock Management** — Track stock statuses, tank items, and tank data with CRUD operations
+- **Stock Management** — Track stock statuses, tank items, and tank data with CRUD operations and update history logs
 - **Tank Monitoring** — Real-time tank level visualization with bar and pie charts
 - **Analytics Dashboard** — Balance trends, daily price charts, and commodity comparisons
+- **Stock Dashboard** — Grouped stock overview across statuses and vendors with dynamic filters
 - **Daily Pricing** — Track and compare commodity prices with multi-line trend charts
 - **Domestic Contracts** — View and manage domestic contract data
 - **EXIM Accounts** — Account overview with CSV export functionality
+- **Advance License** — Manage advance licenses with per-license detail view
 - **Dark Mode** — Full light/dark theme support
 - **Responsive Design** — Works across desktop and mobile with a collapsible sidebar
 
