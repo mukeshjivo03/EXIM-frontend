@@ -1,4 +1,4 @@
-name: Frontend Deployment
+name: Exim-Frontend Deployment
 
 on:
   push:
@@ -8,11 +8,8 @@ on:
 jobs:
   deploy-frontend:
     runs-on: self-hosted
-
+    
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-
       - name: Run deployment script
         shell: powershell
         run: |
