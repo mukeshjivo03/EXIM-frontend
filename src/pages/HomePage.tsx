@@ -37,6 +37,7 @@ const quickLinks: QuickLink[] = [
   { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", roles: ["ADM", "MNG"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", roles: ["ADM", "MNG"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", roles: ["ADM", "MNG"] },
+  { to: "/license/dfia-license", label: "DFIA License", icon: FileText, desc: "DFIA license management", roles: ["ADM", "MNG"] },
   { to: "/admin/stock-updation-logs", label: "Stock Logs", icon: ScrollText, desc: "Stock update history", roles: ["ADM", "MNG"] },
   { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts", roles: ["ADM"] },
   { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync", roles: ["ADM"] },

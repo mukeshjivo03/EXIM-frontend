@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Pencil, Trash2 } from "lucide-react";
 
-import { getLicenseHeaders, deleteLicenseHeader, createLicenseHeader, type LicenseHeader, type LicenseHeaderPayload } from "@/api/license";
+import { getLicenseHeaders, deleteLicenseHeader, createLicenseHeader, updateLicenseHeader, type LicenseHeader, type LicenseHeaderPayload } from "@/api/license";
 import { fmtDate, fmtDecimal } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
@@ -39,8 +39,7 @@ import {
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   OPEN: "default",
-  CLOSED: "secondary",
-  EXPIRED: "destructive",
+  CLOSE: "secondary",
 };
 
 export default function AdvanceLicensePage() {
@@ -68,6 +67,17 @@ export default function AdvanceLicensePage() {
   });
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<LicenseHeader | null>(null);
+  const [editForm, setEditForm] = useState<LicenseHeaderPayload>({
+    license_no: "", issue_date: "", import_validity: "", export_validity: "", import_in_mts: "",
+    cif_value_inr: "", cif_value_usd: "", cif_exchange_rate: "",
+    export_in_mts: "", fob_value_inr: "", fob_value_usd: "", fob_exhange_rate: "", status: "OPEN",
+  });
+  const [editFormError, setEditFormError] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   // Delete state
   const [deleteTarget, setDeleteTarget] = useState<LicenseHeader | null>(null);
@@ -139,6 +149,46 @@ export default function AdvanceLicensePage() {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openEdit(h: LicenseHeader) {
+    setEditTarget(h);
+    setEditForm({
+      license_no: h.license_no, issue_date: h.issue_date, import_validity: h.import_validity, export_validity: h.export_validity,
+      import_in_mts: h.import_in_mts, cif_value_inr: h.cif_value_inr, cif_value_usd: h.cif_value_usd,
+      cif_exchange_rate: h.cif_exchange_rate, export_in_mts: h.export_in_mts, fob_value_inr: h.fob_value_inr,
+      fob_value_usd: h.fob_value_usd, fob_exhange_rate: h.fob_exhange_rate, status: h.status,
+    });
+    setEditFormError("");
+    setEditOpen(true);
+  }
+
+  async function handleUpdate() {
+    if (!editTarget) return;
+    setUpdating(true);
+    setEditFormError("");
+    try {
+      await updateLicenseHeader(editTarget.license_no, editForm);
+      setEditOpen(false);
+      setEditTarget(null);
+      fetchHeaders();
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        const data = err.response?.data;
+        if (typeof data === "object" && data !== null) {
+          const messages = Object.entries(data)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .join("; ");
+          setEditFormError(messages);
+        } else {
+          setEditFormError(typeof data === "string" ? data : err.message);
+        }
+      } else {
+        setEditFormError("Something went wrong");
+      }
+    } finally {
+      setUpdating(false);
     }
   }
 
@@ -271,6 +321,14 @@ export default function AdvanceLicensePage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={(e) => { e.stopPropagation(); openEdit(h); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -316,8 +374,7 @@ export default function AdvanceLicensePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPEN">OPEN</SelectItem>
-                  <SelectItem value="CLOSED">CLOSED</SelectItem>
-                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                  <SelectItem value="CLOSE">CLOSE</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -373,6 +430,88 @@ export default function AdvanceLicensePage() {
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button onClick={handleCreate} disabled={saving}>
               {saving ? "Creating..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit License Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditTarget(null); } }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit License</DialogTitle>
+            <DialogDescription>Editing <strong>{editTarget?.license_no}</strong>. License No cannot be changed.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="space-y-2">
+              <Label>License No</Label>
+              <Input value={editTarget?.license_no ?? ""} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_status">Status</Label>
+              <Select value={editForm.status} onValueChange={(val) => setEditForm({ ...editForm, status: val })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPEN">OPEN</SelectItem>
+                  <SelectItem value="CLOSE">CLOSE</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_issue_date">Issue Date</Label>
+              <Input id="edit_issue_date" type="date" value={editForm.issue_date} onChange={(e) => setEditForm({ ...editForm, issue_date: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_import_validity">Import Validity</Label>
+              <Input id="edit_import_validity" type="date" value={editForm.import_validity} onChange={(e) => setEditForm({ ...editForm, import_validity: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_export_validity">Export Validity</Label>
+              <Input id="edit_export_validity" type="date" value={editForm.export_validity} onChange={(e) => setEditForm({ ...editForm, export_validity: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_import_in_mts">Import (MTS)</Label>
+              <Input id="edit_import_in_mts" type="number" step="0.001" value={editForm.import_in_mts} onChange={(e) => setEditForm({ ...editForm, import_in_mts: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_export_in_mts">Export (MTS)</Label>
+              <Input id="edit_export_in_mts" type="number" step="0.001" value={editForm.export_in_mts} onChange={(e) => setEditForm({ ...editForm, export_in_mts: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_cif_value_inr">CIF Value (INR)</Label>
+              <Input id="edit_cif_value_inr" type="number" step="0.001" value={editForm.cif_value_inr} onChange={(e) => setEditForm({ ...editForm, cif_value_inr: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_cif_value_usd">CIF Value (USD)</Label>
+              <Input id="edit_cif_value_usd" type="number" step="0.001" value={editForm.cif_value_usd} onChange={(e) => setEditForm({ ...editForm, cif_value_usd: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_cif_exchange_rate">CIF Exchange Rate</Label>
+              <Input id="edit_cif_exchange_rate" type="number" step="0.001" value={editForm.cif_exchange_rate} onChange={(e) => setEditForm({ ...editForm, cif_exchange_rate: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_fob_value_inr">FOB Value (INR)</Label>
+              <Input id="edit_fob_value_inr" type="number" step="0.001" value={editForm.fob_value_inr} onChange={(e) => setEditForm({ ...editForm, fob_value_inr: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_fob_value_usd">FOB Value (USD)</Label>
+              <Input id="edit_fob_value_usd" type="number" step="0.001" value={editForm.fob_value_usd} onChange={(e) => setEditForm({ ...editForm, fob_value_usd: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_fob_exhange_rate">FOB Exchange Rate</Label>
+              <Input id="edit_fob_exhange_rate" type="number" step="0.001" value={editForm.fob_exhange_rate} onChange={(e) => setEditForm({ ...editForm, fob_exhange_rate: e.target.value })} />
+            </div>
+          </div>
+
+          {editFormError && <p className="text-sm text-destructive">{editFormError}</p>}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditTarget(null); }}>Cancel</Button>
+            <Button onClick={handleUpdate} disabled={updating}>
+              {updating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

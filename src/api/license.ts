@@ -73,12 +73,22 @@ export async function createLicenseHeader(data: LicenseHeaderPayload): Promise<L
   return res.data;
 }
 
+export async function updateLicenseHeader(licenseNo: string, data: LicenseHeaderPayload): Promise<LicenseHeader> {
+  const res = await api.put<LicenseHeader>(`/license/advance-license-header/${licenseNo}/`, data);
+  return res.data;
+}
+
 export async function deleteLicenseHeader(licenseNo: string): Promise<void> {
   await api.delete(`/license/advance-license-header/${licenseNo}/`);
 }
 
 export async function createLicenseLine(data: LicenseLinePayload): Promise<LicenseLine> {
   const res = await api.post<LicenseLine>("/license/advance-license-lines/", data);
+  return res.data;
+}
+
+export async function updateLicenseLine(id: number, data: LicenseLinePayload): Promise<LicenseLine> {
+  const res = await api.put<LicenseLine>(`/license/advance-license-lines/${id}/`, data);
   return res.data;
 }
 
@@ -129,7 +139,7 @@ export async function deleteDFIALicenseHeader(fileNo: string): Promise<void> {
   await api.delete(`/license/dfia-license-header/${fileNo}/`);
 }
 
-export async function updateDFIALicenseHeader(fileNo: string, data: Omit<DFIALicenseHeaderPayload, "file_no">): Promise<DFIALicenseHeader> {
+export async function updateDFIALicenseHeader(fileNo: string, data: DFIALicenseHeaderPayload): Promise<DFIALicenseHeader> {
   const res = await api.put<DFIALicenseHeader>(`/license/dfia-license-header/${fileNo}/`, data);
   return res.data;
 }
@@ -164,5 +174,10 @@ export interface DFIALicenseLinePayload {
 
 export async function createDFIALicenseLine(data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {
   const res = await api.post<DFIALicenseLine>("/license/dfia-license-lines/create/", data);
+  return res.data;
+}
+
+export async function updateDFIALicenseLine(id: number, data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {
+  const res = await api.put<DFIALicenseLine>(`/license/dfia-license-lines/${id}/`, data);
   return res.data;
 }

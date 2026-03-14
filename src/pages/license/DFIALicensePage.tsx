@@ -46,8 +46,7 @@ import {
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   OPEN: "default",
-  CLOSED: "secondary",
-  EXPIRED: "destructive",
+  CLOSE: "secondary",
 };
 
 const EMPTY_FORM: DFIALicenseHeaderPayload = {
@@ -79,8 +78,8 @@ export default function DFIALicensePage() {
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DFIALicenseHeader | null>(null);
-  const [editForm, setEditForm] = useState<Omit<DFIALicenseHeaderPayload, "file_no">>({
-    issue_date: "", export_validity: "", export_in_mts: "", fob_value_inr: "", fob_exchange_rate: "",
+  const [editForm, setEditForm] = useState<DFIALicenseHeaderPayload>({
+    file_no: "", issue_date: "", export_validity: "", export_in_mts: "", fob_value_inr: "", fob_exchange_rate: "",
     import_validity: "", import_in_mts: "", cif_value_inr: "", cif_exchange_rate: "", status: "OPEN",
   });
   const [editFormError, setEditFormError] = useState("");
@@ -148,6 +147,7 @@ export default function DFIALicensePage() {
   function openEdit(h: DFIALicenseHeader) {
     setEditTarget(h);
     setEditForm({
+      file_no: h.file_no,
       issue_date: h.issue_date,
       export_validity: h.export_validity,
       export_in_mts: h.export_in_mts,
@@ -364,8 +364,7 @@ export default function DFIALicensePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPEN">OPEN</SelectItem>
-                  <SelectItem value="CLOSED">CLOSED</SelectItem>
-                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                  <SelectItem value="CLOSE">CLOSE</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -439,8 +438,7 @@ export default function DFIALicensePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPEN">OPEN</SelectItem>
-                  <SelectItem value="CLOSED">CLOSED</SelectItem>
-                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                  <SelectItem value="CLOSE">CLOSE</SelectItem>
                 </SelectContent>
               </Select>
             </div>

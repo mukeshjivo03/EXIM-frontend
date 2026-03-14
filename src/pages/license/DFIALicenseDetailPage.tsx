@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { ArrowLeft, Plus, FileText } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Pencil } from "lucide-react";
 
 import {
   getDFIALicenseHeader,
   createDFIALicenseLine,
+  updateDFIALicenseLine,
   type DFIALicenseHeader,
   type DFIALicenseLine,
   type DFIALicenseLinePayload,
@@ -63,11 +64,18 @@ export default function DFIALicenseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Dialog state
+  // Create dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<LineForm>(emptyForm);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<DFIALicenseLine | null>(null);
+  const [editForm, setEditForm] = useState<LineForm>(emptyForm);
+  const [editFormError, setEditFormError] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   async function fetchData() {
     setLoading(true);
@@ -122,9 +130,56 @@ export default function DFIALicenseDetailPage() {
     }
   }
 
+  function openEdit(line: DFIALicenseLine) {
+    setEditTarget(line);
+    setEditForm({
+      boe_no: line.boe_no,
+      shipping_bill_no: line.shipping_bill_no,
+      date: line.date,
+      to_be_imported_in_mts: line.to_be_imported_in_mts,
+      exported_in_mts: line.exported_in_mts,
+      balance: line.balance,
+      sb_value_inr: line.sb_value_inr,
+    });
+    setEditFormError("");
+    setEditOpen(true);
+  }
+
+  async function handleUpdate() {
+    if (!editTarget) return;
+    setUpdating(true);
+    setEditFormError("");
+    try {
+      const payload: DFIALicenseLinePayload = {
+        ...editForm,
+        license_no: fileNo!,
+      };
+      await updateDFIALicenseLine(editTarget.id, payload);
+      setEditOpen(false);
+      setEditTarget(null);
+      fetchData();
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        const data = err.response?.data;
+        if (typeof data === "object" && data !== null) {
+          const messages = Object.entries(data)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .join("; ");
+          setEditFormError(messages);
+        } else {
+          setEditFormError(typeof data === "string" ? data : err.message);
+        }
+      } else {
+        setEditFormError("Something went wrong");
+      }
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   const lines: DFIALicenseLine[] = header?.dfia_license_lines ?? [];
 
-  const lineColumns = ["#", "BOE No", "Shipping Bill No", "Date", "To Be Imported (MTS)", "Exported (MTS)", "Balance", "SB Value (INR)"];
+  const lineColumns = ["#", "BOE No", "Shipping Bill No", "Date", "To Be Imported (MTS)", "Exported (MTS)", "Balance", "SB Value (INR)", "Actions"];
 
   return (
     <div className="p-6 space-y-6 animate-page">
@@ -208,6 +263,16 @@ export default function DFIALicenseDetailPage() {
                         <TableCell className="text-right">{fmtDecimal(line.exported_in_mts)}</TableCell>
                         <TableCell className="text-right">{fmtDecimal(line.balance)}</TableCell>
                         <TableCell className="text-right">{fmtDecimal(line.sb_value_inr)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={() => openEdit(line)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -254,6 +319,47 @@ export default function DFIALicenseDetailPage() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Add Line"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Line Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditTarget(null); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit License Line</DialogTitle>
+            <DialogDescription>
+              Editing line #{editTarget?.id} for {fileNo}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-2">
+            {FIELDS.map((f) => (
+              <div key={f.key} className="space-y-2">
+                <Label htmlFor={`edit_${f.key}`}>{f.label}</Label>
+                <Input
+                  id={`edit_${f.key}`}
+                  type={f.type}
+                  step={f.type === "number" ? "0.001" : undefined}
+                  value={editForm[f.key]}
+                  onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                  placeholder={f.label}
+                />
+              </div>
+            ))}
+          </div>
+
+          {editFormError && (
+            <p className="text-sm text-destructive">{editFormError}</p>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditTarget(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} disabled={updating}>
+              {updating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

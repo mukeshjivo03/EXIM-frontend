@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { ArrowLeft, Plus, FileText } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Pencil } from "lucide-react";
 
 import {
   getLicenseHeader,
   createLicenseLine,
+  updateLicenseLine,
   type LicenseHeader,
   type LicenseLine,
   type LicenseLinePayload,
@@ -65,11 +66,18 @@ export default function AdvanceLicenseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Dialog state
+  // Create dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<LineForm>(emptyForm);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<LicenseLine | null>(null);
+  const [editForm, setEditForm] = useState<LineForm>(emptyForm);
+  const [editFormError, setEditFormError] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   async function fetchData() {
     setLoading(true);
@@ -124,9 +132,57 @@ export default function AdvanceLicenseDetailPage() {
     }
   }
 
+  function openEdit(line: LicenseLine) {
+    setEditTarget(line);
+    setEditForm({
+      boe_No: line.boe_No,
+      boe_value_usd: line.boe_value_usd,
+      shipping_bill_no: line.shipping_bill_no,
+      date: line.date,
+      sb_value_usd: line.sb_value_usd,
+      import_in_mts: line.import_in_mts,
+      export_in_mts: line.export_in_mts,
+      balance: line.balance,
+    });
+    setEditFormError("");
+    setEditOpen(true);
+  }
+
+  async function handleUpdate() {
+    if (!editTarget) return;
+    setUpdating(true);
+    setEditFormError("");
+    try {
+      const payload: LicenseLinePayload = {
+        ...editForm,
+        license_no: licenseNo!,
+      };
+      await updateLicenseLine(editTarget.id, payload);
+      setEditOpen(false);
+      setEditTarget(null);
+      fetchData();
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        const data = err.response?.data;
+        if (typeof data === "object" && data !== null) {
+          const messages = Object.entries(data)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .join("; ");
+          setEditFormError(messages);
+        } else {
+          setEditFormError(typeof data === "string" ? data : err.message);
+        }
+      } else {
+        setEditFormError("Something went wrong");
+      }
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   const lines: LicenseLine[] = header?.lincense_lines ?? [];
 
-  const lineColumns = ["#", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance"];
+  const lineColumns = ["#", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance", "Actions"];
 
   return (
     <div className="p-6 space-y-6 animate-page">
@@ -242,6 +298,16 @@ export default function AdvanceLicenseDetailPage() {
                         <TableCell className="text-right">{fmtDecimal(line.import_in_mts)}</TableCell>
                         <TableCell className="text-right">{fmtDecimal(line.export_in_mts)}</TableCell>
                         <TableCell className="text-right">{fmtDecimal(line.balance)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={() => openEdit(line)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -288,6 +354,47 @@ export default function AdvanceLicenseDetailPage() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Add Line"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Line Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditTarget(null); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit License Line</DialogTitle>
+            <DialogDescription>
+              Editing line #{editTarget?.id} for {licenseNo}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-2">
+            {FIELDS.map((f) => (
+              <div key={f.key} className="space-y-2">
+                <Label htmlFor={`edit_${f.key}`}>{f.label}</Label>
+                <Input
+                  id={`edit_${f.key}`}
+                  type={f.type}
+                  step={f.type === "number" ? "0.001" : undefined}
+                  value={editForm[f.key]}
+                  onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                  placeholder={f.label}
+                />
+              </div>
+            ))}
+          </div>
+
+          {editFormError && (
+            <p className="text-sm text-destructive">{editFormError}</p>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditTarget(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} disabled={updating}>
+              {updating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
