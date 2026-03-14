@@ -106,3 +106,5 @@ The backend is a **separate repository** built with:
 | Global styles & theme | `src/index.css` |
 | Utility formatters | `src/lib/formatters.ts` |
 | Error handling | `src/lib/errors.ts` |
+| CI/CD workflow | `.github/workflows/frontend-deploy.yml` |
+| Deploy script | `deploy_frontend.bat` |

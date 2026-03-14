@@ -154,6 +154,45 @@ npm run preview
 npx serve dist
 ```
 
+### CI/CD (GitHub Actions)
+
+The project uses a **self-hosted runner** for automated deployment on every push to `main`.
+
+**Workflow:** `.github/workflows/frontend-deploy.yml`
+
+```yaml
+name: Jivo-Exim-Frontend Deployment
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Run deployment script
+        shell: powershell
+        run: |
+          cd "C:\LiveProjects\JIVO-EXIM\EXIM-frontend"
+          .\deploy_frontend.bat
+```
+
+**Deploy script:** `deploy_frontend.bat`
+
+```batch
+cd C:\LiveProjects\JIvo-Exim\EXIM-frontend
+git pull origin main
+call npm install
+call npm run build
+```
+
+**How it works:**
+1. Push to `main` triggers the GitHub Actions workflow
+2. The self-hosted runner on the production server (`103.89.45.75`) executes `deploy_frontend.bat`
+3. The script pulls latest code, installs dependencies, and rebuilds the static bundle
+4. The production server serves the updated `dist/` folder
+
+**Production path on server:** `C:\LiveProjects\JIVO-EXIM\EXIM-frontend`
+
 ### Deployment Considerations
 
 1. **SPA routing:** The server must redirect all non-asset requests to `index.html` (React Router handles client-side routing). Configure your web server accordingly:
