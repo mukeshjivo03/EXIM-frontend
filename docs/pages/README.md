@@ -222,6 +222,9 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 - Sync individual PO by GRPO number
 - Edit PO details (inline fields)
 - Delete PO
+- **Filter dropdowns** (PO Date, Product, Vendor, Status) — values are dynamically derived from loaded data
+- Text search across all fields (PO number, product, vendor, GRPO, invoice, transporter, etc.)
+- "Clear filters" button when any filter is active
 - Pagination
 - Columns: PO Number, Date, Status, Product, Vendor, Contract Qty/Rate/Value, Load/Unload Qty, Transporter, Vehicle, GRPO details, Invoice, Amounts
 

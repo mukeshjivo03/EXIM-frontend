@@ -72,8 +72,12 @@ export default function DomesticContractsPage() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
 
-  // search
+  // search & filters
   const [search, setSearch] = useState("");
+  const [filterProduct, setFilterProduct] = useState("all");
+  const [filterVendor, setFilterVendor] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPoDate, setFilterPoDate] = useState("all");
   const [page, setPage] = useState(1);
 
   // Pre-compute searchable string per row once (only recomputes when rows change)
@@ -102,11 +106,28 @@ export default function DomesticContractsPage() {
     [rows]
   );
 
+  // unique filter options derived from data
+  const productOptions = useMemo(() => [...new Set(rows.map((r) => r.product_name).filter(Boolean))].sort(), [rows]);
+  const vendorOptions = useMemo(() => [...new Set(rows.map((r) => r.vendor).filter(Boolean))].sort(), [rows]);
+  const statusOptions = useMemo(() => [...new Set(rows.map((r) => r.status).filter(Boolean))].sort(), [rows]);
+  const poDateOptions = useMemo(() => [...new Set(rows.map((r) => r.po_date).filter(Boolean))].sort().reverse(), [rows]);
+
   const filteredRows = useMemo(() => {
+    let result = rows;
+
+    if (filterProduct !== "all") result = result.filter((r) => r.product_name === filterProduct);
+    if (filterVendor !== "all") result = result.filter((r) => r.vendor === filterVendor);
+    if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
+    if (filterPoDate !== "all") result = result.filter((r) => r.po_date === filterPoDate);
+
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((_, i) => searchIndex[i].includes(q));
-  }, [rows, searchIndex, search]);
+    if (q) result = result.filter((r) => {
+      const idx = rows.indexOf(r);
+      return searchIndex[idx].includes(q);
+    });
+
+    return result;
+  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDate]);
 
   // pagination
   const perPage = 20;
@@ -402,7 +423,7 @@ export default function DomesticContractsPage() {
             <div>
               <CardTitle>Contracts</CardTitle>
               <CardDescription>
-                {search.trim()
+                {filteredRows.length !== rows.length
                   ? `${filteredRows.length} of ${rows.length} records`
                   : `${rows.length} records`}
               </CardDescription>
@@ -424,6 +445,69 @@ export default function DomesticContractsPage() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 pt-3">
+            <Select value={filterPoDate} onValueChange={(v) => { setFilterPoDate(v); setPage(1); }}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="PO Date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All PO Dates</SelectItem>
+                {poDateOptions.map((d) => (
+                  <SelectItem key={d} value={d!}>{fmtDate(d)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterProduct} onValueChange={(v) => { setFilterProduct(v); setPage(1); }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                {productOptions.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterVendor} onValueChange={(v) => { setFilterVendor(v); setPage(1); }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vendors</SelectItem>
+                {vendorOptions.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterPoDate !== "all" || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground"
+                onClick={() => { setFilterPoDate("all"); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear filters
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -472,7 +556,7 @@ export default function DomesticContractsPage() {
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <FileCheck className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No contracts found</p>
-                          <p className="text-xs">{search.trim() ? "No contracts match your search." : "Click Sync All to load contracts from SAP."}</p>
+                          <p className="text-xs">{search.trim() || filterPoDate !== "all" || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" ? "No contracts match your search or filters." : "Click Sync All to load contracts from SAP."}</p>
                         </div>
                       </TableCell>
                     </TableRow>
