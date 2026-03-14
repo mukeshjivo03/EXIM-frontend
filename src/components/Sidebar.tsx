@@ -64,6 +64,7 @@ const contractsLinks = [
 
 const licenseLinks = [
   { to: "/license/advance-license", label: "Advance License", icon: FileText },
+  { to: "/license/dfia-license", label: "DFIA License", icon: FileText },
 ];
 
 const adminManagerLinks = [

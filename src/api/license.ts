@@ -81,3 +81,88 @@ export async function createLicenseLine(data: LicenseLinePayload): Promise<Licen
   const res = await api.post<LicenseLine>("/license/advance-license-lines/", data);
   return res.data;
 }
+
+/* ── DFIA License ─────────────────────────────────────────── */
+
+export interface DFIALicenseHeader {
+  file_no: string;
+  dfia_license_lines: DFIALicenseLine[];
+  issue_date: string;
+  export_validity: string;
+  export_in_mts: string;
+  fob_value_inr: string;
+  fob_value_usd: string;
+  fob_exchange_rate: string;
+  import_validity: string;
+  import_in_mts: string;
+  cif_value_inr: string;
+  cif_value_usd: string;
+  cif_exchange_rate: string;
+  status: string;
+}
+
+export interface DFIALicenseHeaderPayload {
+  file_no: string;
+  issue_date: string;
+  export_validity: string;
+  export_in_mts: string;
+  fob_value_inr: string;
+  fob_exchange_rate: string;
+  import_validity: string;
+  import_in_mts: string;
+  cif_value_inr: string;
+  cif_exchange_rate: string;
+  status: string;
+}
+
+export async function getDFIALicenseHeaders(): Promise<DFIALicenseHeader[]> {
+  const res = await api.get<DFIALicenseHeader[]>("/license/dfia-license-header/list/");
+  return res.data ?? [];
+}
+
+export async function createDFIALicenseHeader(data: DFIALicenseHeaderPayload): Promise<DFIALicenseHeader> {
+  const res = await api.post<DFIALicenseHeader>("/license/dfia-license-header/create/", data);
+  return res.data;
+}
+
+export async function deleteDFIALicenseHeader(fileNo: string): Promise<void> {
+  await api.delete(`/license/dfia-license-header/${fileNo}/`);
+}
+
+export async function updateDFIALicenseHeader(fileNo: string, data: Omit<DFIALicenseHeaderPayload, "file_no">): Promise<DFIALicenseHeader> {
+  const res = await api.put<DFIALicenseHeader>(`/license/dfia-license-header/${fileNo}/`, data);
+  return res.data;
+}
+
+export async function getDFIALicenseHeader(fileNo: string): Promise<DFIALicenseHeader> {
+  const res = await api.get<DFIALicenseHeader>(`/license/dfia-license-header/${fileNo}/`);
+  return res.data;
+}
+
+export interface DFIALicenseLine {
+  id: number;
+  boe_no: string;
+  shipping_bill_no: string;
+  date: string;
+  to_be_imported_in_mts: string;
+  exported_in_mts: string;
+  balance: string;
+  sb_value_inr: string;
+  license_no: string;
+}
+
+export interface DFIALicenseLinePayload {
+  license_no: string;
+  boe_no: string;
+  shipping_bill_no: string;
+  date: string;
+  to_be_imported_in_mts: string;
+  exported_in_mts: string;
+  balance: string;
+  sb_value_inr: string;
+}
+
+export async function createDFIALicenseLine(data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {
+  const res = await api.post<DFIALicenseLine>("/license/dfia-license-lines/create/", data);
+  return res.data;
+}

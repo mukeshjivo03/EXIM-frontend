@@ -5,25 +5,41 @@ import { DailyPriceProvider } from "@/context/DailyPriceContext";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
-import UsersPage from "@/pages/UsersPage";
-import SyncVendorDataPage from "@/pages/SyncVendorDataPage";
-import SyncRawMaterialDataPage from "@/pages/SyncRawMaterialDataPage";
-import SyncFinishedGoodsDataPage from "@/pages/SyncFinishedGoodsDataPage";
-import SyncLogsPage from "@/pages/SyncLogsPage";
-import StockUpdationLogsPage from "@/pages/StockUpdationLogsPage";
-import TankItemsPage from "@/pages/TankItemsPage";
-import TankDataPage from "@/pages/TankDataPage";
-import TankMonitoringPage from "@/pages/TankMonitoringPage";
-import StockStatusPage from "@/pages/StockStatusPage";
-import StockDashboardPage from "@/pages/StockDashboardPage";
-import DashboardPage from "@/pages/DashboardPage";
-import EximAccountPage from "@/pages/EximAccountPage";
-import DomesticContractsPage from "@/pages/DomesticContractsPage";
-import DailyPricePage from "@/pages/DailyPricePage";
-import AdvanceLicensePage from "@/pages/AdvanceLicensePage";
-import AdvanceLicenseDetailPage from "@/pages/AdvanceLicenseDetailPage";
-import StockDashboardDetailPage from "@/pages/StockDashboardDetailPage";
 import HomePage from "@/pages/HomePage";
+import DashboardPage from "@/pages/dashboard/DashboardPage";
+
+// Dashboard
+import StockDashboardPage from "@/pages/dashboard/StockDashboardPage";
+import StockDashboardDetailPage from "@/pages/dashboard/StockDashboardDetailPage";
+
+// Stock
+import StockStatusPage from "@/pages/stock/StockStatusPage";
+import TankItemsPage from "@/pages/stock/TankItemsPage";
+import TankDataPage from "@/pages/stock/TankDataPage";
+import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
+
+// Commodity
+import DailyPricePage from "@/pages/commodity/DailyPricePage";
+
+// Accounts
+import EximAccountPage from "@/pages/accounts/EximAccountPage";
+
+// Contracts
+import DomesticContractsPage from "@/pages/contracts/DomesticContractsPage";
+
+// License
+import AdvanceLicensePage from "@/pages/license/AdvanceLicensePage";
+import AdvanceLicenseDetailPage from "@/pages/license/AdvanceLicenseDetailPage";
+import DFIALicensePage from "@/pages/license/DFIALicensePage";
+import DFIALicenseDetailPage from "@/pages/license/DFIALicenseDetailPage";
+
+// Administration
+import UsersPage from "@/pages/administration/UsersPage";
+import SyncRawMaterialDataPage from "@/pages/administration/SyncRawMaterialDataPage";
+import SyncFinishedGoodsDataPage from "@/pages/administration/SyncFinishedGoodsDataPage";
+import SyncVendorDataPage from "@/pages/administration/SyncVendorDataPage";
+import SyncLogsPage from "@/pages/administration/SyncLogsPage";
+import StockUpdationLogsPage from "@/pages/administration/StockUpdationLogsPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -96,6 +112,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
                   <AdvanceLicenseDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/license/dfia-license"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <DFIALicensePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/license/dfia-license/:fileNo"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <DFIALicenseDetailPage />
                 </ProtectedRoute>
               }
             />
