@@ -1,0 +1,156 @@
+# Backend Documentation
+
+The backend is a **Django REST Framework** application in a separate repository at `c:\Users\Mukesh\Desktop\EXIM-backend`.
+
+## Table of Contents
+
+| Document | Description |
+|----------|-------------|
+| [Models](./models.md) | All database models, fields, relationships, and constraints |
+| [Endpoints](./endpoints.md) | Every URL pattern mapped to views and permissions |
+| [Services & Business Logic](./services.md) | SAP sync, FIFO rates, daily price fetching, auto-calculations |
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Framework | Django | 6.0.2 |
+| API | Django REST Framework | - |
+| Database | PostgreSQL | - |
+| Authentication | djangorestframework-simplejwt | - |
+| API Docs | drf-spectacular (OpenAPI/Swagger) | - |
+| SAP Connection | pymssql (MSSQL) | - |
+| CORS | django-cors-headers | - |
+
+---
+
+## Project Structure
+
+```
+EXIM-backend/
+  |- config/                   # Project settings & root URL config
+  |   |- settings.py           # Database, JWT, CORS, installed apps
+  |   |- urls.py               # Root URL router
+  |
+  |- accounts/                 # User management & authentication
+  |   |- models.py             # Custom User model (AbstractBaseUser)
+  |   |- views.py              # Login, logout, register, user CRUD
+  |   |- serializers.py        # User serializers + custom JWT token
+  |   |- permissions.py        # IsAdminUser, IsManagerUser, IsFactoryUser
+  |
+  |- sap_sync/                 # SAP data synchronization
+  |   |- models.py             # RMProducts, FGProducts, Party, DomesticContracts, syncLogs
+  |   |- views.py              # Sync views, list views, summary views
+  |   |- serializers.py        # Product, party, PO serializers
+  |   |- services/
+  |       |- connections.py    # MSSQL connection to SAP
+  |       |- services.py       # Sync logic (bulk upsert, SQL queries)
+  |
+  |- tank/                     # Tank inventory management
+  |   |- models.py             # TankItem, TankData
+  |   |- views.py              # CRUD, summaries, capacity insights, FIFO rates
+  |   |- serializers.py        # Tank serializers
+  |
+  |- stock/                    # Stock status tracking
+  |   |- models.py             # StockStatus, StockStatusUpdateLog
+  |   |- views.py              # CRUD, insights, dashboard
+  |   |- serializers.py        # Stock serializers
+  |   |- filters.py            # StockStatusFilters
+  |
+  |- daily_price/              # Commodity price management
+  |   |- models.py             # DailyPrice
+  |   |- views.py              # Fetch from Google Sheets, save, trends
+  |   |- serializers.py        # Price serializers
+  |   |- services.py           # Google Sheets CSV parser
+  |
+  |- license/                  # License management
+  |   |- models.py             # AdvanceLicenseHeaders/Lines, DFIALicenseHeader/Lines
+  |   |- views.py              # CRUD for headers and lines
+  |   |- serializers.py        # License serializers with nested lines
+  |
+  |- planning/                 # (Empty - future use)
+  |- domestic_contract/        # (Unused)
+  |- manage.py
+```
+
+---
+
+## Configuration
+
+### Database (PostgreSQL)
+
+All values from environment variables in `.env`:
+
+| Env Var | Purpose |
+|---------|---------|
+| `DB_HOST` | Database host |
+| `DB_NAME` | Database name |
+| `DB_USER` | Database user |
+| `DB_PASSWORD` | Database password |
+| `DB_PORT` | Database port |
+
+### JWT Settings
+
+| Setting | Value |
+|---------|-------|
+| Access Token Lifetime | 1 day |
+| Refresh Token Lifetime | 7 days |
+| Token Blacklist | Enabled (for logout) |
+
+### CORS
+
+`CORS_ALLOW_ALL_ORIGINS = True` (allows requests from any frontend origin)
+
+### API Documentation (auto-generated)
+
+| URL | Description |
+|-----|-------------|
+| `/api/schema/` | OpenAPI schema (JSON) |
+| `/api/docs/` | Swagger UI |
+| `/api/redoc/` | ReDoc UI |
+
+---
+
+## Django Apps Overview
+
+| App | Purpose | Models |
+|-----|---------|--------|
+| `accounts` | Auth, users, roles | User |
+| `sap_sync` | SAP integration | RMProducts, FGProducts, Party, DomesticContracts, syncLogs |
+| `tank` | Tank management | TankItem, TankData |
+| `stock` | Inventory tracking | StockStatus, StockStatusUpdateLog |
+| `daily_price` | Commodity prices | DailyPrice |
+| `license` | License management | AdvanceLicenseHeaders, AdvanceLicenseLines, DFIALicenseHeader, DFIALicenseLines |
+| `planning` | (Empty) | - |
+
+---
+
+## Roles & Permissions
+
+| Role | Code | Custom Permission Class |
+|------|------|------------------------|
+| Admin | `ADM` | `IsAdminUser` |
+| Manager | `MNG` | `IsManagerUser` |
+| Factory | `FTR` | `IsFactoryUser` |
+
+Permissions are defined in `accounts/permissions.py` and used across all views.
+
+---
+
+## SAP Integration
+
+The backend connects to a **SAP HANA** database through an intermediate **MSSQL server** using `OPENQUERY`:
+
+```
+Django App  --(pymssql)-->  MSSQL (103.89.45.75)  --(OPENQUERY)-->  SAP HANA (HANADB112)
+                            Database: Jivo_All_Branches_Live
+```
+
+SAP data synced:
+- **Raw Material Products** (OITM + OINM tables)
+- **Finished Goods Products** (OITM table)
+- **Parties/Vendors** (OCRD table)
+- **Purchase Orders** (OPDN, PDN1, POR1, OPOR, PCH1, OPCH, IPF1 tables)
+- **Balance Sheet** (Vendor balances via CTEs)
