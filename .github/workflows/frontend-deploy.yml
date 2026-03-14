@@ -6,12 +6,12 @@ on:
       - main
 
 jobs:
-  deploy-frontend:
+  deploy:
     runs-on: self-hosted
     
     steps:
       - name: Run deployment script
         shell: powershell
         run: |
-          C:\LiveProjects\JIVO-EXIM\EXIM-frontend
+         cd "C:\LiveProjects\JIVO-EXIM\EXIM-frontend"
           .\deploy_frontend.bat

@@ -4,9 +4,9 @@ echo Pulling frontend code...
 git pull origin main
 
 echo Installing packages...
- call npm install
+call npm install
 
 echo Building frontend...
- call npm run build
+call npm run build
 
 echo Frontend deployed successfully
