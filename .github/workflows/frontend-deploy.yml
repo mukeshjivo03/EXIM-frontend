@@ -1,4 +1,4 @@
-name: Exim-Frontend Deployment
+name: Jivo-Exim-Frontend Deployment
 
 on:
   push:
