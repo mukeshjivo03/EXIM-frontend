@@ -1,0 +1,17 @@
+name: Jivo-Exim-Frontend Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Run deployment script
+        shell: powershell
+        run: |
+         cd "C:\LiveProjects\JIVO-EXIM\EXIM-frontend"
+          .\deploy_frontend.bat
