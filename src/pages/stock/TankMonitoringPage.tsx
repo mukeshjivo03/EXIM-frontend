@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Droplets,
   Gauge,
@@ -8,7 +8,7 @@ import {
   Package,
 } from "lucide-react";
 
-import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankRates, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankRateBreakdown } from "@/api/tank";
+import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { fmtDecimal } from "@/lib/formatters";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+
 
 function formatCapacity(value: string | number): string {
   return Number(value).toLocaleString();
@@ -70,7 +71,6 @@ export default function TankMonitoringPage() {
   const [itemSummary, setItemSummary] = useState<ItemWiseTankSummary[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
-  const [tankRates, setTankRates] = useState<TankRateBreakdown[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -88,17 +88,7 @@ export default function TankMonitoringPage() {
     fetchData();
     fetchItemSummary();
     fetchTankSummary();
-    fetchTankRates();
   }, []);
-
-  async function fetchTankRates() {
-    try {
-      const data = await getTankRates();
-      setTankRates(data);
-    } catch {
-      // non-critical
-    }
-  }
 
   async function fetchTankSummary() {
     try {
@@ -125,37 +115,6 @@ export default function TankMonitoringPage() {
     tankItems.map((i) => [i.tank_item_code, i.color])
   );
 
-  const rateMap = new Map(
-    tankRates.map((r) => [r.tank_code, r])
-  );
-
-  // Aggregate rate data per item for item-wise summary
-  const itemRateMap = useMemo(() => {
-    const result = new Map<string, { weightedAvg: number; breakdown: { vendor: string; rate: number; qty: number }[] }>();
-    const temp = new Map<string, { totalValue: number; totalQty: number; vendors: Map<string, { vendor: string; rate: number; qty: number }> }>();
-    for (const tr of tankRates) {
-      let entry = temp.get(tr.item_code);
-      if (!entry) {
-        entry = { totalValue: 0, totalQty: 0, vendors: new Map() };
-        temp.set(tr.item_code, entry);
-      }
-      for (const rb of tr.rate_breakdown) {
-        entry.totalValue += rb.rate * rb.qty;
-        entry.totalQty += rb.qty;
-        const key = `${rb.vendor}|${rb.rate}`;
-        const existing = entry.vendors.get(key);
-        if (existing) existing.qty += rb.qty;
-        else entry.vendors.set(key, { vendor: rb.vendor, rate: rb.rate, qty: rb.qty });
-      }
-    }
-    for (const [itemCode, entry] of temp) {
-      result.set(itemCode, {
-        weightedAvg: entry.totalQty > 0 ? Math.round((entry.totalValue / entry.totalQty) * 100) / 100 : 0,
-        breakdown: Array.from(entry.vendors.values()),
-      });
-    }
-    return result;
-  }, [tankRates]);
 
   return (
     <div className="p-6 space-y-6 animate-page">
@@ -375,59 +334,6 @@ export default function TankMonitoringPage() {
                   </div>
                 </div>
 
-                {/* Rate Breakdown */}
-                {(() => {
-                  const rateData = rateMap.get(tank.tank_code);
-                  if (!rateData || rateData.rate_breakdown.length === 0) return null;
-                  return (
-                    <div className="w-full space-y-2 pt-1 border-t">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rate Breakdown</span>
-                        <Badge variant="outline" className="text-xs px-1.5 py-0">
-                          Avg ₹{rateData.weighted_avg_rate.toFixed(2)}
-                        </Badge>
-                      </div>
-                      {/* Stacked bar */}
-                      <div className="w-full h-3 rounded-full overflow-hidden flex bg-muted">
-                        {rateData.rate_breakdown.map((rb, idx) => (
-                          <div
-                            key={idx}
-                            className="h-full transition-all duration-700"
-                            style={{
-                              width: `${rb.percentage}%`,
-                              backgroundColor: rb.vendor === "Unallocated"
-                                ? "#94a3b8"
-                                : `hsl(${(idx * 60 + 200) % 360}, 60%, 55%)`,
-                            }}
-                            title={`${rb.vendor}: ₹${rb.rate} × ${rb.qty.toLocaleString("en-IN")} L (${rb.percentage}%)`}
-                          />
-                        ))}
-                      </div>
-                      {/* Breakdown list */}
-                      <div className="space-y-1">
-                        {rateData.rate_breakdown.map((rb, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs">
-                            <span
-                              className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
-                              style={{
-                                backgroundColor: rb.vendor === "Unallocated"
-                                  ? "#94a3b8"
-                                  : `hsl(${(idx * 60 + 200) % 360}, 60%, 55%)`,
-                              }}
-                            />
-                            <span className="text-muted-foreground truncate flex-1" title={rb.vendor}>
-                              {rb.vendor}
-                            </span>
-                            <span className="font-medium whitespace-nowrap">
-                              ₹{rb.rate.toFixed(2)} × {rb.qty.toLocaleString("en-IN")} L
-                            </span>
-                            <span className="text-muted-foreground w-10 text-right">{rb.percentage}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
               </div>
             );
           })}
@@ -482,16 +388,12 @@ export default function TankMonitoringPage() {
                       <TableHead>Item Code</TableHead>
                       <TableHead>Quantity (Liters)</TableHead>
                       <TableHead>Capacity (Liters)</TableHead>
-                      <TableHead>Avg Rate (₹/L)</TableHead>
-                      <TableHead>Rate Breakdown</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itemSummary.map((item) => {
-                      const rateInfo = itemRateMap.get(item.tank_item_code);
-                      return (
+                    {itemSummary.map((item) => (
                       <TableRow key={item.tank_item_code}>
                         <TableCell>
                           <div
@@ -507,35 +409,6 @@ export default function TankMonitoringPage() {
                         <TableCell>
                           {item.total_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell>
-                          {rateInfo ? (
-                            <span className="font-semibold">₹{rateInfo.weightedAvg.toFixed(2)}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {rateInfo && rateInfo.breakdown.length > 0 ? (
-                            <div className="space-y-0.5">
-                              {rateInfo.breakdown.map((rb, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5 text-sm">
-                                  <span
-                                    className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
-                                    style={{
-                                      backgroundColor: rb.vendor === "Unallocated"
-                                        ? "#94a3b8"
-                                        : `hsl(${(idx * 60 + 200) % 360}, 60%, 55%)`,
-                                    }}
-                                  />
-                                  <span className="text-muted-foreground truncate max-w-[150px]" title={rb.vendor}>{rb.vendor}</span>
-                                  <span className="font-medium whitespace-nowrap">₹{rb.rate.toFixed(2)} × {rb.qty.toLocaleString("en-IN")} L</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
                         <TableCell>{item.tank_count}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -547,8 +420,7 @@ export default function TankMonitoringPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                      );
-                    })}
+                    ))}
                   </TableBody>
                 </Table>
               </div>

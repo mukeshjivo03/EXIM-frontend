@@ -7,7 +7,6 @@ import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard"
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusHero } from "@/components/StatusHero";
 
 type Unit = "KG" | "MTS" | "LTR";
 
@@ -142,9 +141,6 @@ export default function StockDashboardDetailPage() {
           </Button>
         </div>
       </div>
-
-      {/* Themed illustration banner */}
-      <StatusHero status={status ?? ""} />
 
       {/* Table */}
       <div className="-mx-6">
