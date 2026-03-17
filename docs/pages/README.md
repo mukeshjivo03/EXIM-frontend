@@ -89,7 +89,7 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 
 **Features:**
 - Summary cards (in-factory total from tank data, outside-factory total, active items)
-- Unit toggle: KG / MTS / Liters with proper conversion (density 0.917 kg/L)
+- Unit toggle: KG / MTS / Liters with proper conversion (density 0.910 kg/L)
 - Matrix table: rows = items, columns = status+vendor combinations
 - "In Factory" column shows actual tank quantities from `getItemWiseTankSummary()` (not stock status)
 - Clickable status column headers navigate to detail page
