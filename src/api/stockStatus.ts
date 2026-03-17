@@ -27,6 +27,10 @@ export interface StockStatus {
   rate: string;
   total: string;
   quantity: string;
+  vehicle_number?: string;
+  location?: string;
+  eta?: string;
+  transporter_name?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -39,6 +43,10 @@ export interface StockStatusPayload {
   rate: string;
   quantity: string;
   created_by: string;
+  vehicle_number?: string;
+  location?: string;
+  eta?: string;
+  transporter_name?: string;
 }
 
 export interface StockStatusFilters {
@@ -112,6 +120,38 @@ export async function getStockLogs(): Promise<StockLog[]> {
   return res.data ?? [];
 }
 
+export async function getOutOfFactoryStockStatuses(): Promise<StockStatus[]> {
+  const res = await api.get<StockStatus[]>("/stock-status/out/");
+  return (res.data ?? []).filter((r) => !r.deleted);
+}
+
+// ── Unique RM codes & stock entries by RM ────────────────────
+
+export async function getUniqueRMCodes(): Promise<string[]> {
+  const res = await api.get<string[]>("/stock-status/get-unique-rm/");
+  return res.data ?? [];
+}
+
+export interface StockEntryByRM {
+  id: number;
+  vendor_code: string;
+  rate: number;
+  quantity: number;
+  total: number;
+  vehicle_number: string | null;
+  transporter: string | null;
+  location: string | null;
+  eta: string | null;
+  created_at: string;
+}
+
+export async function getStockEntriesByRM(itemCode: string): Promise<StockEntryByRM[]> {
+  const res = await api.get<StockEntryByRM[]>("/stock-status/get-stock-entry-by-rm/", {
+    params: { item_code: itemCode },
+  });
+  return res.data ?? [];
+}
+
 export async function softDeleteStockStatus(record: StockStatus): Promise<StockStatus> {
   const res = await api.put<StockStatus>(`/stock-status/${record.id}/`, {
     item_code: record.item_code,
@@ -120,6 +160,10 @@ export async function softDeleteStockStatus(record: StockStatus): Promise<StockS
     rate: record.rate,
     quantity: record.quantity,
     created_by: record.created_by,
+    vehicle_number: record.vehicle_number ?? "",
+    location: record.location ?? "",
+    eta: record.eta ?? "",
+    transporter_name: record.transporter_name ?? "",
     deleted: true,
   });
   return res.data;

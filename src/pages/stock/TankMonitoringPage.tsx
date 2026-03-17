@@ -6,9 +6,11 @@ import {
   BarChart3,
   Container,
   Package,
+  Layers,
 } from "lucide-react";
 
-import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary } from "@/api/tank";
+import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankLayersResponse } from "@/api/tank";
+import { toastApiError } from "@/lib/errors";
 import { getErrorMessage } from "@/lib/errors";
 import { fmtDecimal } from "@/lib/formatters";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -23,6 +25,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 
 function formatCapacity(value: string | number): string {
@@ -71,6 +83,23 @@ export default function TankMonitoringPage() {
   const [itemSummary, setItemSummary] = useState<ItemWiseTankSummary[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
+
+  // Rate breakdown dialog
+  const [layersData, setLayersData] = useState<TankLayersResponse | null>(null);
+  const [layersLoading, setLayersLoading] = useState(false);
+
+  async function openRateBreakdown(tankCode: string) {
+    setLayersLoading(true);
+    setLayersData(null);
+    try {
+      const data = await getTankLayers(tankCode);
+      setLayersData(data);
+    } catch (err) {
+      toastApiError(err, "Failed to load rate breakdown.");
+    } finally {
+      setLayersLoading(false);
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -296,7 +325,7 @@ export default function TankMonitoringPage() {
                           {currentL} L
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold text-muted-foreground">
+                        <span className="text-[10px] font-semibold text-white/70">
                           {pct === 0 ? "Empty" : `${currentL} L`}
                         </span>
                       )}
@@ -333,6 +362,17 @@ export default function TankMonitoringPage() {
                     <span>Total: {totalL} L</span>
                   </div>
                 </div>
+
+                {/* Rate Breakdown button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs"
+                  onClick={() => openRateBreakdown(tank.tank_code)}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Rate Breakdown
+                </Button>
 
               </div>
             );
@@ -427,6 +467,110 @@ export default function TankMonitoringPage() {
             )}
           </CardContent>
         </Card>
+
+      {/* Rate Breakdown Dialog */}
+      <Dialog open={layersLoading || !!layersData} onOpenChange={() => setLayersData(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Rate Breakdown
+            </DialogTitle>
+            <DialogDescription>
+              {layersData ? `Tank ${layersData.tank_code}` : "Loading..."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {layersLoading ? (
+            <div className="space-y-3 py-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : layersData ? (
+            <div className="space-y-4">
+              {/* Tank Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Tank Code</p>
+                  <p className="text-sm font-medium">{layersData.tank_code}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Item Code</p>
+                  <p className="text-sm font-medium">
+                    {tanks.find((t) => t.tank_code === layersData.tank_code)?.item_code ?? "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tank Capacity</p>
+                  <p className="text-sm font-medium">{(layersData.tank_capacity ?? 0).toLocaleString("en-IN")} L</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Current Capacity</p>
+                  <p className="text-sm font-medium">{(layersData.current_capacity ?? 0).toLocaleString("en-IN")} L</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Layers */}
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Layers ({(layersData.layers ?? []).length})
+                </h3>
+                {(layersData.layers ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No layers found</p>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-10">#</TableHead>
+                          <TableHead>Rate</TableHead>
+                          <TableHead>Quantity</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(layersData.layers ?? []).map((layer, idx) => (
+                          <TableRow key={layer.layer_id}>
+                            <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                            <TableCell>&#8377; {layer.rate.toLocaleString("en-IN")}</TableCell>
+                            <TableCell>{layer.quantity_remaining.toLocaleString("en-IN")} L</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Totals */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Quantity</p>
+                  <p className="text-sm font-semibold">{(layersData.total_quantity ?? 0).toLocaleString("en-IN")} L</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Cost</p>
+                  <p className="text-sm font-semibold">&#8377; {(layersData.total_cost ?? 0).toLocaleString("en-IN")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Weighted Avg Rate</p>
+                  <p className="text-sm font-semibold">&#8377; {(layersData.weighted_avg_rate ?? 0).toLocaleString("en-IN")}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLayersData(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

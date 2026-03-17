@@ -48,6 +48,7 @@ const stockLinks = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },
+  { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText },
 ];
 
 const commodityLinks = [

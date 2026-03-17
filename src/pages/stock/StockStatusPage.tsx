@@ -32,8 +32,8 @@ import {
   type StockStatusFilters,
   type StockInsightsSummary,
 } from "@/api/stockStatus";
-import { getRmItems, type SapItem } from "@/api/sapSync";
 import { getVendors, type Vendor } from "@/api/sapSync";
+import { getTankItems, type TankItem } from "@/api/tank";
 import { useAuth } from "@/context/AuthContext";
 import { fmtDateTime, fmtDecimal } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
@@ -103,7 +103,7 @@ export default function StockStatusPage() {
   const [error, setError] = useState("");
 
   // dropdown data
-  const [rmItems, setRmItems] = useState<SapItem[]>([]);
+  const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
   // insights summary
@@ -123,6 +123,10 @@ export default function StockStatusPage() {
   const [cVendorCode, setCVendorCode] = useState("");
   const [cRate, setCRate] = useState("");
   const [cQuantity, setCQuantity] = useState("");
+  const [cVehicleNumber, setCVehicleNumber] = useState("");
+  const [cLocation, setCLocation] = useState("");
+  const [cEta, setCEta] = useState("");
+  const [cTransporterName, setCTransporterName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // view dialog
@@ -131,11 +135,12 @@ export default function StockStatusPage() {
 
   // edit dialog
   const [editData, setEditData] = useState<StockStatus | null>(null);
-  const [eItemCode, setEItemCode] = useState("");
   const [eStatus, setEStatus] = useState<StockStatusChoice>("PENDING");
-  const [eVendorCode, setEVendorCode] = useState("");
-  const [eRate, setERate] = useState("");
   const [eQuantity, setEQuantity] = useState("");
+  const [eVehicleNumber, setEVehicleNumber] = useState("");
+  const [eLocation, setELocation] = useState("");
+  const [eEta, setEEta] = useState("");
+  const [eTransporterName, setETransporterName] = useState("");
   const [editing, setEditing] = useState(false);
 
   // delete
@@ -213,8 +218,8 @@ export default function StockStatusPage() {
 
   async function loadDropdowns() {
     try {
-      const [rmRes, vendorRes] = await Promise.all([getRmItems(), getVendors()]);
-      setRmItems((rmRes.items ?? []).sort((a, b) => a.item_code.localeCompare(b.item_code)));
+      const [tankRes, vendorRes] = await Promise.all([getTankItems(), getVendors()]);
+      setTankItems((tankRes ?? []).sort((a, b) => a.tank_item_code.localeCompare(b.tank_item_code)));
       setVendors((vendorRes.parties ?? []).sort((a, b) => a.card_code.localeCompare(b.card_code)));
     } catch {
       // keep whatever was loaded before
@@ -229,6 +234,10 @@ export default function StockStatusPage() {
     setCVendorCode("");
     setCRate("");
     setCQuantity("");
+    setCVehicleNumber("");
+    setCLocation("");
+    setCEta("");
+    setCTransporterName("");
     await loadDropdowns();
     setCreateOpen(true);
   }
@@ -253,6 +262,10 @@ export default function StockStatusPage() {
         rate: cRate.trim(),
         quantity: cQuantity.trim(),
         created_by: email ?? "",
+        vehicle_number: cVehicleNumber.trim() || undefined,
+        location: cLocation.trim() || undefined,
+        eta: cEta.trim() || undefined,
+        transporter_name: cTransporterName.trim() || undefined,
       });
       toast.success("Stock status created.");
       setCreateOpen(false);
@@ -283,11 +296,12 @@ export default function StockStatusPage() {
 
   async function openEdit(row: StockStatus) {
     setEditData(row);
-    setEItemCode(row.item_code);
     setEStatus(row.status);
-    setEVendorCode(row.vendor_code);
-    setERate(row.rate);
     setEQuantity(row.quantity);
+    setEVehicleNumber(row.vehicle_number ?? "");
+    setELocation(row.location ?? "");
+    setEEta(row.eta ?? "");
+    setETransporterName(row.transporter_name ?? "");
     await loadDropdowns();
   }
 
@@ -334,6 +348,10 @@ export default function StockStatusPage() {
             rate: editData.rate,
             quantity: eQuantity.trim(),
             created_by: editData.created_by,
+            vehicle_number: eVehicleNumber.trim() || undefined,
+            location: eLocation.trim() || undefined,
+            eta: eEta.trim() || undefined,
+            transporter_name: eTransporterName.trim() || undefined,
           }),
           createStockStatus({
             item_code: editData.item_code,
@@ -342,6 +360,10 @@ export default function StockStatusPage() {
             rate: editData.rate,
             quantity: remainingQty,
             created_by: editData.created_by,
+            vehicle_number: editData.vehicle_number || undefined,
+            location: editData.location || undefined,
+            eta: editData.eta || undefined,
+            transporter_name: editData.transporter_name || undefined,
           }),
         ]);
         toast.success(
@@ -356,6 +378,10 @@ export default function StockStatusPage() {
           rate: editData.rate,
           quantity: eQuantity.trim(),
           created_by: editData.created_by,
+          vehicle_number: eVehicleNumber.trim() || undefined,
+          location: eLocation.trim() || undefined,
+          eta: eEta.trim() || undefined,
+          transporter_name: eTransporterName.trim() || undefined,
         });
         toast.success("Stock status updated.");
       }
@@ -497,10 +523,10 @@ export default function StockStatusPage() {
                 <SelectContent>
                   <SelectItem value="__all__">All Items</SelectItem>
                   {uniqueItems.map((ic) => {
-                    const item = rmItems.find((x) => x.item_code === ic);
+                    const item = tankItems.find((x) => x.tank_item_code === ic);
                     return (
                       <SelectItem key={ic} value={ic}>
-                        {ic}{item ? ` - ${item.item_name}` : ""}
+                        {ic}{item ? ` - ${item.tank_item_name}` : ""}
                       </SelectItem>
                     );
                   })}
@@ -681,9 +707,9 @@ export default function StockStatusPage() {
                   <SelectValue placeholder="Select an item" />
                 </SelectTrigger>
                 <SelectContent>
-                  {rmItems.map((item) => (
-                    <SelectItem key={item.item_code} value={item.item_code}>
-                      {item.item_code} - {item.item_name}
+                  {tankItems.map((item) => (
+                    <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
+                      {item.tank_item_code} - {item.tank_item_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -751,6 +777,45 @@ export default function StockStatusPage() {
                 <span className="font-semibold">&#8377; {(Number(cRate) * Number(cQuantity)).toFixed(2)}</span>
               </div>
             )}
+            <Separator />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="c-vehicle">Vehicle Number</Label>
+                <Input
+                  id="c-vehicle"
+                  placeholder="e.g. GJ-05-AB-1234"
+                  value={cVehicleNumber}
+                  onChange={(e) => setCVehicleNumber(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="c-transporter">Transporter Name</Label>
+                <Input
+                  id="c-transporter"
+                  placeholder="e.g. ABC Logistics"
+                  value={cTransporterName}
+                  onChange={(e) => setCTransporterName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="c-location">Location</Label>
+                <Input
+                  id="c-location"
+                  placeholder="e.g. Mundra Port"
+                  value={cLocation}
+                  onChange={(e) => setCLocation(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="c-eta">ETA</Label>
+                <Input
+                  id="c-eta"
+                  type="date"
+                  value={cEta}
+                  onChange={(e) => setCEta(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Created By</Label>
               <Input value={email ?? ""} disabled className="disabled:opacity-70" />
@@ -807,7 +872,7 @@ export default function StockStatusPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Item Name</p>
                     <p className="text-sm font-medium">
-                      {rmItems.find((i) => i.item_code === viewData.item_code)?.item_name ?? "—"}
+                      {tankItems.find((i) => i.tank_item_code === viewData.item_code)?.tank_item_name ?? "—"}
                     </p>
                   </div>
                   <div>
@@ -878,6 +943,36 @@ export default function StockStatusPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Total (&#8377;)</p>
                     <p className="text-sm font-semibold">{viewData.total}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Transport & Location */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
+                    Transport & Location
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pl-6">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                    <p className="text-sm font-medium">{viewData.vehicle_number || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transporter Name</p>
+                    <p className="text-sm font-medium">{viewData.transporter_name || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="text-sm font-medium">{viewData.location || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">ETA</p>
+                    <p className="text-sm font-medium">{viewData.eta || "—"}</p>
                   </div>
                 </div>
               </div>
@@ -955,7 +1050,7 @@ export default function StockStatusPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Item Name</p>
-                <p className="text-sm font-medium">{rmItems.find((i) => i.item_code === editData?.item_code)?.item_name ?? "—"}</p>
+                <p className="text-sm font-medium">{tankItems.find((i) => i.tank_item_code === editData?.item_code)?.tank_item_name ?? "—"}</p>
               </div>
             </div>
             {(() => {
@@ -1011,6 +1106,45 @@ export default function StockStatusPage() {
                   step="0.01"
                   value={eQuantity}
                   onChange={(e) => setEQuantity(e.target.value)}
+                />
+              </div>
+            </div>
+            <Separator />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="e-vehicle">Vehicle Number</Label>
+                <Input
+                  id="e-vehicle"
+                  placeholder="e.g. GJ-05-AB-1234"
+                  value={eVehicleNumber}
+                  onChange={(e) => setEVehicleNumber(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e-transporter">Transporter Name</Label>
+                <Input
+                  id="e-transporter"
+                  placeholder="e.g. ABC Logistics"
+                  value={eTransporterName}
+                  onChange={(e) => setETransporterName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e-location">Location</Label>
+                <Input
+                  id="e-location"
+                  placeholder="e.g. Mundra Port"
+                  value={eLocation}
+                  onChange={(e) => setELocation(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e-eta">ETA</Label>
+                <Input
+                  id="e-eta"
+                  type="date"
+                  value={eEta}
+                  onChange={(e) => setEEta(e.target.value)}
                 />
               </div>
             </div>

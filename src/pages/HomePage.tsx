@@ -33,6 +33,7 @@ const quickLinks: QuickLink[] = [
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals" },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks" },
+  { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs" },
   { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText, desc: "Purchase orders", roles: ["ADM", "MNG"] },
   { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", roles: ["ADM", "MNG"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", roles: ["ADM", "MNG"] },

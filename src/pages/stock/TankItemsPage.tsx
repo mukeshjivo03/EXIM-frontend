@@ -6,6 +6,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 
 import { getErrorMessage, toastApiError } from "@/lib/errors";
@@ -18,19 +19,11 @@ import {
   updateTankItem,
   type TankItem,
 } from "@/api/tank";
-import { getRmItems, type SapItem } from "@/api/sapSync";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
@@ -50,21 +43,32 @@ import {
 } from "@/components/ui/dialog";
 
 const COLOR_PALETTE = [
-  { name: "Red", hex: "#EF4444" },
-  { name: "Orange", hex: "#F97316" },
-  { name: "Amber", hex: "#F59E0B" },
-  { name: "Yellow", hex: "#EAB308" },
-  { name: "Lime", hex: "#84CC16" },
-  { name: "Green", hex: "#22C55E" },
-  { name: "Emerald", hex: "#10B981" },
-  { name: "Teal", hex: "#14B8A6" },
-  { name: "Cyan", hex: "#06B6D4" },
-  { name: "Sky", hex: "#0EA5E9" },
-  { name: "Blue", hex: "#3B82F6" },
-  { name: "Indigo", hex: "#6366F1" },
-  { name: "Violet", hex: "#8B5CF6" },
-  { name: "Purple", hex: "#A855F7" },
-  { name: "Pink", hex: "#EC4899" },
+  { name: "Crimson", hex: "#db3344" },
+  { name: "Gold", hex: "#f8b90d" },
+  { name: "Magenta", hex: "#db33ae" },
+  { name: "Burnt Orange", hex: "#d95c26" },
+  { name: "Peach", hex: "#e8a27d" },
+  { name: "Tangerine", hex: "#db7633" },
+  { name: "Salmon", hex: "#e98b8b" },
+  { name: "Dark Red", hex: "#b01d03" },
+  { name: "Mint", hex: "#59f37f" },
+  { name: "Green", hex: "#17ee30" },
+  { name: "Lime", hex: "#68f50a" },
+  { name: "Sky Blue", hex: "#56b6f5" },
+  { name: "Dodger Blue", hex: "#2198e8" },
+  { name: "Steel Blue", hex: "#3498db" },
+  { name: "Navy", hex: "#014f84" },
+  { name: "Olive", hex: "#6c730d" },
+  { name: "Turquoise", hex: "#19d7f0" },
+  { name: "Snow", hex: "#f9fafa" },
+  { name: "Maroon", hex: "#653439" },
+  { name: "Aquamarine", hex: "#10e0c8" },
+  { name: "Teal", hex: "#0a8999" },
+  { name: "Indigo", hex: "#3e33db" },
+  { name: "Midnight", hex: "#020969" },
+  { name: "Yellow Green", hex: "#8e980b" },
+  { name: "Forest Green", hex: "#228b22" },
+  { name: "Grey", hex: "#9e9e9e" },
 ];
 
 function formatDate(dateStr: string): string {
@@ -75,8 +79,9 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function findPaletteColor(color: string): string {
-  const match = COLOR_PALETTE.find(
+function findPaletteColor(color: string, extras: { name: string; hex: string }[] = []): string {
+  const all = [...COLOR_PALETTE, ...extras];
+  const match = all.find(
     (c) =>
       c.hex.toLowerCase() === color.toLowerCase() ||
       c.name.toLowerCase() === color.toLowerCase()
@@ -84,8 +89,9 @@ function findPaletteColor(color: string): string {
   return match?.hex ?? "";
 }
 
-function getColorName(color: string): string {
-  const match = COLOR_PALETTE.find(
+function getColorName(color: string, extras: { name: string; hex: string }[] = []): string {
+  const all = [...COLOR_PALETTE, ...extras];
+  const match = all.find(
     (c) =>
       c.hex.toLowerCase() === color.toLowerCase() ||
       c.name.toLowerCase() === color.toLowerCase()
@@ -107,6 +113,10 @@ export default function TankItemsPage() {
   const [selectedColor, setSelectedColor] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Custom color
+  const [customColors, setCustomColors] = useState<{ name: string; hex: string }[]>([]);
+  const [newColorHex, setNewColorHex] = useState("#000000");
+
   // Pagination
   const [page, setPage] = useState(1);
   const perPage = 20;
@@ -117,9 +127,6 @@ export default function TankItemsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TankItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Raw material items for dropdown
-  const [rmItems, setRmItems] = useState<SapItem[]>([]);
-  const [rmLoading, setRmLoading] = useState(false);
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<TankItem | null>(null);
@@ -150,15 +157,6 @@ export default function TankItemsPage() {
     return () => window.removeEventListener("tank-items-updated", onTankItemsUpdated);
   }, []);
 
-  // Fetch raw material items when create dialog opens
-  useEffect(() => {
-    if (!createOpen) return;
-    setRmLoading(true);
-    getRmItems()
-      .then((res) => setRmItems(res.items))
-      .catch(() => toast.error("Failed to load raw material items"))
-      .finally(() => setRmLoading(false));
-  }, [createOpen]);
 
   // Create
   async function handleCreate(e: React.FormEvent) {
@@ -195,6 +193,33 @@ export default function TankItemsPage() {
     }
   }
 
+  // Add custom color
+  function handleAddColor() {
+    const hex = newColorHex.toLowerCase();
+    const allColors = [...COLOR_PALETTE, ...customColors];
+    if (allColors.some((c) => c.hex.toLowerCase() === hex)) {
+      toast.error("This color already exists in the palette.");
+      return;
+    }
+    setCustomColors((prev) => [...prev, { name: hex, hex }]);
+    setSelectedColor(hex);
+    setNewColorHex("#000000");
+    toast.success("Color added.");
+  }
+
+  function handleDeleteColor(hex: string) {
+    const usedByItem = items.some(
+      (item) => item.color.toLowerCase() === hex.toLowerCase() || findPaletteColor(item.color, customColors).toLowerCase() === hex.toLowerCase()
+    );
+    if (usedByItem) {
+      toast.error("Cannot delete — this color is used by a tank item.");
+      return;
+    }
+    setCustomColors((prev) => prev.filter((c) => c.hex !== hex));
+    if (selectedColor === hex) setSelectedColor("");
+    if (editColor === hex) setEditColor("");
+  }
+
   // Delete
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -220,7 +245,7 @@ export default function TankItemsPage() {
   // Edit
   function openEdit(item: TankItem) {
     setEditTarget(item);
-    setEditColor(findPaletteColor(item.color));
+    setEditColor(findPaletteColor(item.color, customColors));
     setEditName(item.tank_item_name);
   }
 
@@ -337,10 +362,10 @@ export default function TankItemsPage() {
                           <div className="flex items-center gap-2">
                             <div
                               className="h-6 w-6 rounded-full border border-border shrink-0"
-                              style={{ backgroundColor: findPaletteColor(item.color) || item.color }}
+                              style={{ backgroundColor: findPaletteColor(item.color, customColors) || item.color }}
                             />
                             <span className="text-sm text-muted-foreground">
-                              {getColorName(item.color)}
+                              {getColorName(item.color, customColors)}
                             </span>
                           </div>
                         </TableCell>
@@ -400,28 +425,13 @@ export default function TankItemsPage() {
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-5">
             <div className="space-y-2">
-              <Label>Tank Item Code *</Label>
-              <Select
+              <Label htmlFor="tank-item-code">Tank Item Code *</Label>
+              <Input
+                id="tank-item-code"
+                placeholder="e.g. RM-001"
                 value={tankItemCode}
-                onValueChange={(value) => {
-                  setTankItemCode(value);
-                  const match = rmItems.find((rm) => rm.item_code === value);
-                  if (match && !tankItemName.trim()) {
-                    setTankItemName(match.item_name);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={rmLoading ? "Loading..." : "Select raw material item code"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {rmItems.map((rm) => (
-                    <SelectItem key={rm.item_code} value={rm.item_code}>
-                      {rm.item_code} — {rm.item_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setTankItemCode(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tank-item-name">Tank Item Name</Label>
@@ -435,29 +445,63 @@ export default function TankItemsPage() {
             <div className="space-y-2">
               <Label>Color *</Label>
               <div className="flex flex-wrap gap-2">
-                {COLOR_PALETTE.map((color) => (
-                  <button
-                    key={color.hex}
-                    type="button"
-                    title={color.name}
-                    className="relative h-8 w-8 rounded-full border-2 transition-all cursor-pointer hover:scale-110"
-                    style={{
-                      backgroundColor: color.hex,
-                      borderColor: selectedColor === color.hex ? "var(--foreground)" : "transparent",
-                    }}
-                    onClick={() => setSelectedColor(color.hex)}
-                  >
-                    {selectedColor === color.hex && (
-                      <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
-                    )}
-                  </button>
-                ))}
+                {[...COLOR_PALETTE, ...customColors].map((color) => {
+                  const isCustom = customColors.some((c) => c.hex === color.hex);
+                  return (
+                    <div key={color.hex} className="relative group">
+                      <button
+                        type="button"
+                        title={color.name}
+                        className="relative h-8 w-8 rounded-full border-2 transition-all cursor-pointer hover:scale-110"
+                        style={{
+                          backgroundColor: color.hex,
+                          borderColor: selectedColor === color.hex ? "var(--foreground)" : "transparent",
+                        }}
+                        onClick={() => setSelectedColor(color.hex)}
+                      >
+                        {selectedColor === color.hex && (
+                          <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
+                        )}
+                      </button>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteColor(color.hex)}
+                          title="Remove color"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {selectedColor && (
                 <p className="text-xs text-muted-foreground">
-                  Selected: {COLOR_PALETTE.find((c) => c.hex === selectedColor)?.name}
+                  Selected: {[...COLOR_PALETTE, ...customColors].find((c) => c.hex === selectedColor)?.name}
                 </p>
               )}
+
+              {/* Add custom color */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="color"
+                  value={newColorHex}
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="h-8 w-8 rounded cursor-pointer border border-border bg-transparent p-0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={handleAddColor}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Color
+                </Button>
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
@@ -522,27 +566,41 @@ export default function TankItemsPage() {
             <div className="space-y-2">
               <Label>Color *</Label>
               <div className="flex flex-wrap gap-2">
-                {COLOR_PALETTE.map((color) => (
-                  <button
-                    key={color.hex}
-                    type="button"
-                    title={color.name}
-                    className="relative h-8 w-8 rounded-full border-2 transition-all cursor-pointer hover:scale-110"
-                    style={{
-                      backgroundColor: color.hex,
-                      borderColor: editColor === color.hex ? "var(--foreground)" : "transparent",
-                    }}
-                    onClick={() => setEditColor(color.hex)}
-                  >
-                    {editColor === color.hex && (
-                      <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
-                    )}
-                  </button>
-                ))}
+                {[...COLOR_PALETTE, ...customColors].map((color) => {
+                  const isCustom = customColors.some((c) => c.hex === color.hex);
+                  return (
+                    <div key={color.hex} className="relative group">
+                      <button
+                        type="button"
+                        title={color.name}
+                        className="relative h-8 w-8 rounded-full border-2 transition-all cursor-pointer hover:scale-110"
+                        style={{
+                          backgroundColor: color.hex,
+                          borderColor: editColor === color.hex ? "var(--foreground)" : "transparent",
+                        }}
+                        onClick={() => setEditColor(color.hex)}
+                      >
+                        {editColor === color.hex && (
+                          <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
+                        )}
+                      </button>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteColor(color.hex)}
+                          title="Remove color"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {editColor && (
                 <p className="text-xs text-muted-foreground">
-                  Selected: {COLOR_PALETTE.find((c) => c.hex === editColor)?.name}
+                  Selected: {[...COLOR_PALETTE, ...customColors].find((c) => c.hex === editColor)?.name}
                 </p>
               )}
             </div>

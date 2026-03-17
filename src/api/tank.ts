@@ -136,3 +136,86 @@ export async function getTankRates(): Promise<TankRateBreakdown[]> {
   const res = await api.get<TankRateBreakdown[]>("/tank/tank-rates/");
   return res.data ?? [];
 }
+
+// ── Tank Layers ────────────────────────────────────────────────
+
+export interface TankLayer {
+  layer_id: number;
+  stock_status_id: number;
+  vendor: string;
+  item: string;
+  rate: number;
+  quantity_remaining: number;
+  quantity_added: number;
+  line_cost: number;
+  created_at: string;
+}
+
+export interface TankLayersResponse {
+  tank_code: string;
+  tank_capacity: number;
+  current_capacity: number;
+  layers: TankLayer[];
+  total_quantity: number;
+  total_cost: number;
+  weighted_avg_rate: number;
+}
+
+export async function getTankLayers(tankCode: string): Promise<TankLayersResponse> {
+  const res = await api.get<TankLayersResponse>(`/tank/layers/${tankCode}/`);
+  return res.data;
+}
+
+// ── Tank Inward / Outward ──────────────────────────────────────
+
+export interface TankInwardPayload {
+  tank_code: string;
+  stock_status_id: string;
+  quantity: string;
+  user: string;
+}
+
+export async function tankInward(data: TankInwardPayload): Promise<void> {
+  await api.post("/tank/inward/", data);
+}
+
+export interface TankOutwardPayload {
+  tank_code: string;
+  quantity: string;
+  remarks: string;
+  user: string;
+}
+
+export async function tankOutward(data: TankOutwardPayload): Promise<void> {
+  await api.post("/tank/outward/", data);
+}
+
+// ── Tank Logs ─────────────────────────────────────────────────
+
+export interface TankLogConsumption {
+  id: number;
+  layer_id: number;
+  stock_status_id: number;
+  vendor_name: string;
+  quantity_consumed: string;
+  rate: string;
+  created_at: string;
+}
+
+export interface TankLog {
+  id: number;
+  tank_code: string;
+  log_type: "INWARD" | "OUTWARD";
+  quantity: string;
+  stock_status_id?: number;
+  tank_layer_id?: number;
+  remarks: string;
+  created_at: string;
+  created_by: string;
+  consumptions: TankLogConsumption[];
+}
+
+export async function getTankLogs(): Promise<TankLog[]> {
+  const res = await api.get<TankLog[]>("/tank/log/");
+  return res.data ?? [];
+}

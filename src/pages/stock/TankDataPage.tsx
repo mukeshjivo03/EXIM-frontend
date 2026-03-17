@@ -9,6 +9,7 @@ import {
   Warehouse,
   BarChart3,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { fmtDecimal } from "@/lib/formatters";
@@ -18,13 +19,19 @@ import {
   getTanks,
   createTank,
   deleteTank,
-  updateTank,
   getTankItems,
   getTankSummary,
+  tankInward,
+  tankOutward,
   type Tank,
   type TankItem,
   type TankSummary,
 } from "@/api/tank";
+import {
+  getUniqueRMCodes,
+  getStockEntriesByRM,
+  type StockEntryByRM,
+} from "@/api/stockStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +77,7 @@ function fillColor(pct: number): string {
 }
 
 export default function TankDataPage() {
+  const { email } = useAuth();
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,10 +98,13 @@ export default function TankDataPage() {
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<Tank | null>(null);
-  const [editCurrentCapacity, setEditCurrentCapacity] = useState("");
+  const [editOperation, setEditOperation] = useState<"IN" | "OUT" | "">("")
   const [editItemCode, setEditItemCode] = useState("");
+  const [editSelectedEntry, setEditSelectedEntry] = useState("");
+  const [editQuantity, setEditQuantity] = useState("");
   const [editing, setEditing] = useState(false);
-  const [editCapacityError, setEditCapacityError] = useState("");
+  const [uniqueRMCodes, setUniqueRMCodes] = useState<string[]>([]);
+  const [stockEntries, setStockEntries] = useState<StockEntryByRM[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -221,47 +232,109 @@ export default function TankDataPage() {
 
   async function openEdit(tank: Tank) {
     setEditTarget(tank);
-    setEditCurrentCapacity(tank.current_capacity ?? "");
-    setEditItemCode(tank.item_code ?? "");
-    setEditCapacityError("");
+    setEditOperation("");
+    setEditItemCode("");
+    setEditSelectedEntry("");
+    setEditQuantity("");
+    setStockEntries([]);
     try {
-      const freshItems = await getTankItems();
+      const [freshItems, rmCodes] = await Promise.all([
+        getTankItems(),
+        getUniqueRMCodes(),
+      ]);
       setTankItems(freshItems ?? []);
+      setUniqueRMCodes(rmCodes);
     } catch {
       // keep whatever was loaded before
     }
   }
 
-  function handleEditCapacityChange(value: string) {
-    setEditCurrentCapacity(value);
-    if (editTarget && value && Number(value) > Number(editTarget.tank_capacity)) {
-      setEditCapacityError("Current capacity cannot exceed tank capacity");
-    } else {
-      setEditCapacityError("");
+  async function handleItemCodeChange(itemCode: string) {
+    setEditItemCode(itemCode);
+    setEditSelectedEntry("");
+    setEditQuantity("");
+    if (!itemCode) {
+      setStockEntries([]);
+      return;
+    }
+    try {
+      const entries = await getStockEntriesByRM(itemCode);
+      setStockEntries(entries);
+    } catch {
+      setStockEntries([]);
     }
   }
 
+  // Selected stock entry
+  const editSelectedStock = editSelectedEntry
+    ? stockEntries.find((s) => String(s.id) === editSelectedEntry)
+    : null;
+
   async function handleEdit() {
     if (!editTarget) return;
-    if (editCurrentCapacity && Number(editCurrentCapacity) > Number(editTarget.tank_capacity)) {
-      toast.error("Current capacity cannot exceed tank capacity.");
-      return;
+
+    if (editOperation === "IN") {
+      if (!editItemCode) {
+        toast.error("Please select an item code.");
+        return;
+      }
+      if (!editSelectedEntry) {
+        toast.error("Please select a vendor / vehicle.");
+        return;
+      }
+      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
+        toast.error("Please enter a valid quantity.");
+        return;
+      }
+      const maxQty = Number(editSelectedStock?.quantity ?? 0);
+      if (Number(editQuantity) > maxQty) {
+        toast.error(`Quantity cannot exceed available stock (${maxQty} KG).`);
+        return;
+      }
+      // Check tank capacity
+      const currentCap = Number(editTarget.current_capacity ?? 0);
+      const tankCap = Number(editTarget.tank_capacity);
+      if (currentCap + Number(editQuantity) > tankCap) {
+        toast.error(`Adding ${editQuantity} would exceed tank capacity (${tankCap} L). Available space: ${(tankCap - currentCap).toFixed(2)} L.`);
+        return;
+      }
     }
+
+    if (editOperation === "OUT") {
+      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
+        toast.error("Please enter a valid quantity.");
+        return;
+      }
+      const currentCap = Number(editTarget.current_capacity ?? 0);
+      if (Number(editQuantity) > currentCap) {
+        toast.error(`Quantity cannot exceed current stock (${currentCap} L).`);
+        return;
+      }
+    }
+
     setEditing(true);
     try {
-      await updateTank(editTarget.tank_code, {
-        current_capacity: editCurrentCapacity.trim() || null,
-        item_code: editItemCode || null,
-      });
-      setTanks((prev) =>
-        prev.map((t) =>
-          t.tank_code === editTarget.tank_code
-            ? { ...t, current_capacity: editCurrentCapacity.trim() || null, item_code: editItemCode || null }
-            : t
-        )
+      if (editOperation === "IN") {
+        await tankInward({
+          tank_code: editTarget.tank_code,
+          stock_status_id: String(editSelectedStock!.id),
+          quantity: editQuantity.trim(),
+          user: email ?? "",
+        });
+      } else {
+        await tankOutward({
+          tank_code: editTarget.tank_code,
+          quantity: editQuantity.trim(),
+          remarks: "Used for Production",
+          user: email ?? "",
+        });
+      }
+      toast.success(
+        `Tank "${editTarget.tank_code}" updated: ${editOperation === "IN" ? "added" : "removed"} ${editQuantity} L.`
       );
-      toast.success(`Tank "${editTarget.tank_code}" updated.`);
       setEditTarget(null);
+      fetchData();
+      fetchTankSummary();
     } catch (err) {
       toastApiError(err, "Failed to update tank.");
     } finally {
@@ -523,62 +596,148 @@ export default function TankDataPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
-            <div className="space-y-2">
-              <Label>Tank Code</Label>
-              <Input
-                value={editTarget?.tank_code ?? ""}
-                disabled
-                className="disabled:opacity-70"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Tank Code</p>
+                <p className="text-sm font-medium">{editTarget?.tank_code ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Tank Capacity</p>
+                <p className="text-sm font-medium">{editTarget?.tank_capacity ? `${editTarget.tank_capacity} L` : "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Current Stock</p>
+                <p className="text-sm font-medium">{editTarget?.current_capacity ? `${editTarget.current_capacity} L` : "0 L"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Current Item</p>
+                <p className="text-sm font-medium">{editTarget?.item_code ?? "—"}</p>
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Tank Capacity (L)</Label>
-              <Input
-                value={editTarget?.tank_capacity ? `${editTarget.tank_capacity}` : ""}
-                disabled
-                className="disabled:opacity-70"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-current-capacity">Current Capacity (L)</Label>
-              <Input
-                id="edit-current-capacity"
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="Leave empty if not applicable"
-                value={editCurrentCapacity}
-                onChange={(e) => handleEditCapacityChange(e.target.value)}
-              />
-              {editCapacityError && (
-                <p className="text-xs text-destructive">{editCapacityError}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Item Code</Label>
+              <Label>Operation *</Label>
               <Select
-                value={editItemCode || "__none__"}
-                onValueChange={(v) => setEditItemCode(v === "__none__" ? "" : v)}
+                value={editOperation || "__none__"}
+                onValueChange={(v) => {
+                  setEditOperation(v === "__none__" ? "" : v as "IN" | "OUT");
+                  setEditItemCode("");
+                  setEditSelectedEntry("");
+                  setEditQuantity("");
+                  setStockEntries([]);
+                }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a tank item (optional)" />
+                  <SelectValue placeholder="Choose operation" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__" className="text-muted-foreground">None</SelectItem>
-                  {tankItems.map((item) => (
-                    <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
-                      {item.tank_item_code} - {item.tank_item_name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="__none__" className="text-muted-foreground">Choose</SelectItem>
+                  <SelectItem value="IN">In</SelectItem>
+                  <SelectItem value="OUT">Out</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {editOperation === "IN" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Item Code *</Label>
+                  <Select
+                    value={editItemCode || "__none__"}
+                    onValueChange={(v) => handleItemCodeChange(v === "__none__" ? "" : v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="text-muted-foreground">Select item</SelectItem>
+                      {uniqueRMCodes.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editItemCode && stockEntries.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Vendor / Vehicle *</Label>
+                    <Select
+                      value={editSelectedEntry || "__none__"}
+                      onValueChange={(v) => {
+                        setEditSelectedEntry(v === "__none__" ? "" : v);
+                        setEditQuantity("");
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select vendor / vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__" className="text-muted-foreground">Select</SelectItem>
+                        {stockEntries.map((entry) => (
+                          <SelectItem key={entry.id} value={String(entry.id)}>
+                            {entry.vehicle_number ?? "—"} — {entry.vendor_code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {editSelectedStock && (
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Vendor:</span>
+                      <span className="font-medium">{editSelectedStock.vendor_code}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Vehicle:</span>
+                      <span className="font-medium">{editSelectedStock.vehicle_number ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Available Qty:</span>
+                      <span className="font-medium">{editSelectedStock.quantity.toLocaleString("en-IN")} KG</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {(editOperation === "OUT" || (editOperation === "IN" && editSelectedEntry)) && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-qty">
+                  Quantity (L) *
+                  {editOperation === "IN" && editSelectedStock && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (max: {editSelectedStock.quantity})
+                    </span>
+                  )}
+                  {editOperation === "OUT" && editTarget && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (max: {editTarget.current_capacity ?? 0})
+                    </span>
+                  )}
+                </Label>
+                <Input
+                  id="edit-qty"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Enter quantity"
+                  value={editQuantity}
+                  onChange={(e) => setEditQuantity(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTarget(null)}>
               Cancel
             </Button>
-            <Button onClick={handleEdit} disabled={editing || !!editCapacityError}>
+            <Button
+              onClick={handleEdit}
+              disabled={editing || !editQuantity.trim()}
+            >
               {editing ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
