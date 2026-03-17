@@ -732,12 +732,12 @@ export default function StockStatusPage() {
             <div className="space-y-2">
               <Label>Vendor *</Label>
               <Select value={cVendorCode} onValueChange={setCVendorCode}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-auto min-h-9 whitespace-normal text-left">
                   <SelectValue placeholder="Select a vendor" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]">
                   {vendors.map((v) => (
-                    <SelectItem key={v.card_code} value={v.card_code}>
+                    <SelectItem key={v.card_code} value={v.card_code} className="whitespace-normal">
                       {v.card_code} - {v.card_name}
                     </SelectItem>
                   ))}

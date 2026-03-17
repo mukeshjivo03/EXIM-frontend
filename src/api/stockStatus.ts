@@ -134,6 +134,7 @@ export async function getUniqueRMCodes(): Promise<string[]> {
 export interface StockEntryByRM {
   id: number;
   vendor_code: string;
+  vendor_code__card_name: string;
   rate: number;
   quantity: number;
   quantity_in_litre: number;

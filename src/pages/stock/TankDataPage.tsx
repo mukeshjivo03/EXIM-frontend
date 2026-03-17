@@ -519,7 +519,7 @@ export default function TankDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Tank</DialogTitle>
             <DialogDescription>
@@ -600,14 +600,14 @@ export default function TankDataPage() {
                         setEditQuantity("");
                       }}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-auto min-h-9 whitespace-normal text-left">
                         <SelectValue placeholder="Select vendor / vehicle" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]">
                         <SelectItem value="__none__" className="text-muted-foreground">Select</SelectItem>
                         {stockEntries.map((entry) => (
-                          <SelectItem key={entry.id} value={String(entry.id)}>
-                            {entry.vehicle_number ?? "—"} — {entry.vendor_code}
+                          <SelectItem key={entry.id} value={String(entry.id)} className="whitespace-normal">
+                            {entry.vehicle_number ?? "—"} — {entry.vendor_code__card_name || entry.vendor_code}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -619,7 +619,7 @@ export default function TankDataPage() {
                   <div className="rounded-md bg-muted/50 px-3 py-2 text-sm space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Vendor:</span>
-                      <span className="font-medium">{editSelectedStock.vendor_code}</span>
+                      <span className="font-medium">{editSelectedStock.vendor_code__card_name || editSelectedStock.vendor_code}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Vehicle:</span>
