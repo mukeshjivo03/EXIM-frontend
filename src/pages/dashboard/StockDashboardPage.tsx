@@ -17,16 +17,17 @@ const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" 
 /** Conversion factor from KG to target unit */
 function convertUnit(kg: number, unit: Unit): number {
   if (unit === "MTS") return kg / 1000;
-  if (unit === "LTR") return kg * 1.1; // approx oil density ~0.91 kg/L → 1 kg ≈ 1.1 L
+  if (unit === "LTR") return kg / 0.917; // oil density 0.917 kg/L
   return kg;
 }
 
 
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
+  const decimals = unit === "MTS" ? 3 : unit === "LTR" ? 2 : 2;
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: unit === "MTS" ? 2 : 0,
-    maximumFractionDigits: unit === "MTS" ? 2 : 0,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   });
 }
 

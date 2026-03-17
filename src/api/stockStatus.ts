@@ -137,6 +137,7 @@ export interface StockEntryByRM {
   vendor_code: string;
   rate: number;
   quantity: number;
+  quantity_in_litre: number;
   total: number;
   vehicle_number: string | null;
   transporter: string | null;

@@ -69,11 +69,6 @@ function fillPercent(tank: Tank): number {
   return Math.min(100, Math.round(((current / total) * 100) * 100) / 100);
 }
 
-const OIL_DENSITY = 0.917; // kg per litre
-function kgToLitres(kg: number): number {
-  return +(kg / OIL_DENSITY).toFixed(2);
-}
-
 function fillColor(pct: number): string {
   if (pct >= 75) return "bg-green-500";
   if (pct >= 40) return "bg-yellow-500";
@@ -256,7 +251,7 @@ export default function TankDataPage() {
         toast.error("Please enter a valid quantity.");
         return;
       }
-      const maxQtyL = kgToLitres(Number(editSelectedStock?.quantity ?? 0));
+      const maxQtyL = Number(editSelectedStock?.quantity_in_litre ?? 0);
       if (Number(editQuantity) > maxQtyL) {
         toast.error(`Quantity cannot exceed available stock (${maxQtyL} L).`);
         return;
@@ -277,7 +272,7 @@ export default function TankDataPage() {
       }
       const currentCap = Number(editTarget.current_capacity ?? 0);
       if (Number(editQuantity) > currentCap) {
-        toast.error(`Quantity cannot exceed current stock (${currentCap} L).`);
+        toast.error(`Quantity cannot exceed current stock (${currentCap} KG).`);
         return;
       }
     }
@@ -632,7 +627,7 @@ export default function TankDataPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Available Qty:</span>
-                      <span className="font-medium">{kgToLitres(editSelectedStock.quantity).toLocaleString("en-IN")} L</span>
+                      <span className="font-medium">{Number(editSelectedStock.quantity).toLocaleString("en-IN")} KG / {Number(editSelectedStock.quantity_in_litre).toLocaleString("en-IN")} L</span>
                     </div>
                   </div>
                 )}
@@ -645,7 +640,7 @@ export default function TankDataPage() {
                   Quantity (L) *
                   {editOperation === "IN" && editSelectedStock && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      (max: {kgToLitres(editSelectedStock.quantity)} L)
+                      (max: {Number(editSelectedStock.quantity_in_litre)} L)
                     </span>
                   )}
                   {editOperation === "OUT" && editTarget && (
@@ -654,15 +649,29 @@ export default function TankDataPage() {
                     </span>
                   )}
                 </Label>
-                <Input
-                  id="edit-qty"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  placeholder="Enter quantity"
-                  value={editQuantity}
-                  onChange={(e) => setEditQuantity(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-qty"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="Enter quantity"
+                    value={editQuantity}
+                    onChange={(e) => setEditQuantity(e.target.value)}
+                    className="flex-1"
+                  />
+                  {editOperation === "IN" && editSelectedStock && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 h-9"
+                      onClick={() => setEditQuantity(String(Number(editSelectedStock.quantity_in_litre)))}
+                    >
+                      Unload All
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

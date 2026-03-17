@@ -254,15 +254,9 @@ export default function TankItemsPage() {
     setEditing(true);
     try {
       await updateTankItem(editTarget.tank_item_code, editColor, editName.trim());
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === editTarget.id
-            ? { ...i, color: editColor, tank_item_name: editName.trim() }
-            : i
-        )
-      );
       toast.success(`Tank item "${editTarget.tank_item_name}" updated.`);
       setEditTarget(null);
+      await fetchItems();
     } catch (err) {
       toastApiError(err, "Failed to update tank item.");
     } finally {

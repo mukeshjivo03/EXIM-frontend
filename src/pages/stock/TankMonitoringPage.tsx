@@ -12,7 +12,6 @@ import {
 import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankLayersResponse } from "@/api/tank";
 import { toastApiError } from "@/lib/errors";
 import { getErrorMessage } from "@/lib/errors";
-import { fmtDecimal } from "@/lib/formatters";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,8 +36,18 @@ import {
 } from "@/components/ui/dialog";
 
 
-function formatCapacity(value: string | number): string {
-  return Number(value).toLocaleString();
+type Unit = "L" | "MT";
+const L_PER_MT = 1000;
+
+function conv(liters: number, unit: Unit): string {
+  if (unit === "MT") {
+    return (liters / L_PER_MT).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  }
+  return liters.toLocaleString("en-IN");
+}
+
+function formatCapacity(value: string | number, unit: Unit): string {
+  return conv(Number(value), unit);
 }
 
 function fillPercent(tank: Tank): number {
@@ -83,6 +92,7 @@ export default function TankMonitoringPage() {
   const [itemSummary, setItemSummary] = useState<ItemWiseTankSummary[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
+  const [unit, setUnit] = useState<Unit>("L");
 
   // Rate breakdown dialog
   const [layersData, setLayersData] = useState<TankLayersResponse | null>(null);
@@ -148,11 +158,27 @@ export default function TankMonitoringPage() {
   return (
     <div className="p-6 space-y-6 animate-page">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Tank Monitoring</h1>
-        <div className="flex items-center gap-1.5 mt-1">
-          <Droplets className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Live Tank Visual Display</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Tank Monitoring</h1>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Droplets className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Live Tank Visual Display</p>
+          </div>
+        </div>
+        <div className="flex items-center rounded-lg border bg-muted p-0.5">
+          <button
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${unit === "L" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={() => setUnit("L")}
+          >
+            Liters
+          </button>
+          <button
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${unit === "MT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={() => setUnit("MT")}
+          >
+            MTS
+          </button>
         </div>
       </div>
 
@@ -164,8 +190,8 @@ export default function TankMonitoringPage() {
           Tank Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-          <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${fmtDecimal(tankSummary.current_stock)} L` : ""} loading={!tankSummary} />
-          <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${fmtDecimal(tankSummary.total_tank_capacity)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${conv(Number(tankSummary.current_stock), unit)} ${unit}` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${conv(Number(tankSummary.total_tank_capacity), unit)} ${unit}` : ""} loading={!tankSummary} />
           <SummaryCard icon={Container} label="Total Tanks" value={tankSummary ? tankSummary.tank_count : ""} loading={!tankSummary} />
           <SummaryCard icon={Package} label="Total Products" value={tankSummary ? tankSummary.item_count : ""} loading={!tankSummary} />
           <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
@@ -203,9 +229,9 @@ export default function TankMonitoringPage() {
               ? colorMap.get(tank.item_code) ?? null
               : null;
             const currentL = tank.current_capacity
-              ? formatCapacity(tank.current_capacity)
+              ? formatCapacity(tank.current_capacity, unit)
               : "0";
-            const totalL = formatCapacity(tank.tank_capacity);
+            const totalL = formatCapacity(tank.tank_capacity, unit);
 
             // Derived colours
             const fillHex = color ?? "#94a3b8"; // slate-400 fallback
@@ -322,11 +348,11 @@ export default function TankMonitoringPage() {
                     <div className="absolute inset-0 flex items-end justify-center pb-3 z-10">
                       {pct > 15 ? (
                         <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                          {currentL} L
+                          {currentL} {unit}
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-white/70">
-                          {pct === 0 ? "Empty" : `${currentL} L`}
+                          {pct === 0 ? "Empty" : `${currentL} ${unit}`}
                         </span>
                       )}
                     </div>
@@ -358,8 +384,8 @@ export default function TankMonitoringPage() {
                     <span className="text-xs font-bold w-10 text-right">{pct}%</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>Current: {currentL} L</span>
-                    <span>Total: {totalL} L</span>
+                    <span>Current: {currentL} {unit}</span>
+                    <span>Total: {totalL} {unit}</span>
                   </div>
                 </div>
 
@@ -394,8 +420,8 @@ export default function TankMonitoringPage() {
                     <TableRow>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
-                      <TableHead>Quantity (Liters)</TableHead>
-                      <TableHead>Capacity (Liters)</TableHead>
+                      <TableHead>Quantity ({unit})</TableHead>
+                      <TableHead>Capacity ({unit})</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                     </TableRow>
@@ -426,8 +452,8 @@ export default function TankMonitoringPage() {
                     <TableRow>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
-                      <TableHead>Quantity (Liters)</TableHead>
-                      <TableHead>Capacity (Liters)</TableHead>
+                      <TableHead>Quantity ({unit})</TableHead>
+                      <TableHead>Capacity ({unit})</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                     </TableRow>
@@ -443,12 +469,8 @@ export default function TankMonitoringPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{item.tank_item_code}</TableCell>
-                        <TableCell>
-                          {item.quantity_in_liters.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>
-                          {item.total_capacity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </TableCell>
+                        <TableCell>{conv(item.quantity_in_liters, unit)}</TableCell>
+                        <TableCell>{conv(item.total_capacity, unit)}</TableCell>
                         <TableCell>{item.tank_count}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -503,11 +525,11 @@ export default function TankMonitoringPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Tank Capacity</p>
-                  <p className="text-sm font-medium">{(layersData.tank_capacity ?? 0).toLocaleString("en-IN")} L</p>
+                  <p className="text-sm font-medium">{conv(layersData.tank_capacity ?? 0, unit)} {unit}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Current Capacity</p>
-                  <p className="text-sm font-medium">{(layersData.current_capacity ?? 0).toLocaleString("en-IN")} L</p>
+                  <p className="text-sm font-medium">{conv(layersData.current_capacity ?? 0, unit)} {unit}</p>
                 </div>
               </div>
 
@@ -535,7 +557,7 @@ export default function TankMonitoringPage() {
                           <TableRow key={layer.layer_id}>
                             <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                             <TableCell>&#8377; {layer.rate.toLocaleString("en-IN")}</TableCell>
-                            <TableCell>{layer.quantity_remaining.toLocaleString("en-IN")} L</TableCell>
+                            <TableCell>{conv(layer.quantity_remaining, unit)} {unit}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -550,7 +572,7 @@ export default function TankMonitoringPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Total Quantity</p>
-                  <p className="text-sm font-semibold">{(layersData.total_quantity ?? 0).toLocaleString("en-IN")} L</p>
+                  <p className="text-sm font-semibold">{conv(layersData.total_quantity ?? 0, unit)} {unit}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Cost</p>
