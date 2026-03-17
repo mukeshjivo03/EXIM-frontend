@@ -69,6 +69,11 @@ function fillPercent(tank: Tank): number {
   return Math.min(100, Math.round(((current / total) * 100) * 100) / 100);
 }
 
+const OIL_DENSITY = 0.917; // kg per litre
+function kgToLitres(kg: number): number {
+  return +(kg / OIL_DENSITY).toFixed(2);
+}
+
 function fillColor(pct: number): string {
   if (pct >= 75) return "bg-green-500";
   if (pct >= 40) return "bg-yellow-500";
@@ -87,10 +92,7 @@ export default function TankDataPage() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [tankCapacity, setTankCapacity] = useState("");
-  const [currentCapacity, setCurrentCapacity] = useState("");
-  const [selectedItemCode, setSelectedItemCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [capacityError, setCapacityError] = useState("");
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Tank | null>(null);
@@ -145,36 +147,9 @@ export default function TankDataPage() {
 
   // ── Create ──────────────────────────────────────────────
 
-  async function openCreateDialog() {
+  function openCreateDialog() {
     setTankCapacity("");
-    setCurrentCapacity("");
-    setSelectedItemCode("");
-    setCapacityError("");
-    try {
-      const freshItems = await getTankItems();
-      setTankItems(freshItems ?? []);
-    } catch {
-      // keep whatever was loaded before
-    }
     setCreateOpen(true);
-  }
-
-  function handleCurrentCapacityChange(value: string) {
-    setCurrentCapacity(value);
-    if (value && tankCapacity && Number(value) > Number(tankCapacity)) {
-      setCapacityError("Current capacity cannot exceed tank capacity");
-    } else {
-      setCapacityError("");
-    }
-  }
-
-  function handleTankCapacityChange(value: string) {
-    setTankCapacity(value);
-    if (currentCapacity && value && Number(currentCapacity) > Number(value)) {
-      setCapacityError("Current capacity cannot exceed tank capacity");
-    } else {
-      setCapacityError("");
-    }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -183,17 +158,12 @@ export default function TankDataPage() {
       toast.error("Valid tank capacity is required.");
       return;
     }
-    if (currentCapacity && Number(currentCapacity) > Number(tankCapacity)) {
-      toast.error("Current capacity cannot exceed tank capacity.");
-      return;
-    }
-
     setSubmitting(true);
     try {
       const created = await createTank({
         tank_capacity: tankCapacity.trim(),
-        current_capacity: currentCapacity.trim() || null,
-        item_code: selectedItemCode || null,
+        current_capacity: null,
+        item_code: null,
       });
       toast.success(`Tank "${created.tank_code}" created successfully.`);
       setCreateOpen(false);
@@ -286,9 +256,9 @@ export default function TankDataPage() {
         toast.error("Please enter a valid quantity.");
         return;
       }
-      const maxQty = Number(editSelectedStock?.quantity ?? 0);
-      if (Number(editQuantity) > maxQty) {
-        toast.error(`Quantity cannot exceed available stock (${maxQty} KG).`);
+      const maxQtyL = kgToLitres(Number(editSelectedStock?.quantity ?? 0));
+      if (Number(editQuantity) > maxQtyL) {
+        toast.error(`Quantity cannot exceed available stock (${maxQtyL} L).`);
         return;
       }
       // Check tank capacity
@@ -512,42 +482,8 @@ export default function TankDataPage() {
                 step="0.01"
                 placeholder="e.g. 10000.00"
                 value={tankCapacity}
-                onChange={(e) => handleTankCapacityChange(e.target.value)}
+                onChange={(e) => setTankCapacity(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="current-capacity">Current Capacity (L)</Label>
-              <Input
-                id="current-capacity"
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="Leave empty if not applicable"
-                value={currentCapacity}
-                onChange={(e) => handleCurrentCapacityChange(e.target.value)}
-              />
-              {capacityError && (
-                <p className="text-xs text-destructive">{capacityError}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Item Code</Label>
-              <Select
-                value={selectedItemCode || "__none__"}
-                onValueChange={(v) => setSelectedItemCode(v === "__none__" ? "" : v)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a tank item (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__" className="text-muted-foreground">None</SelectItem>
-                  {tankItems.map((item) => (
-                    <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
-                      {item.tank_item_code} - {item.tank_item_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
@@ -555,7 +491,7 @@ export default function TankDataPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={submitting || !tankCapacity.trim() || !!capacityError}
+                disabled={submitting || !tankCapacity.trim()}
               >
                 {submitting ? "Creating..." : "Create"}
               </Button>
@@ -696,7 +632,7 @@ export default function TankDataPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Available Qty:</span>
-                      <span className="font-medium">{editSelectedStock.quantity.toLocaleString("en-IN")} KG</span>
+                      <span className="font-medium">{kgToLitres(editSelectedStock.quantity).toLocaleString("en-IN")} L</span>
                     </div>
                   </div>
                 )}
@@ -709,7 +645,7 @@ export default function TankDataPage() {
                   Quantity (L) *
                   {editOperation === "IN" && editSelectedStock && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      (max: {editSelectedStock.quantity})
+                      (max: {kgToLitres(editSelectedStock.quantity)} L)
                     </span>
                   )}
                   {editOperation === "OUT" && editTarget && (
