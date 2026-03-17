@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankLayersResponse } from "@/api/tank";
+import { useAuth } from "@/context/AuthContext";
 import { toastApiError } from "@/lib/errors";
 import { getErrorMessage } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -85,6 +86,8 @@ function WaveSvg({ color, className }: { color: string; className?: string }) {
 }
 
 export default function TankMonitoringPage() {
+  const { role } = useAuth();
+  const isFTR = role === "FTR";
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -390,15 +393,17 @@ export default function TankMonitoringPage() {
                 </div>
 
                 {/* Rate Breakdown button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-1.5 text-xs"
-                  onClick={() => openRateBreakdown(tank.tank_code)}
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  Rate Breakdown
-                </Button>
+                {!isFTR && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs"
+                    onClick={() => openRateBreakdown(tank.tank_code)}
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    Rate Breakdown
+                  </Button>
+                )}
 
               </div>
             );

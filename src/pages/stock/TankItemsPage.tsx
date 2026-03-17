@@ -100,7 +100,8 @@ function getColorName(color: string, extras: { name: string; hex: string }[] = [
 }
 
 export default function TankItemsPage() {
-  const { email } = useAuth();
+  const { email, role } = useAuth();
+  const canEdit = role === "ADM" || role === "MNG";
 
   const [items, setItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,10 +275,12 @@ export default function TankItemsPage() {
             Create and manage tank items
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="btn-press gap-2">
-          <Plus className="h-4 w-4" />
-          Create Tank Item
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setCreateOpen(true)} className="btn-press gap-2">
+            <Plus className="h-4 w-4" />
+            Create Tank Item
+          </Button>
+        )}
       </div>
 
       {/* Error */}
@@ -300,7 +303,7 @@ export default function TankItemsPage() {
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Created At</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    {canEdit && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -332,13 +335,13 @@ export default function TankItemsPage() {
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Created At</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    {canEdit && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-16">
+                      <TableCell colSpan={canEdit ? 6 : 5} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <Droplets className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No tank items found</p>
@@ -366,26 +369,28 @@ export default function TankItemsPage() {
                         <TableCell>{item.tank_item_code}</TableCell>
                         <TableCell>{item.tank_item_name}</TableCell>
                         <TableCell>{formatDate(item.created_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openEdit(item)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteTarget(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {canEdit && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openEdit(item)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteTarget(item)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

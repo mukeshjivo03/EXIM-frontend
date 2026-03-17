@@ -69,8 +69,6 @@ const licenseLinks = [
   { to: "/license/dfia-license", label: "DFIA License", icon: FileText },
 ];
 
-const adminManagerLinks: { to: string; label: string; icon: typeof ClipboardList }[] = [];
-
 const adminLinks = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/sync-raw-material-data", label: "Sync Raw Material", icon: RefreshCw },
@@ -180,8 +178,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )}
 
           {stockLinks.map((link) => {
-            // Stock Status requires ADM|MNG; Tank pages are for all authenticated users
-            const needsAdmMng = link.to === "/stock/stock-status";
+            // Stock Status & Stock Updation Logs require ADM|MNG; Tank pages are for all authenticated users
+            const needsAdmMng = link.to === "/stock/stock-status" || link.to === "/admin/stock-updation-logs";
             if (needsAdmMng && !isAdminOrManager) return null;
             return (
               <NavLink
@@ -326,8 +324,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </>
           )}
 
-          {/* ── Administration (ADM | MNG for shared links, ADM only for the rest) ── */}
-          {isAdminOrManager && (
+          {/* ── Administration (ADM only) ── */}
+          {isAdmin && (
             <>
               <Separator className="my-3" />
 
@@ -337,25 +335,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </span>
               )}
 
-              {isAdmin && adminLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-
-              {adminManagerLinks.map((link) => (
+              {adminLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}

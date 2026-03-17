@@ -77,7 +77,8 @@ function fillColor(pct: number): string {
 }
 
 export default function TankDataPage() {
-  const { email } = useAuth();
+  const { email, role } = useAuth();
+  const canCreateDelete = role === "ADM" || role === "MNG";
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -317,10 +318,12 @@ export default function TankDataPage() {
             Create and manage tanks
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="btn-press gap-2">
-          <Plus className="h-4 w-4" />
-          Create Tank
-        </Button>
+        {canCreateDelete && (
+          <Button onClick={openCreateDialog} className="btn-press gap-2">
+            <Plus className="h-4 w-4" />
+            Create Tank
+          </Button>
+        )}
       </div>
 
       {/* Error */}
@@ -431,14 +434,16 @@ export default function TankDataPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeleteTarget(tank)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canCreateDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => setDeleteTarget(tank)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
