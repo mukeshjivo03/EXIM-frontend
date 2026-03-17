@@ -154,17 +154,7 @@ export async function getStockEntriesByRM(itemCode: string): Promise<StockEntryB
 }
 
 export async function softDeleteStockStatus(record: StockStatus): Promise<StockStatus> {
-  const res = await api.put<StockStatus>(`/stock-status/${record.id}/`, {
-    item_code: record.item_code,
-    status: record.status,
-    vendor_code: record.vendor_code,
-    rate: record.rate,
-    quantity: record.quantity,
-    created_by: record.created_by,
-    vehicle_number: record.vehicle_number ?? "",
-    location: record.location ?? "",
-    eta: record.eta ?? "",
-    transporter_name: record.transporter_name ?? "",
+  const res = await api.patch<StockStatus>(`/stock-status/${record.id}/`, {
     deleted: true,
   });
   return res.data;
