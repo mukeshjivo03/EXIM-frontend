@@ -49,6 +49,7 @@ const stockLinks = [
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText },
+  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
 ];
 
 const commodityLinks = [
@@ -68,9 +69,7 @@ const licenseLinks = [
   { to: "/license/dfia-license", label: "DFIA License", icon: FileText },
 ];
 
-const adminManagerLinks = [
-  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
-];
+const adminManagerLinks: { to: string; label: string; icon: typeof ClipboardList }[] = [];
 
 const adminLinks = [
   { to: "/admin/users", label: "Users", icon: Users },
