@@ -19,12 +19,10 @@ import {
   getTanks,
   createTank,
   deleteTank,
-  getTankItems,
   getTankSummary,
   tankInward,
   tankOutward,
   type Tank,
-  type TankItem,
   type TankSummary,
 } from "@/api/tank";
 import {
@@ -80,7 +78,6 @@ export default function TankDataPage() {
   const { email, role } = useAuth();
   const canCreateDelete = role === "ADM" || role === "MNG";
   const [tanks, setTanks] = useState<Tank[]>([]);
-  const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
@@ -114,12 +111,8 @@ export default function TankDataPage() {
     setLoading(true);
     setError("");
     try {
-      const [tanksData, itemsData] = await Promise.all([
-        getTanks(),
-        getTankItems(),
-      ]);
+      const tanksData = await getTanks();
       setTanks((tanksData ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
-      setTankItems((itemsData ?? []).sort((a, b) => a.id - b.id));
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load tank data"));
     } finally {
@@ -204,11 +197,7 @@ export default function TankDataPage() {
     setEditQuantity("");
     setStockEntries([]);
     try {
-      const [freshItems, rmCodes] = await Promise.all([
-        getTankItems(),
-        getUniqueRMCodes(),
-      ]);
-      setTankItems(freshItems ?? []);
+      const rmCodes = await getUniqueRMCodes();
       setUniqueRMCodes(rmCodes);
     } catch {
       // keep whatever was loaded before
