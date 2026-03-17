@@ -107,7 +107,7 @@ export default function StockDashboardDetailPage() {
   }, [data, status, vendorKeys]);
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

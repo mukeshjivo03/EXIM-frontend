@@ -219,11 +219,11 @@ export default function DashboardPage() {
   const loading = capacityLoading || balanceLoading || trendsLoading;
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Operational insights at a glance</p>
         </div>
         <Button variant="outline" className="btn-press gap-2" onClick={fetchAll} disabled={loading}>

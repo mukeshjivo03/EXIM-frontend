@@ -170,11 +170,11 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Users</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Users</h1>
           <p className="text-sm text-muted-foreground">Manage user accounts and roles</p>
         </div>
         <Button onClick={openCreate} className="btn-press">Create User</Button>

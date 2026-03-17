@@ -185,7 +185,7 @@ export default function AdvanceLicenseDetailPage() {
   const lineColumns = ["#", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance", "Actions"];
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

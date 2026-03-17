@@ -246,6 +246,12 @@
   box-shadow: 0 0 0 3px oklch(0.488 0.243 264.376 / 0.15);
 }
 
+/* ── Responsive: table scroll on small screens ── */
+.rounded-md.border:has(table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ── Global: Uiverse.io / Magic UI / DaisyUI inspired enhancements ── */
 
 /* Smooth page content fade-in (Magic UI) */

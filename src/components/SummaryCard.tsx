@@ -13,16 +13,16 @@ export function SummaryCard({ icon: Icon, label, value, loading }: SummaryCardPr
   return (
     <Card>
       <CardContent className="pt-6 pb-5 px-5">
-        <div className="flex items-center gap-4">
-          <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-3">
-            <Icon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-2 sm:p-3 shrink-0">
+            <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
             {loading ? (
               <Skeleton className="h-7 w-24 mt-1" />
             ) : (
-              <p className="text-2xl font-bold mt-0.5">{value}</p>
+              <p className="text-base sm:text-lg md:text-2xl font-bold mt-0.5 break-words">{value}</p>
             )}
           </div>
         </div>

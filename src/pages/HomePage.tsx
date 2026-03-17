@@ -185,7 +185,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="p-6 space-y-8 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-6 sm:space-y-8 animate-page">
       {/* ── Hero Banner ── */}
       <div className="relative overflow-hidden rounded-2xl h-[200px] sm:h-[230px] md:h-[260px] border border-black/10 dark:border-white/5 shadow-lg">
         {/* Sky */}

@@ -22,15 +22,15 @@ export function Pagination({ page, totalPages, totalItems, perPage, onPageChange
   if (totalPages > 1) pages.push(totalPages);
 
   return (
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p className="text-xs sm:text-sm text-muted-foreground">
         Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, totalItems)} of {totalItems}
       </p>
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
         >
@@ -38,13 +38,13 @@ export function Pagination({ page, totalPages, totalItems, perPage, onPageChange
         </Button>
         {pages.map((p, idx) =>
           p === "..." ? (
-            <span key={`dots-${idx}`} className="px-1 text-sm text-muted-foreground">...</span>
+            <span key={`dots-${idx}`} className="px-1 text-xs sm:text-sm text-muted-foreground">...</span>
           ) : (
             <Button
               key={p}
               variant={p === page ? "default" : "outline"}
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 sm:h-8 sm:w-8 text-xs sm:text-sm"
               onClick={() => onPageChange(p)}
             >
               {p}
@@ -54,7 +54,7 @@ export function Pagination({ page, totalPages, totalItems, perPage, onPageChange
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(page + 1)}
           disabled={page === totalPages}
         >

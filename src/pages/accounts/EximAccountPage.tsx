@@ -67,11 +67,11 @@ export default function EximAccountPage() {
   const netBalance = entries.reduce((s, e) => s + e.Balance, 0);
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dr/Cr Outstanding</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Dr/Cr Outstanding</h1>
           <p className="text-sm text-muted-foreground">Dr/Cr outstanding balances from SAP</p>
         </div>
         <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function EximAccountPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{entries.length}</p>
+            <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{entries.length}</p>
           </CardContent>
         </Card>
 
@@ -106,7 +106,7 @@ export default function EximAccountPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <p className="text-base sm:text-lg md:text-2xl font-bold break-words text-green-600 dark:text-green-400 truncate">
               ₹ {fmtDecimal(totalReceivable)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -121,7 +121,7 @@ export default function EximAccountPage() {
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+            <p className="text-base sm:text-lg md:text-2xl font-bold break-words text-red-600 dark:text-red-400 truncate">
               ₹ {fmtDecimal(Math.abs(totalPayable))}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -136,7 +136,7 @@ export default function EximAccountPage() {
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-bold ${netBalance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <p className={`text-base sm:text-lg md:text-2xl font-bold break-words truncate ${netBalance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
               ₹ {fmtDecimal(netBalance)}
             </p>
           </CardContent>

@@ -137,11 +137,11 @@ export default function StockDashboardPage() {
   }, [colKeys]);
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Stock Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Stock Dashboard</h1>
           <p className="text-sm text-muted-foreground">Overview of raw material stock across statuses and vendors</p>
         </div>
         <div className="flex items-center gap-3">
@@ -177,7 +177,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtLiters(tankInFactoryTotal, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${fmtLiters(tankInFactoryTotal, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -188,7 +188,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.outside_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${fmtNum(data.summary.outside_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -199,7 +199,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${data.summary.active_items} item codes` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${data.summary.active_items} item codes` : "—"}</p>}
           </CardContent>
         </Card>
       </div>

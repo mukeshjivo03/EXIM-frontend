@@ -80,9 +80,10 @@ const adminLinks = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProps) {
   const { role, name, email, clearAuth } = useAuth();
   const navigate = useNavigate();
   const isAdmin = role === "ADM";
@@ -103,9 +104,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <>
       <aside
-        className={`fixed left-0 top-14 bottom-12 border-r glass-sidebar flex flex-col transition-all duration-300 ${
-          collapsed ? "w-16" : "w-56"
-        }`}
+        className={`fixed left-0 top-14 bottom-12 border-r glass-sidebar flex flex-col transition-all duration-300 z-40 ${
+          mobileOpen ? "translate-x-0 w-56" : "-translate-x-full w-56"
+        } md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-56"}`}
       >
         {/* Toggle button */}
         <div className={`flex p-2 ${collapsed ? "justify-center" : "justify-end"}`}>

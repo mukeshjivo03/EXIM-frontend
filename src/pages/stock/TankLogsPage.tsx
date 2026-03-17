@@ -68,10 +68,10 @@ export default function TankLogsPage() {
   }, []);
 
   return (
-    <div className="p-6 space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Tank Logs</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Tank Logs</h1>
         <p className="text-sm text-muted-foreground">
           Inward and outward tank operation logs
         </p>

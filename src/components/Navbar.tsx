@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Moon, Sun, Search, Trash2 } from "lucide-react";
+import { Moon, Sun, Search, Trash2, Menu } from "lucide-react";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { getRmItem, getFgItem, getVendor, deleteRmItem, deleteFgItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
 import { getTankItem, deleteTankItem, type TankItem } from "@/api/tank";
 
-export default function Navbar() {
+export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { theme, toggleTheme } = useTheme();
 
   const [query, setQuery] = useState("");
@@ -211,19 +211,26 @@ export default function Navbar() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 border-b glass-navbar shadow-sm">
-        <div className="flex h-14 items-center justify-between px-6">
-          <Link to="/" className="text-lg font-bold tracking-wide">
-            JIVO EXIM
-          </Link>
-
+        <div className="flex h-14 items-center justify-between px-3 sm:px-6">
           <div className="flex items-center gap-2">
+            {onMenuToggle && (
+              <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={onMenuToggle}>
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
+            <Link to="/" className="text-base sm:text-lg font-bold tracking-wide">
+              JIVO EXIM
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2">
             <div className="flex items-center gap-1">
               <Input
                 placeholder="Search by code"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-64 h-9"
+                className="w-32 sm:w-48 md:w-64 h-9"
               />
               <Button
                 variant="ghost"
