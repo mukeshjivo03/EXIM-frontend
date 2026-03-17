@@ -22,6 +22,7 @@ import {
   getTankSummary,
   tankInward,
   tankOutward,
+  updateTank,
   type Tank,
   type TankSummary,
 } from "@/api/tank";
@@ -283,6 +284,11 @@ export default function TankDataPage() {
           remarks: "Used for Production",
           user: email ?? "",
         });
+        // If tank is now empty, remove item assignment
+        const remaining = Number(editTarget.current_capacity ?? 0) - Number(editQuantity);
+        if (remaining <= 0) {
+          await updateTank(editTarget.tank_code, { current_capacity: null, item_code: null });
+        }
       }
       toast.success(
         `Tank "${editTarget.tank_code}" updated: ${editOperation === "IN" ? "added" : "removed"} ${editQuantity} L.`
@@ -663,6 +669,17 @@ export default function TankDataPage() {
                       onClick={() => setEditQuantity(String(Number(editSelectedStock.quantity_in_litre)))}
                     >
                       Unload All
+                    </Button>
+                  )}
+                  {editOperation === "OUT" && editTarget?.current_capacity && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 h-9"
+                      onClick={() => setEditQuantity(String(editTarget.current_capacity))}
+                    >
+                      Drain All
                     </Button>
                   )}
                 </div>

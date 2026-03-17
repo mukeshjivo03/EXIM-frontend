@@ -97,7 +97,7 @@ export async function getTankSummary(): Promise<TankSummary> {
 
 // ── Item-wise Tank Summary ───────────────────────────────────
 
-export interface ItemWiseTankSummary {
+export interface ItemWiseTankSummaryItem {
   color: string;
   tank_item_code: string;
   tank_item_name: string;
@@ -107,9 +107,14 @@ export interface ItemWiseTankSummary {
   tank_numbers: string[];
 }
 
-export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary[]> {
-  const res = await api.get<ItemWiseTankSummary[]>("/tank/item-wise-summary/");
-  return res.data ?? [];
+export interface ItemWiseTankSummary {
+  total_quantity: number;
+  items: ItemWiseTankSummaryItem[];
+}
+
+export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary> {
+  const res = await api.get<ItemWiseTankSummary>("/tank/item-wise-summary/");
+  return res.data ?? { total_quantity: 0, items: [] };
 }
 
 // ── Tank Rate Breakdown ─────────────────────────────────────

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { RefreshCw, Factory, PackageOpen, Layers } from "lucide-react";
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
+import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +25,22 @@ function convertUnit(kg: number, unit: Unit): number {
 
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
+  const decimals = unit === "MTS" ? 3 : unit === "LTR" ? 2 : 2;
+  return val.toLocaleString("en-IN", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+/** Convert liters to the selected display unit */
+function convertFromLiters(liters: number, unit: Unit): number {
+  if (unit === "KG") return liters * 0.917;
+  if (unit === "MTS") return (liters * 0.917) / 1000;
+  return liters; // LTR
+}
+
+function fmtLiters(n: number, unit: Unit) {
+  const val = convertFromLiters(n, unit);
   const decimals = unit === "MTS" ? 3 : unit === "LTR" ? 2 : 2;
   return val.toLocaleString("en-IN", {
     minimumFractionDigits: decimals,
@@ -57,14 +74,30 @@ const STATUS_META: Record<string, { label: string; variant: "default" | "seconda
 export default function StockDashboardPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<StockDashboardResponse | null>(null);
+  const [tankSummary, setTankSummary] = useState<ItemWiseTankSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit>("KG");
+
+  // Map item_code → quantity in liters from tank data
+  const tankQtyMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of tankSummary?.items ?? []) {
+      map.set(item.tank_item_code, item.quantity_in_liters);
+    }
+    return map;
+  }, [tankSummary]);
+
+  const tankInFactoryTotal = tankSummary?.total_quantity ?? 0;
 
   async function fetchData() {
     setLoading(true);
     try {
-      const res = await getStockDashboard();
+      const [res, tankData] = await Promise.all([
+        getStockDashboard(),
+        getItemWiseTankSummary(),
+      ]);
       setData(res);
+      setTankSummary(tankData);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load stock dashboard"));
     } finally {
@@ -144,7 +177,7 @@ export default function StockDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtNum(data.summary.in_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
+            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{data ? `${fmtLiters(tankInFactoryTotal, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -248,9 +281,9 @@ export default function StockDashboardPage() {
                       <td className="sticky left-0 z-10 px-2 py-1.5 font-mono font-semibold truncate border-r bg-card text-xs">
                         {item.item_code}
                       </td>
-                      <td className="px-1 py-1.5 text-center tabular-nums border-r text-xs" title={fmtNum(item.in_factory, unit)}>
-                        {item.in_factory > 0 ? (
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtNum(item.in_factory, unit)}</span>
+                      <td className="px-1 py-1.5 text-center tabular-nums border-r text-xs" title={fmtLiters(tankQtyMap.get(item.item_code) ?? 0, unit)}>
+                        {(tankQtyMap.get(item.item_code) ?? 0) > 0 ? (
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtLiters(tankQtyMap.get(item.item_code) ?? 0, unit)}</span>
                         ) : (
                           <span className="text-muted-foreground/40">·</span>
                         )}
@@ -274,20 +307,26 @@ export default function StockDashboardPage() {
                           </td>
                         );
                       })}
-                      <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/20 text-xs" title={fmtNum(item.in_factory + item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit)}>
-                        {fmtNum(
-                          item.in_factory + item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0),
-                          unit
-                        )}
-                      </td>
+                      {(() => {
+                        const tankVal = convertFromLiters(tankQtyMap.get(item.item_code) ?? 0, unit);
+                        const restVal = convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
+                        const total = tankVal + restVal;
+                        const decimals = unit === "MTS" ? 3 : 2;
+                        const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                        return (
+                          <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/20 text-xs" title={formatted}>
+                            {formatted}
+                          </td>
+                        );
+                      })()}
                     </tr>
                   ))}
 
                   {/* Totals row */}
                   <tr className="border-t-2 bg-muted/40 font-bold text-xs">
                     <td className="sticky left-0 z-10 px-2 py-1.5 border-r bg-muted/40">Total</td>
-                    <td className="px-1 py-1.5 text-center tabular-nums border-r text-blue-600 dark:text-blue-400" title={fmtNum(data.totals.in_factory, unit)}>
-                      {fmtNum(data.totals.in_factory, unit)}
+                    <td className="px-1 py-1.5 text-center tabular-nums border-r text-blue-600 dark:text-blue-400" title={fmtLiters(tankInFactoryTotal, unit)}>
+                      {fmtLiters(tankInFactoryTotal, unit)}
                     </td>
                     <td className="px-1 py-1.5 text-center tabular-nums border-r text-amber-600 dark:text-amber-400" title={fmtNum(data.totals.outside_factory, unit)}>
                       {fmtNum(data.totals.outside_factory, unit)}
@@ -297,12 +336,18 @@ export default function StockDashboardPage() {
                         {fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}
                       </td>
                     ))}
-                    <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/60 text-primary" title={fmtNum(data.totals.in_factory + data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0), unit)}>
-                      {fmtNum(
-                        data.totals.in_factory + data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0),
-                        unit
-                      )}
-                    </td>
+                    {(() => {
+                      const tankVal = convertFromLiters(tankInFactoryTotal, unit);
+                      const restVal = convertUnit(data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0), unit);
+                      const total = tankVal + restVal;
+                      const decimals = unit === "MTS" ? 3 : 2;
+                      const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                      return (
+                        <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/60 text-primary" title={formatted}>
+                          {formatted}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 </tbody>
               </table>

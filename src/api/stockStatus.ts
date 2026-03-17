@@ -10,7 +10,6 @@ export const STATUS_CHOICES = [
   "MUNDRA_PORT",
   "ON_THE_SEA",
   "IN_CONTRACT",
-  "COMPLETED",
   "DELIVERED",
   "IN_TRANSIT",
   "PENDING",

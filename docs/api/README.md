@@ -180,7 +180,7 @@ const STATUS_CHOICES = [
   "OUT_SIDE_FACTORY", "ON_THE_WAY", "UNDER_LOADING",
   "AT_REFINERY", "OTW_TO_REFINERY", "KANDLA_STORAGE",
   "MUNDRA_PORT", "ON_THE_SEA", "IN_CONTRACT",
-  "COMPLETED", "DELIVERED", "IN_TRANSIT",
+  "DELIVERED", "IN_TRANSIT",
   "PENDING", "PROCESSING",
 ] as const;
 ```
@@ -196,6 +196,10 @@ interface StockStatus {
   rate: string;
   total: string;
   quantity: string;
+  vehicle_number?: string;
+  location?: string;
+  eta?: string;
+  transporter_name?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;       // soft-delete flag
@@ -208,6 +212,24 @@ interface StockStatusPayload {
   rate: string;
   quantity: string;
   created_by: string;
+  vehicle_number?: string;
+  location?: string;
+  eta?: string;
+  transporter_name?: string;
+}
+
+interface StockEntryByRM {
+  id: number;
+  vendor_code: string;
+  rate: number;
+  quantity: number;
+  quantity_in_litre: number;   // backend-calculated liters
+  total: number;
+  vehicle_number: string | null;
+  transporter: string | null;
+  location: string | null;
+  eta: string | null;
+  created_at: string;
 }
 
 interface StockStatusFilters {
@@ -245,12 +267,14 @@ interface StockLog {
 | `getStockStatus(id)` | GET | `/stock-status/{id}/` | Get single stock record |
 | `createStockStatus(data)` | POST | `/stock-status/` | Create stock entry |
 | `updateStockStatus(id, data)` | PUT | `/stock-status/{id}/` | Update stock entry |
-| `softDeleteStockStatus(record)` | PUT | `/stock-status/{id}/` | Soft-delete (sets `deleted: true`) |
+| `softDeleteStockStatus(record)` | PATCH | `/stock-status/{id}/` | Soft-delete (sends only `{ deleted: true }`) |
+| `getUniqueRMCodes()` | GET | `/stock-status/get-unique-rm/` | List unique RM item codes |
+| `getStockEntriesByRM(itemCode)` | GET | `/stock-status/get-stock-entry-by-rm/` | Stock entries for an item code |
 | `getStockSummary()` | GET | `/stock-status/stock-summary/` | Overall stock summary |
 | `getStockInsights(filters?)` | GET | `/stock-status/stock-insights/` | Filtered stock insights |
 | `getStockLogs()` | GET | `/stock-status/stock-logs/` | Audit log of stock changes |
 
-**Note:** Soft delete sends a full PUT with all fields + `deleted: true`. There is no hard DELETE endpoint for stock entries.
+**Note:** Soft delete uses PATCH to send only `{ deleted: true }`. There is no hard DELETE endpoint for stock entries.
 
 ---
 
@@ -287,7 +311,7 @@ interface TankSummary {
   item_count: number;
 }
 
-interface ItemWiseTankSummary {
+interface ItemWiseTankSummaryItem {
   color: string;
   tank_item_code: string;
   tank_item_name: string;
@@ -295,6 +319,48 @@ interface ItemWiseTankSummary {
   total_capacity: number;
   tank_count: number;
   tank_numbers: string[];
+}
+
+interface ItemWiseTankSummary {
+  total_quantity: number;
+  items: ItemWiseTankSummaryItem[];
+}
+
+interface TankLog {
+  id: number;
+  tank_code: string;
+  log_type: "INWARD" | "OUTWARD";
+  quantity: string;
+  stock_status_id?: number;
+  tank_layer_id?: number;
+  remarks: string;
+  created_at: string;
+  created_by: string;
+  consumptions: TankLogConsumption[];
+}
+
+interface TankLogConsumption {
+  id: number;
+  layer_id: number;
+  stock_status_id: number;
+  vendor_name: string;
+  quantity_consumed: string;
+  rate: string;
+  created_at: string;
+}
+
+interface TankInwardPayload {
+  tank_code: string;
+  stock_status_id: string;
+  quantity: string;
+  user: string;
+}
+
+interface TankOutwardPayload {
+  tank_code: string;
+  quantity: string;
+  remarks: string;
+  user: string;
 }
 
 interface TankRateBreakdown {
@@ -326,8 +392,13 @@ interface TankRateBreakdown {
 | `updateTank(code, data)` | PUT | `/tank/update-capacity/{code}/` | Update tank capacity + item |
 | **Summaries** | | | |
 | `getTankSummary()` | GET | `/tank/tank-summary/` | Overall tank summary |
-| `getItemWiseTankSummary()` | GET | `/tank/item-wise-summary/` | Per-item tank summary |
-| `getTankRates()` | GET | `/tank/tank-rates/` | Rate breakdown per tank |
+| `getItemWiseTankSummary()` | GET | `/tank/item-wise-summary/` | Per-item tank summary (returns `{ total_quantity, items[] }`) |
+| `getTankLayers(code)` | GET | `/tank/layers/{code}/` | Rate breakdown layers for a tank |
+| **Operations** | | | |
+| `tankInward(data)` | POST | `/tank/inward/` | Add stock to tank |
+| `tankOutward(data)` | POST | `/tank/outward/` | Remove stock from tank |
+| **Logs** | | | |
+| `getTankLogs()` | GET | `/tank/log/` | Tank operation history with consumptions |
 
 ---
 

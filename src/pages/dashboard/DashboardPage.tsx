@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Droplets, BarChart3, Landmark, TrendingUp, Calendar } from "lucide-react";
+import { RefreshCw, Droplets, BarChart3, Landmark, TrendingUp } from "lucide-react";
 
 import {
   PieChart,
@@ -36,7 +36,7 @@ function truncate(str: string, max = 22) {
 /* ── pie chart helpers ─────────────────────────────────────── */
 
 const FILLED_COLOR = "#3b82f6";
-const EMPTY_COLOR  = "#e2e8f0";
+const EMPTY_COLOR  = "#94a3b8";
 
 function CustomPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: PieLabelRenderProps) {
   if ((percent ?? 0) < 0.04) return null;
@@ -122,8 +122,6 @@ export default function DashboardPage() {
   const [trends, setTrends] = useState<PriceTrendsResponse | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
 
   async function fetchAll() {
     setCapacityLoading(true);
@@ -207,18 +205,14 @@ export default function DashboardPage() {
   /* ── grouped bar chart data (dates × selected commodities) ── */
   const priceChartData = useMemo<Record<string, string | number | null>[]>(() => {
     if (!trends) return [];
-    return trends.labels
-      .map((date, i) => {
-        if (dateFrom && date < dateFrom) return null;
-        if (dateTo && date > dateTo) return null;
-        const row: Record<string, string | number | null> = { date };
-        for (const ds of trends.datasets) {
-          if (selectedLabels.has(ds.label)) row[ds.label] = ds.data[i] ?? null;
-        }
-        return row;
-      })
-      .filter(Boolean) as Record<string, string | number | null>[];
-  }, [trends, selectedLabels, dateFrom, dateTo]);
+    return trends.labels.map((date, i) => {
+      const row: Record<string, string | number | null> = { date };
+      for (const ds of trends.datasets) {
+        if (selectedLabels.has(ds.label)) row[ds.label] = ds.data[i] ?? null;
+      }
+      return row;
+    });
+  }, [trends, selectedLabels]);
 
   const activeDatasets = trends?.datasets.filter((ds) => selectedLabels.has(ds.label)) ?? [];
 
@@ -336,32 +330,6 @@ export default function DashboardPage() {
                   </CardDescription>
                 </div>
               </div>
-              {!trendsLoading && trends && (
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="border rounded px-2 py-1 text-xs bg-background"
-                  />
-                  <span>to</span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="border rounded px-2 py-1 text-xs bg-background"
-                  />
-                  {(dateFrom || dateTo) && (
-                    <button
-                      onClick={() => { setDateFrom(""); setDateTo(""); }}
-                      className="text-xs text-destructive hover:underline"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
             {!trendsLoading && trends && (
               <div className="flex items-center gap-1.5 flex-wrap">

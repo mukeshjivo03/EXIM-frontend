@@ -141,8 +141,13 @@ Individual stock inventory entries tracking goods through the supply chain.
 | `vendor_code` | ForeignKey | -> Party | Vendor/supplier |
 | `status` | CharField | 14 choices | Current location/state |
 | `rate` | DecimalField | | Price per unit |
-| `quantity` | DecimalField | | Quantity |
+| `quantity` | DecimalField | | Quantity (KG) |
+| `quantity_in_litre` | DecimalField | default=0.00 | Quantity in liters (auto-calculated) |
 | `total` | DecimalField | auto-calculated | `rate * quantity` |
+| `vehicle_number` | CharField | nullable | Vehicle number |
+| `location` | CharField | nullable | Current location |
+| `eta` | CharField | nullable | Estimated time of arrival |
+| `transporter_name` | CharField | nullable | Transporter name |
 | `created_at` | DateTimeField | auto_now_add | Creation timestamp |
 | `created_by` | CharField | | Creator's name |
 | `deleted` | BooleanField | default=False | Soft-delete flag |
@@ -159,8 +164,8 @@ KANDLA_STORAGE      - At Kandla port storage
 MUNDRA_PORT         - At Mundra port
 ON_THE_SEA          - In sea transit (import)
 IN_CONTRACT         - Under contract
-COMPLETED           - Completed
 DELIVERED           - Delivered
+IN_TANK             - In tank (set by inward operation)
 IN_TRANSIT          - In transit
 PENDING             - Pending
 PROCESSING          - Being processed
@@ -226,6 +231,53 @@ Individual tank records.
 
 - `tank_code` is auto-generated on create using atomic `select_for_update()` to get the next sequential code
 - Format: `TNK` + 3-digit zero-padded number (e.g., `TNK001`, `TNK042`)
+
+---
+
+## tank.TankLayer
+
+FIFO layers tracking stock entries added to tanks.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `tank` | ForeignKey | -> TankData | Parent tank |
+| `stock_status` | ForeignKey | -> StockStatus | Source stock entry |
+| `rate` | DecimalField | | Rate at time of inward |
+| `quantity_remaining` | DecimalField | | Remaining quantity in this layer |
+| `created_at` | DateTimeField | auto_now_add | Layer creation time |
+
+---
+
+## tank.TankLog
+
+Audit trail for tank inward/outward operations.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `tank_code` | CharField | | Tank identifier |
+| `log_type` | CharField | choices: INWARD/OUTWARD | Operation type |
+| `quantity` | DecimalField | | Quantity moved |
+| `stock_status` | ForeignKey | -> StockStatus, nullable | Source stock (inward only) |
+| `tank_layer` | ForeignKey | -> TankLayer, nullable | Layer reference |
+| `remarks` | TextField | blank | Operation notes |
+| `created_at` | DateTimeField | auto_now_add | Operation timestamp |
+| `created_by` | CharField | | User who performed operation |
+
+---
+
+## tank.TankLogConsumption
+
+Layer consumption details for outward operations (FIFO).
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `tank_log` | ForeignKey | -> TankLog | Parent log entry |
+| `layer` | ForeignKey | -> TankLayer | Consumed layer |
+| `stock_status` | ForeignKey | -> StockStatus | Original stock entry |
+| `vendor_name` | CharField | | Vendor code |
+| `quantity_consumed` | DecimalField | | Quantity consumed from this layer |
+| `rate` | DecimalField | | Rate of the consumed layer |
+| `created_at` | DateTimeField | auto_now_add | Consumption timestamp |
 
 ---
 
@@ -363,6 +415,12 @@ RMProducts (sap_sync)         Party (sap_sync)
 TankItem (tank)
   |
   +--< TankData (tank)
+         |
+         +--< TankLayer (tank) >----< StockStatus
+         |
+         +--< TankLog (tank)
+                |
+                +--< TankLogConsumption (tank)
 
 AdvanceLicenseHeaders (license)
   |

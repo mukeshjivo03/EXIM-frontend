@@ -17,6 +17,7 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 | `/stock/tank-items` | `TankItemsPage` | All | Tank item management |
 | `/stock/tank-monitoring` | `TankMonitoringPage` | All | Visual tank fill levels |
 | `/stock/tank-data` | `TankDataPage` | All | Tank CRUD |
+| `/stock/tank-logs` | `TankLogsPage` | All | Tank operation logs |
 | `/commodity/daily-price` | `DailyPricePage` | ADM, MNG | Daily commodity prices + trends |
 | `/exim-account` | `EximAccountPage` | ADM, MNG | Balance sheet from SAP |
 | `/domestic-contracts` | `DomesticContractsPage` | ADM, MNG | Purchase orders |
@@ -87,12 +88,14 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 **Purpose:** Matrix view of stock quantities broken down by item and status.
 
 **Features:**
-- Summary cards (in-factory total, outside-factory total, active items)
+- Summary cards (in-factory total from tank data, outside-factory total, active items)
+- Unit toggle: KG / MTS / Liters with proper conversion (density 0.917 kg/L)
 - Matrix table: rows = items, columns = status+vendor combinations
+- "In Factory" column shows actual tank quantities from `getItemWiseTankSummary()` (not stock status)
 - Clickable status column headers navigate to detail page
 - Grand total row at bottom
 
-**API:** `getStockDashboard()`
+**API:** `getStockDashboard()`, `getItemWiseTankSummary()`
 
 **Navigation:** Clicking a status column header navigates to `/stock-dashboard/:status`
 
@@ -143,10 +146,11 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 
 **Features:**
 - List of tank items with color indicators
-- Create new tank item
+- Create new tank item with custom color picker (add/delete colors, duplicate prevention)
 - Edit tank item (color + name)
 - Delete tank item
 - Listens for `tank-items-updated` custom event to refresh
+- **Role-based:** FTR users see read-only view (no create/edit/delete buttons)
 
 **API:** `getTankItems()`, `createTankItem()`, `updateTankItem()`, `deleteTankItem()`
 
@@ -154,15 +158,21 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 
 ### TankDataPage (`src/pages/stock/TankDataPage.tsx`)
 
-**Purpose:** Manage individual tanks (capacity, assigned item).
+**Purpose:** Manage individual tanks and perform inward/outward operations.
 
 **Features:**
-- List of tanks with capacity and assigned item
-- Create new tank
-- Update tank capacity and assigned item
+- List of tanks with capacity, fill %, and assigned item
+- Create new tank (capacity only, item code auto-assigned on inward)
+- Edit tank: inward (add stock) or outward (remove stock) operations
+- Inward flow: Select Item Code → Select Vendor/Vehicle (from `getStockEntriesByRM`) → Enter quantity or "Unload All"
+- Outward flow: Enter quantity or "Drain All" to empty tank
+- When tank is fully drained (quantity = 0), item assignment is automatically cleared
+- Available quantity shown in both KG and Liters (using `quantity_in_litre` from API)
 - Delete tank
+- Tank summary cards (total capacity, current stock, utilisation rate)
+- **Role-based:** FTR users cannot create or delete tanks (can still edit/inward/outward)
 
-**API:** `getTanks()`, `createTank()`, `updateTank()`, `deleteTank()`, `getTankItems()`
+**API:** `getTanks()`, `createTank()`, `updateTank()`, `deleteTank()`, `getTankSummary()`, `getUniqueRMCodes()`, `getStockEntriesByRM()`, `tankInward()`, `tankOutward()`
 
 ---
 
@@ -174,10 +184,28 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 - Industrial tank SVG visuals with animated wave fill effects
 - Each tank shows: tank code, item name, current/total capacity, fill percentage
 - Color-coded by assigned tank item color
-- Summary cards: total capacity, current stock, utilization rate
-- Item-wise summary section
+- Summary cards: total quantity, total capacity, total tanks, total products, fill rate
+- Unit toggle: Liters / MTS (1000 L = 1 MT, MTS shown to 3 decimal places)
+- Item-wise summary table with quantity and capacity per item
+- Rate Breakdown dialog per tank (layers, rates, weighted average)
+- **Role-based:** FTR users cannot see the Rate Breakdown button
 
-**API:** `getTanks()`, `getTankItems()`, `getTankSummary()`, `getItemWiseTankSummary()`
+**API:** `getTanks()`, `getTankItems()`, `getTankSummary()`, `getItemWiseTankSummary()`, `getTankLayers()`
+
+---
+
+### TankLogsPage (`src/pages/stock/TankLogsPage.tsx`)
+
+**Purpose:** View tank operation history (inward/outward logs).
+
+**Features:**
+- Table: Tank Code, Log Type (IN/OUT badge), Quantity, Created At, Created By, View action
+- View dialog: tank code, log type, quantity, tank layer id (OUT only), created at, created by, remarks
+- Consumptions section (OUT only): Layer ID, Quantity Consumed, Rate, Total Value (rate × qty)
+- Sorted by `created_at` descending (newest first)
+- Pagination (20 per page)
+
+**API:** `getTankLogs()`
 
 ---
 

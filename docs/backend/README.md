@@ -49,8 +49,8 @@ EXIM-backend/
   |       |- services.py       # Sync logic (bulk upsert, SQL queries)
   |
   |- tank/                     # Tank inventory management
-  |   |- models.py             # TankItem, TankData
-  |   |- views.py              # CRUD, summaries, capacity insights, FIFO rates
+  |   |- models.py             # TankItem, TankData, TankLayer, TankLog, TankLogConsumption
+  |   |- views.py              # CRUD, summaries, capacity insights, FIFO rates, inward/outward
   |   |- serializers.py        # Tank serializers
   |
   |- stock/                    # Stock status tracking
@@ -119,7 +119,7 @@ All values from environment variables in `.env`:
 |-----|---------|--------|
 | `accounts` | Auth, users, roles | User |
 | `sap_sync` | SAP integration | RMProducts, FGProducts, Party, DomesticContracts, syncLogs |
-| `tank` | Tank management | TankItem, TankData |
+| `tank` | Tank management | TankItem, TankData, TankLayer, TankLog, TankLogConsumption |
 | `stock` | Inventory tracking | StockStatus, StockStatusUpdateLog |
 | `daily_price` | Commodity prices | DailyPrice |
 | `license` | License management | AdvanceLicenseHeaders, AdvanceLicenseLines, DFIALicenseHeader, DFIALicenseLines |
@@ -129,11 +129,11 @@ All values from environment variables in `.env`:
 
 ## Roles & Permissions
 
-| Role | Code | Custom Permission Class |
-|------|------|------------------------|
-| Admin | `ADM` | `IsAdminUser` |
-| Manager | `MNG` | `IsManagerUser` |
-| Factory | `FTR` | `IsFactoryUser` |
+| Role | Code | Custom Permission Class | Access |
+|------|------|------------------------|--------|
+| Admin | `ADM` | `IsAdminUser` | Full access including user management, all sync operations |
+| Manager | `MNG` | `IsManagerUser` | All stock, tank, dashboard, contracts, licenses, daily price. No sync or user management |
+| Factory | `FTR` | `IsFactoryUser` | Tank pages only: Tank Items (read), Tank Data (read + inward/outward), Tank Monitoring (no rate breakdown), Tank Logs |
 
 Permissions are defined in `accounts/permissions.py` and used across all views.
 

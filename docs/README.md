@@ -87,8 +87,8 @@ The backend is a **separate repository** built with:
 | Role | Code | Access Level |
 |------|------|-------------|
 | Admin | `ADM` | Full access: all pages + user management + SAP sync |
-| Manager | `MNG` | Dashboard, stock, contracts, licenses, accounts, daily price, stock logs |
-| Factory | `FTR` | Tank pages only (tank items, tank monitoring, tank data) |
+| Manager | `MNG` | Dashboard, stock, contracts, licenses, accounts, daily price, stock logs. No access to sync operations or user management |
+| Factory | `FTR` | Tank pages only: Tank Items (read-only), Tank Data (read + inward/outward, no create/delete), Tank Monitoring (full, no rate breakdown), Tank Logs, Home |
 
 ---
 

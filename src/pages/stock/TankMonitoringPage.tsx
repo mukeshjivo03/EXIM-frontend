@@ -9,7 +9,7 @@ import {
   Layers,
 } from "lucide-react";
 
-import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummary, type TankSummary, type TankLayersResponse } from "@/api/tank";
+import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummaryItem, type TankSummary, type TankLayersResponse } from "@/api/tank";
 import { useAuth } from "@/context/AuthContext";
 import { toastApiError } from "@/lib/errors";
 import { getErrorMessage } from "@/lib/errors";
@@ -92,7 +92,7 @@ export default function TankMonitoringPage() {
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [itemSummary, setItemSummary] = useState<ItemWiseTankSummary[]>([]);
+  const [itemSummary, setItemSummary] = useState<ItemWiseTankSummaryItem[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
   const [unit, setUnit] = useState<Unit>("L");
@@ -145,7 +145,7 @@ export default function TankMonitoringPage() {
     setItemSummaryLoading(true);
     try {
       const data = await getItemWiseTankSummary();
-      setItemSummary(data);
+      setItemSummary(data.items);
     } catch {
       // non-critical
     } finally {

@@ -79,7 +79,6 @@ function formatStatus(s: string) {
 
 function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   switch (s) {
-    case "COMPLETED":
     case "DELIVERED":
       return "default";
     case "PENDING":

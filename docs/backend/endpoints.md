@@ -116,11 +116,14 @@ Auto-generated API docs are available at:
 |--------|----------|------------|-------------|
 | GET | `/stock-status/` | ADM, MNG | List stock entries (filters: `?status=X&vendor=X&item=X`) |
 | POST | `/stock-status/` | ADM, MNG | Create stock entry |
-| GET/PUT/DELETE | `/stock-status/{id}/` | ADM, MNG | Get, update, or delete stock entry |
+| GET/PUT/PATCH/DELETE | `/stock-status/{id}/` | ADM, MNG | Get, update, soft-delete (`PATCH {deleted:true}`), or delete stock entry |
 | GET | `/stock-status/stock-logs/` | ADM, MNG | List stock update audit logs |
 | GET | `/stock-status/stock-insights/` | ADM, MNG | Aggregate insights (filterable) |
 | GET | `/stock-status/stock-summary/` | ADM, MNG | Overall summary |
 | GET | `/stock-status/stock-dashboard/` | ADM, MNG | Full dashboard data |
+| GET | `/stock-status/get-unique-rm/` | ADM, MNG | List unique RM item codes with out-of-factory stock |
+| GET | `/stock-status/get-stock-entry-by-rm/` | ADM, MNG | Stock entries for an item code (`?item_code=X`), includes `quantity_in_litre` |
+| GET | `/stock-status/out/` | ADM, MNG | List out-of-factory stock statuses |
 
 ### Stock Insights Response
 
@@ -179,9 +182,13 @@ Auto-generated API docs are available at:
 | GET/DELETE | `/tank/item/{tankItemCode}/` | ADM, MNG | Get or delete tank item |
 | PUT | `/tank/item/update-color/{tankItemCode}/` | ADM, MNG | Update item color + name |
 | GET | `/tank/tank-summary/` | Authenticated | Tank summary stats |
-| GET | `/tank/item-wise-summary/` | Authenticated | Per-item summary |
+| GET | `/tank/item-wise-summary/` | Authenticated | Per-item summary (returns `{ total_quantity, items[] }`) |
 | GET | `/tank/capacity-insights/` | ADM, MNG | Capacity utilization |
 | GET | `/tank/tank-rates/` | ADM, MNG | FIFO rate breakdown per tank |
+| GET | `/tank/layers/{tankCode}/` | Authenticated | Rate breakdown layers for a specific tank |
+| POST | `/tank/inward/` | Authenticated | Add stock to tank (changes stock status to IN_TANK) |
+| POST | `/tank/outward/` | Authenticated | Remove stock from tank (FIFO consumption) |
+| GET | `/tank/log/` | Authenticated | Tank operation logs with consumptions |
 
 ### Tank Summary Response
 
@@ -195,6 +202,88 @@ Auto-generated API docs are available at:
     "item_count": 5
   }
 }
+```
+
+### Item-Wise Summary Response
+
+```json
+{
+  "total_quantity": 19217.41,
+  "items": [
+    {
+      "color": "#f8b90d",
+      "tank_item_code": "RM000SF",
+      "tank_item_name": "Sunflower Oil",
+      "quantity_in_liters": 9608.71,
+      "total_capacity": 50000.0,
+      "tank_count": 1,
+      "tank_numbers": ["TNK001"]
+    }
+  ]
+}
+```
+
+### Tank Inward Request
+
+```json
+{
+  "tank_code": "TNK001",
+  "stock_status_id": "86",
+  "quantity": "5000.00",
+  "user": "admin@exim.com"
+}
+```
+
+### Tank Outward Request
+
+```json
+{
+  "tank_code": "TNK001",
+  "quantity": "2000.00",
+  "remarks": "Used for Production",
+  "user": "admin@exim.com"
+}
+```
+
+### Tank Log Response
+
+```json
+[
+  {
+    "id": 1,
+    "tank_code": "TNK001",
+    "log_type": "INWARD",
+    "quantity": "5000.00",
+    "stock_status_id": 86,
+    "tank_layer_id": null,
+    "remarks": "",
+    "created_at": "2026-03-17T07:35:00Z",
+    "created_by": "admin@exim.com",
+    "consumptions": []
+  },
+  {
+    "id": 2,
+    "tank_code": "TNK001",
+    "log_type": "OUTWARD",
+    "quantity": "2000.00",
+    "stock_status_id": null,
+    "tank_layer_id": 1,
+    "remarks": "Used for Production",
+    "created_at": "2026-03-17T08:00:00Z",
+    "created_by": "admin@exim.com",
+    "consumptions": [
+      {
+        "id": 1,
+        "layer_id": 1,
+        "stock_status_id": 86,
+        "vendor_name": "VENDA000020",
+        "quantity_consumed": "2000.00",
+        "rate": "100.00",
+        "created_at": "2026-03-17T08:00:00Z"
+      }
+    ]
+  }
+]
 ```
 
 ### Tank Rates Response

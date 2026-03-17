@@ -232,12 +232,41 @@ def save(self, *args, **kwargs):
 
 ---
 
+## Tank Inward/Outward Operations (`tank/views.py`)
+
+### Inward Operation
+
+When stock is added to a tank:
+1. Validates stock entry exists and has sufficient quantity
+2. Creates a `TankLayer` with the rate and quantity from the stock entry
+3. Updates `TankData.current_capacity` (adds quantity)
+4. Updates `TankData.item_code` if not already set
+5. Changes the source `StockStatus.status` to `IN_TANK`
+6. Creates a `TankLog` entry with `log_type=INWARD`
+
+### Outward Operation
+
+When stock is removed from a tank (FIFO):
+1. Validates tank has sufficient current capacity
+2. Consumes layers in FIFO order (oldest first):
+   - Reduces `TankLayer.quantity_remaining`
+   - Deletes layer if fully consumed
+3. Updates `TankData.current_capacity` (subtracts quantity)
+4. Creates a `TankLog` entry with `log_type=OUTWARD`
+5. Creates `TankLogConsumption` entries for each consumed layer
+
+### Auto-Clear Item on Empty
+
+When the frontend detects a tank is fully drained (remaining quantity = 0), it calls `updateTank()` to set both `current_capacity` and `item_code` to `null`.
+
+---
+
 ## Soft Delete Pattern (`stock/`)
 
 Stock entries use soft-delete (not hard delete):
 
 - `deleted` field is a BooleanField (default=False)
-- Frontend sends PUT with `deleted: true` and all other fields
+- Frontend sends PATCH with `{ deleted: true }` only
 - All list queries filter `deleted=False`
 - No hard DELETE endpoint exists for stock status
 
