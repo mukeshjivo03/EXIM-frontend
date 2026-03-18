@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
-import { fmtDecimal } from "@/lib/formatters";
+import { fmtNum } from "@/lib/formatters";
 import { Pagination } from "@/components/Pagination";
 
 import {
@@ -330,8 +330,8 @@ export default function TankDataPage() {
           Tank Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <SummaryCard icon={Warehouse} label="Total Tank Capacity" value={tankSummary ? `${fmtDecimal(tankSummary.total_tank_capacity)} L` : ""} loading={!tankSummary} />
-          <SummaryCard icon={Gauge} label="Current Stock" value={tankSummary ? `${fmtDecimal(tankSummary.current_stock)} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Warehouse} label="Total Tank Capacity" value={tankSummary ? `${fmtNum(Number(tankSummary.total_tank_capacity))} L` : ""} loading={!tankSummary} />
+          <SummaryCard icon={Gauge} label="Current Stock" value={tankSummary ? `${fmtNum(Number(tankSummary.current_stock))} L` : ""} loading={!tankSummary} />
           <SummaryCard icon={BarChart3} label="Utilisation Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
         </div>
       </div>

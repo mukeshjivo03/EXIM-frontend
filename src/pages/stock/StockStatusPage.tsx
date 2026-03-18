@@ -35,7 +35,7 @@ import {
 import { getVendors, type Vendor } from "@/api/sapSync";
 import { getTankItems, type TankItem } from "@/api/tank";
 import { useAuth } from "@/context/AuthContext";
-import { fmtDateTime, fmtDecimal } from "@/lib/formatters";
+import { fmtDateTime, fmtNum } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Pagination } from "@/components/Pagination";
@@ -509,10 +509,10 @@ export default function StockStatusPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={overallSummary?.total_count ?? 0} loading={!overallSummary} />
-          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtDecimal(overallSummary?.total_value ?? 0)}`} loading={!overallSummary} />
-          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtDecimal(overallSummary?.total_qty ?? 0)} KG`} loading={!overallSummary} />
-          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtDecimal(overallSummary?.avg_price_per_kg ?? 0)}`} loading={!overallSummary} />
-          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtDecimal(overallSummary?.avg_price_per_ltr ?? 0)}`} loading={!overallSummary} />
+          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(overallSummary?.total_value ?? 0))}`} loading={!overallSummary} />
+          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(overallSummary?.total_qty ?? 0))} KG`} loading={!overallSummary} />
+          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtNum(Number(overallSummary?.avg_price_per_kg ?? 0))}`} loading={!overallSummary} />
+          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(overallSummary?.avg_price_per_ltr ?? 0))}`} loading={!overallSummary} />
         </div>
       </div>
 
@@ -604,10 +604,10 @@ export default function StockStatusPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={loading} />
-          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtDecimal(summary?.total_value ?? 0)}`} loading={loading} />
-          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtDecimal(summary?.total_qty ?? 0)} KG`} loading={loading} />
-          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtDecimal(summary?.avg_price_per_kg ?? 0)}`} loading={loading} />
-          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtDecimal(summary?.avg_price_per_ltr ?? 0)}`} loading={loading} />
+          <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(summary?.total_value ?? 0))}`} loading={loading} />
+          <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(summary?.total_qty ?? 0))} KG`} loading={loading} />
+          <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtNum(Number(summary?.avg_price_per_kg ?? 0))}`} loading={loading} />
+          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(summary?.avg_price_per_ltr ?? 0))}`} loading={loading} />
         </div>
       </div>
 

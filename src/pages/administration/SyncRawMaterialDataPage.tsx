@@ -4,7 +4,7 @@ import { Trash2, PackageOpen, Filter, X, Hash, IndianRupee, Scale, TrendingUp } 
 
 import { getRmItems, getRmVarieties, getRmSummary, syncRmItems, syncSingleRmItem, deleteRmItem, type SapItem, type RmSummary } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
-import { fmtDecimal } from "@/lib/formatters";
+import { fmtDecimal, fmtNum } from "@/lib/formatters";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
@@ -298,9 +298,9 @@ async function handleSyncAll() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={!summary} />
-          <SummaryCard icon={Scale} label="Total Quantity (LTR)" value={summary ? fmtDecimal(summary.total_qty) : ""} loading={!summary} />
-          <SummaryCard icon={TrendingUp} label="Avg Rate / LTR" value={summary ? `₹ ${fmtDecimal(summary.avg_rate)}` : ""} loading={!summary} />
-          <SummaryCard icon={IndianRupee} label="Total Trans Value" value={summary ? `₹ ${fmtDecimal(summary.total_trans_value)}` : ""} loading={!summary} />
+          <SummaryCard icon={Scale} label="Total Quantity (LTR)" value={summary ? fmtNum(Number(summary.total_qty)) : ""} loading={!summary} />
+          <SummaryCard icon={TrendingUp} label="Avg Rate / LTR" value={summary ? `₹ ${fmtNum(Number(summary.avg_rate))}` : ""} loading={!summary} />
+          <SummaryCard icon={IndianRupee} label="Total Trans Value" value={summary ? `₹ ${fmtNum(Number(summary.total_trans_value))}` : ""} loading={!summary} />
         </div>
       </div>
 
