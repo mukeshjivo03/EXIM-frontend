@@ -185,7 +185,19 @@ export default function StockStatusPage() {
         getStockStatuses(filters),
         getStockInsights(filters),
       ]);
-      setRows(data.filter((r) => !r.deleted).sort((a, b) => b.id - a.id));
+      const STATUS_ORDER: Record<string, number> = {
+        OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, UNDER_LOADING: 2, AT_REFINERY: 3,
+        MUNDRA_PORT: 4, ON_THE_SEA: 5, IN_CONTRACT: 6, IN_TANK: 7,
+      };
+      setRows(
+        data
+          .filter((r) => !r.deleted)
+          .sort((a, b) => {
+            const oa = STATUS_ORDER[a.status] ?? 99;
+            const ob = STATUS_ORDER[b.status] ?? 99;
+            return oa !== ob ? oa - ob : b.id - a.id;
+          })
+      );
       setSummary(insights.summary);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load stock statuses"));
@@ -675,9 +687,9 @@ export default function StockStatusPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{row.vendor_code}</TableCell>
-                        <TableCell>{row.rate}</TableCell>
-                        <TableCell>{row.quantity}</TableCell>
-                        <TableCell className="font-medium">{row.total}</TableCell>
+                        <TableCell>{Number(row.rate).toLocaleString("en-IN")}</TableCell>
+                        <TableCell>{Number(row.quantity).toLocaleString("en-IN")}</TableCell>
+                        <TableCell className="font-medium">{Number(row.total).toLocaleString("en-IN")}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {fmtDateTime(row.created_at)}
                         </TableCell>

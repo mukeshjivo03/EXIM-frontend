@@ -12,7 +12,7 @@ interface SummaryCardProps {
 export function SummaryCard({ icon: Icon, label, value, loading }: SummaryCardProps) {
   return (
     <Card>
-      <CardContent className="pt-6 pb-5 px-5">
+      <CardContent className="pt-4 pb-3 px-3 sm:pt-6 sm:pb-5 sm:px-5">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div className="rounded-lg bg-orange-50 dark:bg-orange-900/50 p-2 sm:p-3 shrink-0">
             <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />

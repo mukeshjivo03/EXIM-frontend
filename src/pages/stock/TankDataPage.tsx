@@ -406,8 +406,8 @@ export default function TankDataPage() {
                         <TableRow key={tank.tank_code}>
                           <TableCell className="font-medium">{tank.tank_code}</TableCell>
                           <TableCell>{tank.item_code ?? "—"}</TableCell>
-                          <TableCell>{tank.tank_capacity} L</TableCell>
-                          <TableCell>{tank.current_capacity ? `${tank.current_capacity} L` : "—"}</TableCell>
+                          <TableCell>{Number(tank.tank_capacity).toLocaleString("en-IN")} L</TableCell>
+                          <TableCell>{tank.current_capacity ? `${Number(tank.current_capacity).toLocaleString("en-IN")} L` : "—"}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-16 rounded-full bg-muted overflow-hidden">
