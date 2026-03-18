@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -118,8 +118,14 @@ export default function StockStatusPage() {
   // create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [cItemCode, setCItemCode] = useState("");
+  const [cItemSearch, setCItemSearch] = useState("");
+  const [cItemOpen, setCItemOpen] = useState(false);
+  const cItemRef = useRef<HTMLDivElement>(null);
   const [cStatus, setCStatus] = useState<StockStatusChoice>("PENDING");
   const [cVendorCode, setCVendorCode] = useState("");
+  const [cVendorSearch, setCVendorSearch] = useState("");
+  const [cVendorOpen, setCVendorOpen] = useState(false);
+  const cVendorRef = useRef<HTMLDivElement>(null);
   const [cRate, setCRate] = useState("");
   const [cQuantity, setCQuantity] = useState("");
   const [cVehicleNumber, setCVehicleNumber] = useState("");
@@ -225,12 +231,42 @@ export default function StockStatusPage() {
     }
   }
 
+  // click-outside to close omnisearch dropdowns
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (cItemRef.current && !cItemRef.current.contains(e.target as Node)) setCItemOpen(false);
+      if (cVendorRef.current && !cVendorRef.current.contains(e.target as Node)) setCVendorOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filteredItems = useMemo(() => {
+    const q = cItemSearch.toLowerCase();
+    if (!q) return tankItems;
+    return tankItems.filter(
+      (i) => i.tank_item_code.toLowerCase().includes(q) || i.tank_item_name.toLowerCase().includes(q)
+    );
+  }, [tankItems, cItemSearch]);
+
+  const filteredVendors = useMemo(() => {
+    const q = cVendorSearch.toLowerCase();
+    if (!q) return vendors;
+    return vendors.filter(
+      (v) => v.card_code.toLowerCase().includes(q) || v.card_name.toLowerCase().includes(q)
+    );
+  }, [vendors, cVendorSearch]);
+
   /* ── create ──────────────────────────────────────────────── */
 
   async function openCreate() {
     setCItemCode("");
+    setCItemSearch("");
+    setCItemOpen(false);
     setCStatus("PENDING");
     setCVendorCode("");
+    setCVendorSearch("");
+    setCVendorOpen(false);
     setCRate("");
     setCQuantity("");
     setCVehicleNumber("");
@@ -701,18 +737,54 @@ export default function StockStatusPage() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
               <Label>Item Code *</Label>
-              <Select value={cItemCode} onValueChange={setCItemCode}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select an item" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tankItems.map((item) => (
-                    <SelectItem key={item.tank_item_code} value={item.tank_item_code}>
-                      {item.tank_item_code} - {item.tank_item_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={cItemRef}>
+                <Input
+                  placeholder="Search item code..."
+                  value={cItemSearch}
+                  onChange={(e) => {
+                    setCItemSearch(e.target.value);
+                    setCItemOpen(true);
+                    if (!e.target.value) setCItemCode("");
+                  }}
+                  onFocus={() => setCItemOpen(true)}
+                />
+                {cItemCode && !cItemOpen && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {cItemCode}
+                    </Badge>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => { setCItemCode(""); setCItemSearch(""); }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {cItemOpen && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-auto rounded-md border bg-popover shadow-md">
+                    {filteredItems.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">No items found</div>
+                    ) : (
+                      filteredItems.map((item) => (
+                        <button
+                          key={item.tank_item_code}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${cItemCode === item.tank_item_code ? "bg-accent font-medium" : ""}`}
+                          onClick={() => {
+                            setCItemCode(item.tank_item_code);
+                            setCItemSearch(item.tank_item_code);
+                            setCItemOpen(false);
+                          }}
+                        >
+                          {item.tank_item_code}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Status *</Label>
@@ -731,18 +803,54 @@ export default function StockStatusPage() {
             </div>
             <div className="space-y-2">
               <Label>Vendor *</Label>
-              <Select value={cVendorCode} onValueChange={setCVendorCode}>
-                <SelectTrigger className="w-full h-auto min-h-9 whitespace-normal text-left">
-                  <SelectValue placeholder="Select a vendor" />
-                </SelectTrigger>
-                <SelectContent className="max-w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]">
-                  {vendors.map((v) => (
-                    <SelectItem key={v.card_code} value={v.card_code} className="whitespace-normal">
-                      {v.card_code} - {v.card_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={cVendorRef}>
+                <Input
+                  placeholder="Search vendor code or name..."
+                  value={cVendorSearch}
+                  onChange={(e) => {
+                    setCVendorSearch(e.target.value);
+                    setCVendorOpen(true);
+                    if (!e.target.value) setCVendorCode("");
+                  }}
+                  onFocus={() => setCVendorOpen(true)}
+                />
+                {cVendorCode && !cVendorOpen && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs whitespace-normal">
+                      {cVendorCode} - {vendors.find((v) => v.card_code === cVendorCode)?.card_name}
+                    </Badge>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground shrink-0"
+                      onClick={() => { setCVendorCode(""); setCVendorSearch(""); }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {cVendorOpen && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-auto rounded-md border bg-popover shadow-md">
+                    {filteredVendors.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">No vendors found</div>
+                    ) : (
+                      filteredVendors.map((v) => (
+                        <button
+                          key={v.card_code}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors whitespace-normal ${cVendorCode === v.card_code ? "bg-accent font-medium" : ""}`}
+                          onClick={() => {
+                            setCVendorCode(v.card_code);
+                            setCVendorSearch(v.card_code + " - " + v.card_name);
+                            setCVendorOpen(false);
+                          }}
+                        >
+                          {v.card_code} - {v.card_name}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
