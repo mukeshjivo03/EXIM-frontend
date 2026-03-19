@@ -136,6 +136,15 @@ export default function StockDashboardPage() {
     return groups;
   }, [colKeys]);
 
+  // Set of keys that are the last vendor in their status group — these get thick right borders
+  const lastKeyPerGroup = useMemo(() => {
+    const set = new Set<string>();
+    for (const group of statusGroups) {
+      set.add(group.vendors[group.vendors.length - 1].key);
+    }
+    return set;
+  }, [statusGroups]);
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
@@ -222,7 +231,7 @@ export default function StockDashboardPage() {
           </div>
         ) : (
           <div className="border-y shadow-sm overflow-x-auto">
-              <table className="w-full table-fixed text-xs border-separate" style={{ borderSpacing: "6px 0" }}>
+              <table className="w-full table-fixed text-xs" style={{ borderCollapse: "collapse" }}>
                 <colgroup>
                   <col style={{ width: 110 }} />
                   <col style={{ width: `${90 / (colKeys.length + 3)}%` }} />
@@ -265,7 +274,7 @@ export default function StockDashboardPage() {
                   <tr className="border-b bg-muted/20">
                     {statusGroups.map((group) =>
                       group.vendors.map(({ key, vendor }) => (
-                        <th key={key} title={vendor} className="px-2 py-2 text-center font-medium border-r-2 last:border-r-0 text-xs text-muted-foreground overflow-hidden">
+                        <th key={key} title={vendor} className={`px-2 py-2 text-center font-medium text-xs text-muted-foreground overflow-hidden ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`}>
                           <span className="block truncate">{vendor}</span>
                         </th>
                       ))
@@ -298,7 +307,7 @@ export default function StockDashboardPage() {
                       {colKeys.map((key) => {
                         const val = item.status_data[key] ?? 0;
                         return (
-                          <td key={key} className="px-1 py-1.5 text-center tabular-nums border-r-2 last:border-r-0 text-xs" title={val > 0 ? fmtNum(val, unit) : undefined}>
+                          <td key={key} className={`px-1 py-1.5 text-center tabular-nums text-xs ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`} title={val > 0 ? fmtNum(val, unit) : undefined}>
                             {val > 0 ? (
                               <span className="font-semibold">{fmtNum(val, unit)}</span>
                             ) : (
@@ -332,7 +341,7 @@ export default function StockDashboardPage() {
                       {fmtNum(data.totals.outside_factory, unit)}
                     </td>
                     {colKeys.map((key) => (
-                      <td key={key} className="px-1 py-1.5 text-center tabular-nums border-r-2 last:border-r-0" title={fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}>
+                      <td key={key} className={`px-1 py-1.5 text-center tabular-nums ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`} title={fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}>
                         {fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}
                       </td>
                     ))}
