@@ -12,12 +12,15 @@ import {
   IndianRupee,
   Search,
   X,
+  Scale,
+  TrendingUp,
 } from "lucide-react";
 
 import { syncPOs, syncSinglePO, getPOs, deletePO, updatePO, type PO } from "@/api/sapSync";
 import { fmtDecimal, fmtDate } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
+import { SummaryCard } from "@/components/SummaryCard";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +80,8 @@ export default function DomesticContractsPage() {
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterVendor, setFilterVendor] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterPoDate, setFilterPoDate] = useState("all");
+  const [filterPoDateFrom, setFilterPoDateFrom] = useState("");
+  const [filterPoDateTo, setFilterPoDateTo] = useState("");
   const [page, setPage] = useState(1);
 
   // Pre-compute searchable string per row once (only recomputes when rows change)
@@ -110,15 +114,14 @@ export default function DomesticContractsPage() {
   const productOptions = useMemo(() => [...new Set(rows.map((r) => r.product_name).filter(Boolean))].sort(), [rows]);
   const vendorOptions = useMemo(() => [...new Set(rows.map((r) => r.vendor).filter(Boolean))].sort(), [rows]);
   const statusOptions = useMemo(() => [...new Set(rows.map((r) => r.status).filter(Boolean))].sort(), [rows]);
-  const poDateOptions = useMemo(() => [...new Set(rows.map((r) => r.po_date).filter(Boolean))].sort().reverse(), [rows]);
-
   const filteredRows = useMemo(() => {
     let result = rows;
 
     if (filterProduct !== "all") result = result.filter((r) => r.product_name === filterProduct);
     if (filterVendor !== "all") result = result.filter((r) => r.vendor === filterVendor);
     if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
-    if (filterPoDate !== "all") result = result.filter((r) => r.po_date === filterPoDate);
+    if (filterPoDateFrom) result = result.filter((r) => (r.po_date ?? "") >= filterPoDateFrom);
+    if (filterPoDateTo) result = result.filter((r) => (r.po_date ?? "") <= filterPoDateTo);
 
     const q = search.trim().toLowerCase();
     if (q) result = result.filter((r) => {
@@ -127,7 +130,23 @@ export default function DomesticContractsPage() {
     });
 
     return result;
-  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDate]);
+  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDateFrom, filterPoDateTo]);
+
+  // summary stats from filtered data
+  const summary = useMemo(() => {
+    let totalQty = 0;
+    let totalValue = 0;
+    let count = 0;
+    for (const r of filteredRows) {
+      const qty = Number(r.contract_qty) || 0;
+      const val = Number(r.contract_value) || 0;
+      totalQty += qty;
+      totalValue += val;
+      if (qty > 0) count++;
+    }
+    const avgRate = totalQty > 0 ? totalValue / totalQty : 0;
+    return { totalQty, totalValue, avgRate };
+  }, [filteredRows]);
 
   // pagination
   const perPage = 20;
@@ -342,6 +361,28 @@ export default function DomesticContractsPage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <SummaryCard
+          icon={Scale}
+          label="Total Quantity"
+          value={loading ? "" : `${summary.totalQty.toLocaleString("en-IN", { maximumFractionDigits: 0 })} MTS`}
+          loading={loading}
+        />
+        <SummaryCard
+          icon={IndianRupee}
+          label="Total Value"
+          value={loading ? "" : `₹ ${summary.totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+          loading={loading}
+        />
+        <SummaryCard
+          icon={TrendingUp}
+          label="Average Rate"
+          value={loading ? "" : `₹ ${summary.avgRate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/MTS`}
+          loading={loading}
+        />
+      </div>
+
       {/* Single Sync Result */}
       {lastSyncedGrpo && (() => {
         const syncedRows = rows.filter((r) => r.grpo_no === lastSyncedGrpo);
@@ -449,17 +490,22 @@ export default function DomesticContractsPage() {
 
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3 pt-3">
-            <Select value={filterPoDate} onValueChange={(v) => { setFilterPoDate(v); setPage(1); }}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="PO Date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All PO Dates</SelectItem>
-                {poDateOptions.map((d) => (
-                  <SelectItem key={d} value={d!}>{fmtDate(d)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground shrink-0">PO Date</label>
+              <input
+                type="date"
+                value={filterPoDateFrom}
+                onChange={(e) => { setFilterPoDateFrom(e.target.value); setPage(1); }}
+                className="h-9 w-[150px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={filterPoDateTo}
+                onChange={(e) => { setFilterPoDateTo(e.target.value); setPage(1); }}
+                className="h-9 w-[150px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              />
+            </div>
 
             <Select value={filterProduct} onValueChange={(v) => { setFilterProduct(v); setPage(1); }}>
               <SelectTrigger className="w-[200px]">
@@ -497,12 +543,12 @@ export default function DomesticContractsPage() {
               </SelectContent>
             </Select>
 
-            {(filterPoDate !== "all" || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all") && (
+            {(filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
-                onClick={() => { setFilterPoDate("all"); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
+                onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear filters
@@ -556,7 +602,7 @@ export default function DomesticContractsPage() {
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <FileCheck className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No contracts found</p>
-                          <p className="text-xs">{search.trim() || filterPoDate !== "all" || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" ? "No contracts match your search or filters." : "Click Sync All to load contracts from SAP."}</p>
+                          <p className="text-xs">{search.trim() || filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" ? "No contracts match your search or filters." : "Click Sync All to load contracts from SAP."}</p>
                         </div>
                       </TableCell>
                     </TableRow>
