@@ -245,12 +245,14 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 **Purpose:** Manage domestic purchase orders.
 
 **Features:**
+- Summary cards: Total Quantity (MTS), Total Value (₹), Average Rate (₹/MTS) — dynamically update based on active filters
 - List of purchase orders with full details
 - Sync all POs from SAP
 - Sync individual PO by GRPO number
 - Edit PO details (inline fields)
 - Delete PO
-- **Filter dropdowns** (PO Date, Product, Vendor, Status) — values are dynamically derived from loaded data
+- **Date range filter** (PO Date from/to) using native date inputs
+- **Filter dropdowns** (Product, Vendor, Status) — values are dynamically derived from loaded data
 - Text search across all fields (PO number, product, vendor, GRPO, invoice, transporter, etc.)
 - "Clear filters" button when any filter is active
 - Pagination
