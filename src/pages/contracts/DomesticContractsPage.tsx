@@ -24,6 +24,7 @@ import { SummaryCard } from "@/components/SummaryCard";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -492,18 +493,16 @@ export default function DomesticContractsPage() {
           <div className="flex flex-wrap items-center gap-3 pt-3">
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground shrink-0">PO Date</label>
-              <input
-                type="date"
+              <DateInput
                 value={filterPoDateFrom}
                 onChange={(e) => { setFilterPoDateFrom(e.target.value); setPage(1); }}
-                className="h-9 w-[150px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="h-9 w-[150px]"
               />
               <span className="text-xs text-muted-foreground">to</span>
-              <input
-                type="date"
+              <DateInput
                 value={filterPoDateTo}
                 onChange={(e) => { setFilterPoDateTo(e.target.value); setPage(1); }}
-                className="h-9 w-[150px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="h-9 w-[150px]"
               />
             </div>
 
@@ -821,7 +820,7 @@ export default function DomesticContractsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="e-po-date">PO Date</Label>
-                  <Input id="e-po-date" type="date" value={ePoDate} onChange={(e) => setEPoDate(e.target.value)} />
+                  <DateInput id="e-po-date" value={ePoDate} onChange={(e) => setEPoDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="e-status">Status</Label>
@@ -903,7 +902,7 @@ export default function DomesticContractsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="e-bilty-date">Bilty Date</Label>
-                  <Input id="e-bilty-date" type="date" value={eBiltyDate} onChange={(e) => setEBiltyDate(e.target.value)} />
+                  <DateInput id="e-bilty-date" value={eBiltyDate} onChange={(e) => setEBiltyDate(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -916,7 +915,7 @@ export default function DomesticContractsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="e-grpo-date">GRPO Date</Label>
-                  <Input id="e-grpo-date" type="date" value={eGrpoDate} onChange={(e) => setEGrpoDate(e.target.value)} />
+                  <DateInput id="e-grpo-date" value={eGrpoDate} onChange={(e) => setEGrpoDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="e-invoice-no">Invoice No</Label>

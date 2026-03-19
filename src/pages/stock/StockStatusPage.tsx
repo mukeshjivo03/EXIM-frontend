@@ -42,6 +42,7 @@ import { Pagination } from "@/components/Pagination";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -187,8 +188,9 @@ export default function StockStatusPage() {
         getStockInsights(filters),
       ]);
       const STATUS_ORDER: Record<string, number> = {
-        OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, UNDER_LOADING: 2, AT_REFINERY: 3,
+        OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, AT_REFINERY: 2, OTW_TO_REFINERY: 3,
         MUNDRA_PORT: 4, ON_THE_SEA: 5, IN_CONTRACT: 6, IN_TANK: 7,
+        DELIVERED: 8, IN_TRANSIT: 9, PENDING: 10, PROCESSING: 11,
       };
       setRows(
         data
@@ -929,9 +931,8 @@ export default function StockStatusPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="c-eta">ETA</Label>
-                <Input
+                <DateInput
                   id="c-eta"
-                  type="date"
                   value={cEta}
                   onChange={(e) => setCEta(e.target.value)}
                 />
@@ -1268,9 +1269,8 @@ export default function StockStatusPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="e-eta">ETA</Label>
-                <Input
+                <DateInput
                   id="e-eta"
-                  type="date"
                   value={eEta}
                   onChange={(e) => setEEta(e.target.value)}
                 />

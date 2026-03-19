@@ -10,6 +10,7 @@ import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -380,15 +381,15 @@ export default function AdvanceLicensePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="issue_date">Issue Date</Label>
-              <Input id="issue_date" type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} />
+              <DateInput id="issue_date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="import_validity">Import Validity</Label>
-              <Input id="import_validity" type="date" value={form.import_validity} onChange={(e) => setForm({ ...form, import_validity: e.target.value })} />
+              <DateInput id="import_validity" value={form.import_validity} onChange={(e) => setForm({ ...form, import_validity: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="export_validity">Export Validity</Label>
-              <Input id="export_validity" type="date" value={form.export_validity} onChange={(e) => setForm({ ...form, export_validity: e.target.value })} />
+              <DateInput id="export_validity" value={form.export_validity} onChange={(e) => setForm({ ...form, export_validity: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="import_in_mts">Import (MTS)</Label>
@@ -462,15 +463,15 @@ export default function AdvanceLicensePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_issue_date">Issue Date</Label>
-              <Input id="edit_issue_date" type="date" value={editForm.issue_date} onChange={(e) => setEditForm({ ...editForm, issue_date: e.target.value })} />
+              <DateInput id="edit_issue_date" value={editForm.issue_date} onChange={(e) => setEditForm({ ...editForm, issue_date: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_import_validity">Import Validity</Label>
-              <Input id="edit_import_validity" type="date" value={editForm.import_validity} onChange={(e) => setEditForm({ ...editForm, import_validity: e.target.value })} />
+              <DateInput id="edit_import_validity" value={editForm.import_validity} onChange={(e) => setEditForm({ ...editForm, import_validity: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_export_validity">Export Validity</Label>
-              <Input id="edit_export_validity" type="date" value={editForm.export_validity} onChange={(e) => setEditForm({ ...editForm, export_validity: e.target.value })} />
+              <DateInput id="edit_export_validity" value={editForm.export_validity} onChange={(e) => setEditForm({ ...editForm, export_validity: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_import_in_mts">Import (MTS)</Label>

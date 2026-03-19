@@ -114,7 +114,7 @@ export default function StockDashboardPage() {
     () =>
       data
         ? Object.keys(data.totals.status_vendor_totals).filter(
-            (key) => !key.startsWith("COMPLETED__")
+            (key) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__")
           )
         : [],
     [data]
