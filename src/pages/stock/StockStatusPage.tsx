@@ -141,6 +141,7 @@ export default function StockStatusPage() {
   // edit dialog
   const [editData, setEditData] = useState<StockStatus | null>(null);
   const [eStatus, setEStatus] = useState<StockStatusChoice>("PENDING");
+  const [eRate, setERate] = useState("");
   const [eQuantity, setEQuantity] = useState("");
   const [eVehicleNumber, setEVehicleNumber] = useState("");
   const [eLocation, setELocation] = useState("");
@@ -344,6 +345,7 @@ export default function StockStatusPage() {
   async function openEdit(row: StockStatus) {
     setEditData(row);
     setEStatus(row.status);
+    setERate(row.rate);
     setEQuantity(row.quantity);
     setEVehicleNumber(row.vehicle_number ?? "");
     setELocation(row.location ?? "");
@@ -354,8 +356,8 @@ export default function StockStatusPage() {
 
   async function handleEdit() {
     if (!editData) return;
-    if (!eQuantity.trim()) {
-      toast.error("Quantity is required.");
+    if (!eRate.trim() || !eQuantity.trim()) {
+      toast.error("Rate and quantity are required.");
       return;
     }
 
@@ -392,7 +394,7 @@ export default function StockStatusPage() {
             item_code: editData.item_code,
             status: eStatus,
             vendor_code: editData.vendor_code,
-            rate: editData.rate,
+            rate: eRate.trim(),
             quantity: eQuantity.trim(),
             created_by: editData.created_by,
             vehicle_number: eVehicleNumber.trim() || undefined,
@@ -404,7 +406,7 @@ export default function StockStatusPage() {
             item_code: editData.item_code,
             status: editData.status,
             vendor_code: editData.vendor_code,
-            rate: editData.rate,
+            rate: eRate.trim(),
             quantity: remainingQty,
             created_by: editData.created_by,
             vehicle_number: editData.vehicle_number || undefined,
@@ -422,7 +424,7 @@ export default function StockStatusPage() {
           item_code: editData.item_code,
           status: eStatus,
           vendor_code: editData.vendor_code,
-          rate: editData.rate,
+          rate: eRate.trim(),
           quantity: eQuantity.trim(),
           created_by: editData.created_by,
           vehicle_number: eVehicleNumber.trim() || undefined,
@@ -1212,9 +1214,16 @@ export default function StockStatusPage() {
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Rate (&#8377;)</p>
-                <p className="text-sm font-medium">{editData?.rate ?? "—"}</p>
+              <div className="space-y-2">
+                <Label htmlFor="e-rate">Rate (&#8377;) *</Label>
+                <Input
+                  id="e-rate"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={eRate}
+                  onChange={(e) => setERate(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="e-qty">Quantity (KG) *</Label>
