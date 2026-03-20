@@ -291,7 +291,7 @@ export default function AdvanceLicensePage() {
                     </TableRow>
                   ) : (
                     paginated.map((h, i) => (
-                      <TableRow key={h.license_no} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/license/advance-license/${encodeURIComponent(h.license_no)}`)}>
+                      <TableRow key={h.license_no} className={`cursor-pointer hover:bg-muted/50 ${h.status === "CLOSE" ? "opacity-50" : ""}`} onClick={() => navigate(`/license/advance-license/${encodeURIComponent(h.license_no)}`)}>
                         <TableCell className="font-medium">{(page - 1) * perPage + i + 1}</TableCell>
                         <TableCell>
                           <span className="text-primary underline underline-offset-4 font-medium">

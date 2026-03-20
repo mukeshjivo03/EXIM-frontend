@@ -293,7 +293,7 @@ export default function DFIALicensePage() {
                     </TableRow>
                   ) : (
                     paginated.map((h, i) => (
-                      <TableRow key={h.file_no} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/license/dfia-license/${encodeURIComponent(h.file_no)}`)}>
+                      <TableRow key={h.file_no} className={`cursor-pointer hover:bg-muted/50 ${h.status === "CLOSE" ? "opacity-50" : ""}`} onClick={() => navigate(`/license/dfia-license/${encodeURIComponent(h.file_no)}`)}>
                         <TableCell className="font-medium">{(page - 1) * perPage + i + 1}</TableCell>
                         <TableCell>
                           <span className="text-primary underline underline-offset-4 font-medium">{h.file_no}</span>

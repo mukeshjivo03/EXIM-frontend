@@ -204,9 +204,6 @@ export default function AdvanceLicenseDetailPage() {
             <p className="text-sm text-muted-foreground">License line details</p>
           </div>
         </div>
-        <Button onClick={openCreate} className="btn-press gap-2">
-          <Plus className="h-4 w-4" /> Add Line
-        </Button>
       </div>
 
       {/* Error */}
@@ -277,6 +274,13 @@ export default function AdvanceLicenseDetailPage() {
           </Card>
         </div>
       )}
+
+      {/* Add Line Button */}
+      <div className="flex justify-end">
+        <Button onClick={openCreate} className="btn-press gap-2">
+          <Plus className="h-4 w-4" /> Add Line
+        </Button>
+      </div>
 
       {/* Lines Table */}
       <Card className="card-hover shimmer-hover">
