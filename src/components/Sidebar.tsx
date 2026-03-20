@@ -62,6 +62,7 @@ const accountsLinks = [
 
 const contractsLinks = [
   { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText },
+  { to: "/old-domestic-contracts", label: "Old Domestic Contracts", icon: FileText },
 ];
 
 const licenseLinks = [
