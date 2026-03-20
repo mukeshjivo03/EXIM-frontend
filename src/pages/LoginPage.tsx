@@ -285,7 +285,7 @@ export default function LoginPage() {
 
         {/* Cargo Ship sailing */}
         <div
-          className="absolute z-[5] ship-sail pointer-events-none"
+          className="absolute z-[5] login-ship-sail pointer-events-none"
           style={{ bottom: "15%", width: "200px", height: "110px" }}
         >
           <div className="ship-bob w-full h-full">

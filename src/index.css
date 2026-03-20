@@ -270,6 +270,11 @@
   animation: loginRouteDash 2s linear infinite;
 }
 
+/* Login ship — slower sail */
+.login-ship-sail {
+  animation: shipSail 35s linear infinite;
+}
+
 /* Star twinkle */
 @keyframes starTwinkle {
   0%, 100% { opacity: var(--star-base, 0.5); }
