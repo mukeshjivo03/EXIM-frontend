@@ -58,11 +58,9 @@ export default function AdvanceLicensePage() {
     export_validity: "",
     import_in_mts: "",
     cif_value_inr: "",
-    cif_value_usd: "",
     cif_exchange_rate: "",
     export_in_mts: "",
     fob_value_inr: "",
-    fob_value_usd: "",
     fob_exhange_rate: "",
     status: "OPEN",
   });
@@ -74,8 +72,8 @@ export default function AdvanceLicensePage() {
   const [editTarget, setEditTarget] = useState<LicenseHeader | null>(null);
   const [editForm, setEditForm] = useState<LicenseHeaderPayload>({
     license_no: "", issue_date: "", import_validity: "", export_validity: "", import_in_mts: "",
-    cif_value_inr: "", cif_value_usd: "", cif_exchange_rate: "",
-    export_in_mts: "", fob_value_inr: "", fob_value_usd: "", fob_exhange_rate: "", status: "OPEN",
+    cif_value_inr: "", cif_exchange_rate: "",
+    export_in_mts: "", fob_value_inr: "", fob_exhange_rate: "", status: "OPEN",
   });
   const [editFormError, setEditFormError] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -115,11 +113,9 @@ export default function AdvanceLicensePage() {
       export_validity: "",
       import_in_mts: "",
       cif_value_inr: "",
-      cif_value_usd: "",
       cif_exchange_rate: "",
       export_in_mts: "",
       fob_value_inr: "",
-      fob_value_usd: "",
       fob_exhange_rate: "",
       status: "OPEN",
     });
@@ -157,9 +153,9 @@ export default function AdvanceLicensePage() {
     setEditTarget(h);
     setEditForm({
       license_no: h.license_no, issue_date: h.issue_date, import_validity: h.import_validity, export_validity: h.export_validity,
-      import_in_mts: h.import_in_mts, cif_value_inr: h.cif_value_inr, cif_value_usd: h.cif_value_usd,
+      import_in_mts: h.import_in_mts, cif_value_inr: h.cif_value_inr,
       cif_exchange_rate: h.cif_exchange_rate, export_in_mts: h.export_in_mts, fob_value_inr: h.fob_value_inr,
-      fob_value_usd: h.fob_value_usd, fob_exhange_rate: h.fob_exhange_rate, status: h.status,
+      fob_exhange_rate: h.fob_exhange_rate, status: h.status,
     });
     setEditFormError("");
     setEditOpen(true);
@@ -404,25 +400,29 @@ export default function AdvanceLicensePage() {
               <Input id="cif_value_inr" type="number" step="0.001" value={form.cif_value_inr} onChange={(e) => setForm({ ...form, cif_value_inr: e.target.value })} placeholder="8300000.000" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cif_value_usd">CIF Value (USD)</Label>
-              <Input id="cif_value_usd" type="number" step="0.001" value={form.cif_value_usd} onChange={(e) => setForm({ ...form, cif_value_usd: e.target.value })} placeholder="100000.000" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="cif_exchange_rate">CIF Exchange Rate</Label>
               <Input id="cif_exchange_rate" type="number" step="0.001" value={form.cif_exchange_rate} onChange={(e) => setForm({ ...form, cif_exchange_rate: e.target.value })} placeholder="83.000" />
             </div>
+            {Number(form.cif_value_inr) > 0 && Number(form.cif_exchange_rate) > 0 && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">CIF Value (USD)</Label>
+                <p className="text-sm font-medium pt-1">$ {(Number(form.cif_value_inr) / Number(form.cif_exchange_rate)).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="fob_value_inr">FOB Value (INR)</Label>
               <Input id="fob_value_inr" type="number" step="0.001" value={form.fob_value_inr} onChange={(e) => setForm({ ...form, fob_value_inr: e.target.value })} placeholder="9130000.000" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fob_value_usd">FOB Value (USD)</Label>
-              <Input id="fob_value_usd" type="number" step="0.001" value={form.fob_value_usd} onChange={(e) => setForm({ ...form, fob_value_usd: e.target.value })} placeholder="110000.000" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="fob_exhange_rate">FOB Exchange Rate</Label>
               <Input id="fob_exhange_rate" type="number" step="0.001" value={form.fob_exhange_rate} onChange={(e) => setForm({ ...form, fob_exhange_rate: e.target.value })} placeholder="83.000" />
             </div>
+            {Number(form.fob_value_inr) > 0 && Number(form.fob_exhange_rate) > 0 && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">FOB Value (USD)</Label>
+                <p className="text-sm font-medium pt-1">$ {(Number(form.fob_value_inr) / Number(form.fob_exhange_rate)).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
+              </div>
+            )}
           </div>
 
           {formError && <p className="text-sm text-destructive">{formError}</p>}
@@ -486,25 +486,29 @@ export default function AdvanceLicensePage() {
               <Input id="edit_cif_value_inr" type="number" step="0.001" value={editForm.cif_value_inr} onChange={(e) => setEditForm({ ...editForm, cif_value_inr: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_cif_value_usd">CIF Value (USD)</Label>
-              <Input id="edit_cif_value_usd" type="number" step="0.001" value={editForm.cif_value_usd} onChange={(e) => setEditForm({ ...editForm, cif_value_usd: e.target.value })} />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit_cif_exchange_rate">CIF Exchange Rate</Label>
               <Input id="edit_cif_exchange_rate" type="number" step="0.001" value={editForm.cif_exchange_rate} onChange={(e) => setEditForm({ ...editForm, cif_exchange_rate: e.target.value })} />
             </div>
+            {Number(editForm.cif_value_inr) > 0 && Number(editForm.cif_exchange_rate) > 0 && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">CIF Value (USD)</Label>
+                <p className="text-sm font-medium pt-1">$ {(Number(editForm.cif_value_inr) / Number(editForm.cif_exchange_rate)).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="edit_fob_value_inr">FOB Value (INR)</Label>
               <Input id="edit_fob_value_inr" type="number" step="0.001" value={editForm.fob_value_inr} onChange={(e) => setEditForm({ ...editForm, fob_value_inr: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_fob_value_usd">FOB Value (USD)</Label>
-              <Input id="edit_fob_value_usd" type="number" step="0.001" value={editForm.fob_value_usd} onChange={(e) => setEditForm({ ...editForm, fob_value_usd: e.target.value })} />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit_fob_exhange_rate">FOB Exchange Rate</Label>
               <Input id="edit_fob_exhange_rate" type="number" step="0.001" value={editForm.fob_exhange_rate} onChange={(e) => setEditForm({ ...editForm, fob_exhange_rate: e.target.value })} />
             </div>
+            {Number(editForm.fob_value_inr) > 0 && Number(editForm.fob_exhange_rate) > 0 && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">FOB Value (USD)</Label>
+                <p className="text-sm font-medium pt-1">$ {(Number(editForm.fob_value_inr) / Number(editForm.fob_exhange_rate)).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
+              </div>
+            )}
           </div>
 
           {editFormError && <p className="text-sm text-destructive">{editFormError}</p>}

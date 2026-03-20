@@ -5,11 +5,13 @@ import { ArrowLeft, Plus, FileText, Pencil } from "lucide-react";
 
 import {
   getDFIALicenseHeader,
+  getDFIALicenseLineInsight,
   createDFIALicenseLine,
   updateDFIALicenseLine,
   type DFIALicenseHeader,
   type DFIALicenseLine,
   type DFIALicenseLinePayload,
+  type DFIALicenseLineInsight,
 } from "@/api/license";
 import { fmtDate, fmtDecimal } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errors";
@@ -61,6 +63,7 @@ export default function DFIALicenseDetailPage() {
   const { fileNo } = useParams<{ fileNo: string }>();
   const navigate = useNavigate();
   const [header, setHeader] = useState<DFIALicenseHeader | null>(null);
+  const [insight, setInsight] = useState<DFIALicenseLineInsight | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -81,8 +84,12 @@ export default function DFIALicenseDetailPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await getDFIALicenseHeader(fileNo!);
+      const [data, insightData] = await Promise.all([
+        getDFIALicenseHeader(fileNo!),
+        getDFIALicenseLineInsight(fileNo!),
+      ]);
       setHeader(data);
+      setInsight(insightData);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load DFIA license details"));
     } finally {
@@ -200,6 +207,66 @@ export default function DFIALicenseDetailPage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Summary Cards */}
+      {header && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Issue Date</CardDescription>
+              <CardTitle className="text-lg">{fmtDate(header.issue_date)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Import Validity</CardDescription>
+              <CardTitle className="text-lg">{fmtDate(header.import_validity)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Export Validity</CardDescription>
+              <CardTitle className="text-lg">{fmtDate(header.export_validity)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Status</CardDescription>
+              <CardTitle className="text-lg">{header.status}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      {/* Line Insight Cards */}
+      {insight && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total To Be Imported</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_to_be_imported)} MTS</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Exported</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_exported_in_mts)} MTS</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Balance</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_balance)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total SB Value (INR)</CardDescription>
+              <CardTitle className="text-lg">₹ {fmtDecimal(insight.total_sb_value_inr)}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
 
       {/* Lines Table */}
       <Card className="card-hover shimmer-hover">

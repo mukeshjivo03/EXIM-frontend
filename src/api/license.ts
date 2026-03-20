@@ -59,11 +59,9 @@ export interface LicenseHeaderPayload {
   export_validity: string;
   import_in_mts: string;
   cif_value_inr: string;
-  cif_value_usd: string;
   cif_exchange_rate: string;
   export_in_mts: string;
   fob_value_inr: string;
-  fob_value_usd: string;
   fob_exhange_rate: string;
   status: string;
 }
@@ -80,6 +78,19 @@ export async function updateLicenseHeader(licenseNo: string, data: LicenseHeader
 
 export async function deleteLicenseHeader(licenseNo: string): Promise<void> {
   await api.delete(`/license/advance-license-header/${licenseNo}/`);
+}
+
+export interface LicenseLineInsight {
+  total_boe_value_usd: number;
+  total_sb_value_usd: number;
+  total_balance: number;
+  total_import_in_mts: number;
+  total_export_in_mts: number;
+}
+
+export async function getLicenseLineInsight(licenseNo: string): Promise<LicenseLineInsight> {
+  const res = await api.get<LicenseLineInsight>(`/license/advance-license-lines/insight/${licenseNo}/`);
+  return res.data;
 }
 
 export async function createLicenseLine(data: LicenseLinePayload): Promise<LicenseLine> {
@@ -170,6 +181,18 @@ export interface DFIALicenseLinePayload {
   exported_in_mts: string;
   balance: string;
   sb_value_inr: string;
+}
+
+export interface DFIALicenseLineInsight {
+  total_balance: number;
+  total_to_be_imported: number;
+  total_exported_in_mts: number;
+  total_sb_value_inr: number;
+}
+
+export async function getDFIALicenseLineInsight(fileNo: string): Promise<DFIALicenseLineInsight> {
+  const res = await api.get<DFIALicenseLineInsight>(`/license/dfia-license-lines/insight/${fileNo}/`);
+  return res.data;
 }
 
 export async function createDFIALicenseLine(data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {

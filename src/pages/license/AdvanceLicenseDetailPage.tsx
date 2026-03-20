@@ -5,11 +5,13 @@ import { ArrowLeft, Plus, FileText, Pencil } from "lucide-react";
 
 import {
   getLicenseHeader,
+  getLicenseLineInsight,
   createLicenseLine,
   updateLicenseLine,
   type LicenseHeader,
   type LicenseLine,
   type LicenseLinePayload,
+  type LicenseLineInsight,
 } from "@/api/license";
 import { fmtDate, fmtDecimal } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errors";
@@ -63,6 +65,7 @@ export default function AdvanceLicenseDetailPage() {
   const { licenseNo } = useParams<{ licenseNo: string }>();
   const navigate = useNavigate();
   const [header, setHeader] = useState<LicenseHeader | null>(null);
+  const [insight, setInsight] = useState<LicenseLineInsight | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -83,8 +86,12 @@ export default function AdvanceLicenseDetailPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await getLicenseHeader(licenseNo!);
+      const [data, insightData] = await Promise.all([
+        getLicenseHeader(licenseNo!),
+        getLicenseLineInsight(licenseNo!),
+      ]);
       setHeader(data);
+      setInsight(insightData);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load license details"));
     } finally {
@@ -230,6 +237,42 @@ export default function AdvanceLicenseDetailPage() {
             <CardHeader className="pb-2">
               <CardDescription>Status</CardDescription>
               <CardTitle className="text-lg">{header.status}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      {/* Line Insight Cards */}
+      {insight && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Import</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_import_in_mts)} MTS</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Export</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_export_in_mts)} MTS</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total BOE Value</CardDescription>
+              <CardTitle className="text-lg">$ {fmtDecimal(insight.total_boe_value_usd)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total SB Value</CardDescription>
+              <CardTitle className="text-lg">$ {fmtDecimal(insight.total_sb_value_usd)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Balance</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(insight.total_balance)}</CardTitle>
             </CardHeader>
           </Card>
         </div>
