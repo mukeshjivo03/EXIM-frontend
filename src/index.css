@@ -246,6 +246,40 @@
   box-shadow: 0 0 0 3px oklch(0.488 0.243 264.376 / 0.15);
 }
 
+/* Login page ocean waves */
+.login-wave-back  { fill: rgba(56, 130, 180, 0.35); }
+.login-wave-mid   { fill: rgba(40, 100, 160, 0.5); }
+.login-wave-front { fill: rgba(25, 75, 130, 0.7); }
+.dark .login-wave-back  { fill: rgba(12, 28, 48, 0.5); }
+.dark .login-wave-mid   { fill: rgba(8, 22, 40, 0.7); }
+.dark .login-wave-front { fill: rgba(5, 15, 30, 0.9); }
+
+/* Login sky gradient */
+.login-sky {
+  background: linear-gradient(to bottom, transparent 50%, rgba(56, 130, 180, 0.1) 100%);
+}
+.dark .login-sky {
+  background: linear-gradient(to bottom, transparent 50%, rgba(5, 15, 30, 0.3) 100%);
+}
+
+/* Login route line animation */
+@keyframes loginRouteDash {
+  to { stroke-dashoffset: -28; }
+}
+.login-route-line {
+  animation: loginRouteDash 2s linear infinite;
+}
+
+/* Star twinkle */
+@keyframes starTwinkle {
+  0%, 100% { opacity: var(--star-base, 0.5); }
+  50%      { opacity: 0.1; }
+}
+.login-star {
+  --star-base: inherit;
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+
 /* ── Responsive: table scroll on small screens ── */
 .rounded-md.border:has(table) {
   overflow-x: auto;

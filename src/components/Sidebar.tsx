@@ -22,6 +22,9 @@ import {
   BarChart3,
   Scale,
   FileText,
+  FileCheck,
+  FileClock,
+  ShieldCheck,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -61,13 +64,13 @@ const accountsLinks = [
 ];
 
 const contractsLinks = [
-  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText },
-  { to: "/old-domestic-contracts", label: "Old Domestic Contracts", icon: FileText },
+  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileCheck },
+  { to: "/old-domestic-contracts", label: "Old Domestic Contracts", icon: FileClock },
 ];
 
 const licenseLinks = [
   { to: "/license/advance-license", label: "Advance License", icon: FileText },
-  { to: "/license/dfia-license", label: "DFIA License", icon: FileText },
+  { to: "/license/dfia-license", label: "DFIA License", icon: ShieldCheck },
 ];
 
 const adminLinks = [
