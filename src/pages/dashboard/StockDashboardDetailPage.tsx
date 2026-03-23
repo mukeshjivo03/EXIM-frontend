@@ -14,7 +14,7 @@ const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" 
 
 function convertUnit(kg: number, unit: Unit): number {
   if (unit === "MTS") return kg / 1000;
-  if (unit === "LTR") return kg * 1.1;
+  if (unit === "LTR") return kg * 1.0989; // 1ltr = 1kg * 1.0989
   return kg;
 }
 

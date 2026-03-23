@@ -38,7 +38,7 @@ import {
 
 
 type Unit = "L" | "MT";
-const L_PER_MT = 1000;
+const L_PER_MT = 1098.9;
 
 function conv(liters: number, unit: Unit): string {
   if (unit === "MT") {

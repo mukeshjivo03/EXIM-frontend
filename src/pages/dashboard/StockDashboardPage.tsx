@@ -18,24 +18,23 @@ const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" 
 /** Conversion factor from KG to target unit */
 function convertUnit(kg: number, unit: Unit): number {
   if (unit === "MTS") return kg / 1000;
-  if (unit === "LTR") return kg / 0.910; // oil density 0.910 kg/L
+  if (unit === "LTR") return kg * 1.0989; // 1ltr = 1kg * 1.0989
   return kg;
 }
-
 
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: unit === "MTS" ? 2 : 0,
+    maximumFractionDigits: unit === "MTS" ? 2 : 0,
   });
 }
 
 /** Convert liters to the selected display unit */
 function convertFromLiters(liters: number, unit: Unit): number {
-  if (unit === "KG") return liters * 0.910;
-  if (unit === "MTS") return (liters * 0.910) / 1000;
-  return liters; // LTR
+  if (unit === "KG") return liters / 1.0989;
+  if (unit === "MTS") return (liters / 1.0989) / 1000;
+  return liters;
 }
 
 function fmtLiters(n: number, unit: Unit) {
