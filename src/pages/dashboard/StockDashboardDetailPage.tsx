@@ -12,17 +12,18 @@ type Unit = "KG" | "MTS" | "LTR";
 
 const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" };
 
+/** Conversion factor from KG to target unit */
 function convertUnit(kg: number, unit: Unit): number {
   if (unit === "MTS") return kg / 1000;
-  if (unit === "LTR") return kg * 1.1;
+  if (unit === "LTR") return kg * 1.0989; // conversion 1 KG = 1.0989 LTR
   return kg;
 }
 
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: unit === "MTS" ? 2 : 0,
-    maximumFractionDigits: unit === "MTS" ? 2 : 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
@@ -50,7 +51,17 @@ export default function StockDashboardDetailPage() {
 
   const [data, setData] = useState<StockDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState<Unit>("KG");
+  
+  // Persistence: initialize from localStorage or default to "MTS"
+  const [unit, setUnit] = useState<Unit>(() => {
+    const saved = localStorage.getItem("stock_dashboard_unit");
+    return (saved === "KG" || saved === "MTS" || saved === "LTR") ? saved : "MTS";
+  });
+
+  // Update localStorage when unit changes
+  useEffect(() => {
+    localStorage.setItem("stock_dashboard_unit", unit);
+  }, [unit]);
 
   async function fetchData() {
     setLoading(true);
