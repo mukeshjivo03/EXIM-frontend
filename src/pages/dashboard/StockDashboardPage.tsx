@@ -25,10 +25,9 @@ function convertUnit(kg: number, unit: Unit): number {
 
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
-  const decimals = unit === "MTS" ? 3 : unit === "LTR" ? 2 : 2;
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
@@ -41,10 +40,9 @@ function convertFromLiters(liters: number, unit: Unit): number {
 
 function fmtLiters(n: number, unit: Unit) {
   const val = convertFromLiters(n, unit);
-  const decimals = unit === "MTS" ? 3 : unit === "LTR" ? 2 : 2;
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
@@ -76,7 +74,17 @@ export default function StockDashboardPage() {
   const [data, setData] = useState<StockDashboardResponse | null>(null);
   const [tankSummary, setTankSummary] = useState<ItemWiseTankSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState<Unit>("KG");
+  
+  // Persistence: initialize from localStorage or default to "MTS"
+  const [unit, setUnit] = useState<Unit>(() => {
+    const saved = localStorage.getItem("stock_dashboard_unit");
+    return (saved === "KG" || saved === "MTS" || saved === "LTR") ? saved : "MTS";
+  });
+
+  // Update localStorage when unit changes
+  useEffect(() => {
+    localStorage.setItem("stock_dashboard_unit", unit);
+  }, [unit]);
 
   // Map item_code → quantity in liters from tank data
   const tankQtyMap = useMemo(() => {
@@ -320,8 +328,7 @@ export default function StockDashboardPage() {
                         const tankVal = convertFromLiters(tankQtyMap.get(item.item_code) ?? 0, unit);
                         const restVal = convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
                         const total = tankVal + restVal;
-                        const decimals = unit === "MTS" ? 3 : 2;
-                        const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                        const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                         return (
                           <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/20 text-xs" title={formatted}>
                             {formatted}
@@ -349,8 +356,7 @@ export default function StockDashboardPage() {
                       const tankVal = convertFromLiters(tankInFactoryTotal, unit);
                       const restVal = convertUnit(data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0), unit);
                       const total = tankVal + restVal;
-                      const decimals = unit === "MTS" ? 3 : 2;
-                      const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                      const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                       return (
                         <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/60 text-primary" title={formatted}>
                           {formatted}
