@@ -38,13 +38,13 @@ import {
 
 
 type Unit = "L" | "MT";
-const L_PER_MT = 1098.9;
+const L_PER_MT = 1000;
 
 function conv(liters: number, unit: Unit): string {
   if (unit === "MT") {
-    return (liters / L_PER_MT).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return (liters / L_PER_MT).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   }
-  return liters.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return liters.toLocaleString("en-IN");
 }
 
 function formatCapacity(value: string | number, unit: Unit): string {

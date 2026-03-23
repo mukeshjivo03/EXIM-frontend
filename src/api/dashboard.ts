@@ -1,53 +1,43 @@
-import { z } from "zod";
 import api from "./client";
 
-// ── Capacity Insights ──────────────────────────────────────────
-
-export const CapacityInsightSchema = z.object({
-  total_capacity: z.number(),
-  filled_capacity: z.number(),
-  filled_percentage: z.number(),
-  empty_capacity: z.number(),
-  empty_percentage: z.number(),
-});
-
-export type CapacityInsight = z.infer<typeof CapacityInsightSchema>;
-
-export async function getCapacityInsights(): Promise<CapacityInsight> {
-  const res = await api.get("/tank/capacity-insights/");
-  return CapacityInsightSchema.parse(res.data);
+export interface CapacityInsight {
+  total_capacity: number;
+  filled_capacity: number;
+  filled_percentage: number;
+  empty_capacity: number;
+  empty_percentage: number;
 }
 
-// ── Stock Dashboard ───────────────────────────────────────────
+export async function getCapacityInsights(): Promise<CapacityInsight> {
+  const res = await api.get<CapacityInsight>("/tank/capacity-insights/");
+  return res.data;
+}
 
-export const StockDashboardItemSchema = z.object({
-  item_code: z.string(),
-  in_factory: z.number(),
-  outside_factory: z.number(),
-  status_data: z.record(z.string(), z.number()),
-  total: z.number(),
-});
+export interface StockDashboardItem {
+  item_code: string;
+  in_factory: number;
+  outside_factory: number;
+  status_data: Record<string, number>;
+  total: number;
+}
 
-export const StockDashboardResponseSchema = z.object({
-  summary: z.object({
-    in_factory_total: z.number(),
-    outside_factory_total: z.number(),
-    active_items: z.number(),
-  }),
-  status_vendors: z.record(z.string(), z.array(z.string())),
-  items: z.array(StockDashboardItemSchema),
-  totals: z.object({
-    in_factory: z.number(),
-    outside_factory: z.number(),
-    status_vendor_totals: z.record(z.string(), z.number()),
-    grand_total: z.number(),
-  }),
-});
-
-export type StockDashboardItem = z.infer<typeof StockDashboardItemSchema>;
-export type StockDashboardResponse = z.infer<typeof StockDashboardResponseSchema>;
+export interface StockDashboardResponse {
+  summary: {
+    in_factory_total: number;
+    outside_factory_total: number;
+    active_items: number;
+  };
+  status_vendors: Record<string, string[]>;
+  items: StockDashboardItem[];
+  totals: {
+    in_factory: number;
+    outside_factory: number;
+    status_vendor_totals: Record<string, number>;
+    grand_total: number;
+  };
+}
 
 export async function getStockDashboard(): Promise<StockDashboardResponse> {
-  const res = await api.get("/stock-status/stock-dashboard/");
-  return StockDashboardResponseSchema.parse(res.data);
+  const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/");
+  return res.data;
 }

@@ -127,10 +127,10 @@ The `StockStatusInsights` view computes:
 
 ```python
 avg_price_per_kg = total_value / total_qty
-avg_price_per_ltr = total_value / (total_qty * 1.0989)  # kg to liter conversion
+avg_price_per_ltr = total_value / (total_qty * 0.92)  # kg to liter conversion
 ```
 
-The `1.0989` factor is the conversion for edible oils (1 kg = 1.0989 liters).
+The `0.92` factor is the density conversion for edible oils (kg to liters).
 
 ---
 
@@ -277,7 +277,7 @@ Stock entries use soft-delete (not hard delete):
 ### Oil Density Factor
 
 ```python
-KG_TO_LTR = 1.0989  # Used in stock insights for avg_price_per_ltr calculation
+KG_TO_LTR = 0.92  # Used in stock insights for avg_price_per_ltr calculation
 ```
 
 ### Sync Type Codes
