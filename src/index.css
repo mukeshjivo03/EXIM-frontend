@@ -427,17 +427,48 @@
 .tank-wave-1 {
   animation: wave1 4s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
 }
-
 .tank-wave-2 {
   animation: wave2 5s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.5s infinite;
+}
+
+/* Splash — violent oscillation on refresh, settles after 2s */
+@keyframes waveSplash {
+  0%   { transform: translateX(0) scaleY(1); }
+  10%  { transform: translateX(-8%) scaleY(2.5); }
+  20%  { transform: translateX(-15%) scaleY(0.3); }
+  30%  { transform: translateX(-22%) scaleY(2.2); }
+  40%  { transform: translateX(-28%) scaleY(0.5); }
+  55%  { transform: translateX(-34%) scaleY(1.8); }
+  70%  { transform: translateX(-40%) scaleY(0.7); }
+  85%  { transform: translateX(-46%) scaleY(1.2); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
+.tank-wave-splash {
+  animation: waveSplash 2s ease-out forwards !important;
 }
 
 .tank-glow {
   animation: tankPulseGlow 3s ease-in-out infinite;
 }
+/* Neon glow for dark mode */
+.dark .tank-glow {
+  animation: tankNeonGlow 3s ease-in-out infinite;
+}
+@keyframes tankNeonGlow {
+  0%, 100% { opacity: 0.5; filter: brightness(1.3); }
+  50%      { opacity: 0.85; filter: brightness(1.8); }
+}
+/* Critical high tank — intense pulsing glow */
+.tank-glow-critical {
+  animation: tankCriticalGlow 1.5s ease-in-out infinite !important;
+}
+@keyframes tankCriticalGlow {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
 
 .tank-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 .tank-card:hover {
   transform: translateY(-4px);
@@ -445,6 +476,39 @@
 }
 .dark .tank-card:hover {
   box-shadow: 0 12px 28px -8px rgba(0,0,0,0.5);
+}
+
+/* Critical fill indicators */
+.tank-critical-high {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 16px -4px rgba(239, 68, 68, 0.3);
+  animation: tankCriticalPulse 2s ease-in-out infinite;
+}
+.dark .tank-critical-high {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 24px -4px rgba(239, 68, 68, 0.4);
+}
+@keyframes tankCriticalPulse {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.3); }
+  50%      { border-color: rgba(239, 68, 68, 0.7); }
+}
+.tank-critical-low {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 12px -4px rgba(245, 158, 11, 0.25);
+}
+.dark .tank-critical-low {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 0 16px -4px rgba(245, 158, 11, 0.35);
+}
+
+/* Empty/unassigned tank — dimmed with dashed border */
+.tank-empty {
+  opacity: 0.55;
+  border-style: dashed;
+  border-color: hsl(var(--border));
+}
+.tank-empty:hover {
+  opacity: 0.85;
 }
 
 .tank-glass {
@@ -465,48 +529,65 @@
 
 /* ── Industrial Tank Shell Styles ────────────────────────────── */
 
-/* Update Tank Shells to look more like Galvanized Steel */
+/* ── Ambient Day Mode — High-contrast galvanized steel with bright reflections ── */
 .tank-shell {
-  background: linear-gradient(to right, #475569, #64748B 50%, #475569);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-.dark .tank-shell {
-  background: linear-gradient(to right, #0F172A, #1E293B 50%, #0F172A);
-  border: 1px solid rgba(15,23,42,0.8);
+  background: linear-gradient(to right, #475569, #78909C 35%, #B0BEC5 50%, #78909C 65%, #475569);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: inset 2px 0 8px rgba(255,255,255,0.15), inset -2px 0 8px rgba(0,0,0,0.08);
 }
 .tank-dome {
-  background: linear-gradient(to bottom, hsl(210 8% 80%), hsl(210 8% 72%));
+  background: linear-gradient(to bottom, hsl(210 10% 84%), hsl(210 8% 74%));
+  box-shadow: inset 0 4px 8px rgba(255,255,255,0.2);
 }
-.dark .tank-dome {
-  background: linear-gradient(to bottom, hsl(215 12% 30%), hsl(215 12% 22%));
-}
-
 .tank-flange {
-  background: linear-gradient(to bottom, hsl(210 8% 68%), hsl(210 8% 76%));
+  background: linear-gradient(to bottom, hsl(210 8% 68%), hsl(210 10% 78%));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.dark .tank-flange {
-  background: linear-gradient(to bottom, hsl(215 12% 26%), hsl(215 12% 32%));
-}
-
 .tank-band {
-  background: hsl(210 8% 62%);
-  box-shadow: 0 1px 0 hsl(210 8% 82%);
+  background: hsl(210 10% 65%);
+  box-shadow: 0 1px 0 hsl(210 8% 85%), 0 -1px 0 hsl(210 8% 55%);
 }
-.dark .tank-band {
-  background: hsl(215 12% 32%);
-  box-shadow: 0 1px 0 hsl(215 12% 40%);
-}
-
 .tank-leg {
-  background: linear-gradient(to bottom, hsl(210 8% 66%), hsl(210 8% 56%));
+  background: linear-gradient(to bottom, hsl(210 8% 68%), hsl(210 8% 56%));
 }
-.dark .tank-leg {
-  background: linear-gradient(to bottom, hsl(215 12% 28%), hsl(215 12% 20%));
-}
-
 .tank-base {
   background: hsl(210 8% 56%);
 }
+
+/* ── Ambient Night Mode — Deep metallic with soft neon liquid glow ── */
+.dark .tank-shell {
+  background: linear-gradient(to right, #0C1220, #162032 35%, #1C2A3E 50%, #162032 65%, #0C1220);
+  border: 1px solid rgba(100,140,180,0.15);
+  box-shadow: inset 2px 0 12px rgba(100,160,220,0.06), inset -2px 0 12px rgba(0,0,0,0.3);
+}
+.dark .tank-dome {
+  background: linear-gradient(to bottom, hsl(215 14% 28%), hsl(215 12% 20%));
+  box-shadow: inset 0 3px 6px rgba(100,160,220,0.08);
+}
+.dark .tank-flange {
+  background: linear-gradient(to bottom, hsl(215 12% 24%), hsl(215 12% 30%));
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.dark .tank-band {
+  background: hsl(215 12% 30%);
+  box-shadow: 0 1px 0 hsl(215 12% 38%), 0 -1px 0 hsl(215 12% 22%);
+}
+.dark .tank-leg {
+  background: linear-gradient(to bottom, hsl(215 12% 26%), hsl(215 12% 18%));
+}
 .dark .tank-base {
-  background: hsl(215 12% 26%);
+  background: hsl(215 12% 24%);
+}
+
+/* ── Kiosk Mode — hide layout chrome, maximize tank grid ── */
+.kiosk-mode .glass-navbar,
+.kiosk-mode .glass-sidebar,
+.kiosk-mode footer {
+  display: none !important;
+}
+.kiosk-mode main {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
 }

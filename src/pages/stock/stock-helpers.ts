@@ -18,6 +18,7 @@ export function formatStatus(s: string) {
 export function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   switch (s) {
     case "DELIVERED":
+    case "COMPLETED":
       return "default";
     case "PENDING":
     case "PROCESSING":
@@ -63,7 +64,8 @@ export const JOURNEY_STEPS: { status: StockStatusChoice; label: string; icon: an
 /* ── Status sort order for table ────────────────────────── */
 
 export const STATUS_ORDER: Record<string, number> = {
-  OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, AT_REFINERY: 2, OTW_TO_REFINERY: 3,
-  MUNDRA_PORT: 4, ON_THE_SEA: 5, IN_CONTRACT: 6, IN_TANK: 7,
-  DELIVERED: 8, IN_TRANSIT: 9, PENDING: 10, PROCESSING: 11,
+  OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, UNDER_LOADING: 2, AT_REFINERY: 3,
+  OTW_TO_REFINERY: 4, KANDLA_STORAGE: 5, MUNDRA_PORT: 6, ON_THE_SEA: 7,
+  IN_CONTRACT: 8, IN_TANK: 9, DELIVERED: 10, IN_TRANSIT: 11,
+  PENDING: 12, PROCESSING: 13, COMPLETED: 14,
 };

@@ -5,11 +5,9 @@ import {
   RefreshCw, 
   Factory, 
   PackageOpen, 
-  Layers, 
+
   EyeOff, 
   Eye, 
-  TrendingUp, 
-  AlertTriangle,
   ChevronRight,
   Info
 } from "lucide-react";
@@ -74,6 +72,7 @@ const STATUS_META: Record<string, { label: string; variant: string; className: s
   IN_TRANSIT:      { label: "In Transit",      variant: "default",   className: "bg-sky-500",    headerBg: "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-200", barColor: "#0ea5e9" },
   PENDING:         { label: "Pending",         variant: "secondary", className: "bg-slate-500",  headerBg: "bg-slate-50 dark:bg-slate-900/20 text-slate-800 dark:text-slate-200", barColor: "#64748b" },
   PROCESSING:      { label: "Processing",      variant: "default",   className: "bg-purple-500", headerBg: "bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200", barColor: "#a855f7" },
+  COMPLETED:       { label: "Completed",       variant: "default",   className: "bg-teal-500",   headerBg: "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200", barColor: "#14b8a6" },
 };
 
 /* ── component ────────────────────────────────────────────────── */
@@ -134,7 +133,7 @@ export default function StockDashboardPage() {
     () =>
       data
         ? Object.keys(data.totals.status_vendor_totals).filter(
-            (key) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__")
+            (key) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__") && !key.startsWith("completed__")
           )
         : [],
     [data]
@@ -177,13 +176,7 @@ export default function StockDashboardPage() {
   const insights = useMemo(() => {
     if (!data) return null;
     const topItem = [...data.items].sort((a, b) => b.total - a.total)[0];
-    const statusTotals = Object.entries(data.totals.status_vendor_totals).reduce((acc, [key, val]) => {
-      const status = key.split("__")[0];
-      acc[status] = (acc[status] || 0) + val;
-      return acc;
-    }, {} as Record<string, number>);
-    const bottleneck = Object.entries(statusTotals).sort((a, b) => b[1] - a[1])[0];
-    return { topItem, bottleneck };
+    return { topItem };
   }, [data]);
 
   // Filtered rows based on hideZeroRows
@@ -239,7 +232,7 @@ export default function StockDashboardPage() {
       </div>
 
       {/* ── Summary & Insights ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="card-hover border-none bg-blue-50/50 dark:bg-blue-950/20 shadow-sm">
           <CardContent className="p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
@@ -262,17 +255,6 @@ export default function StockDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-none bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Total Asset</p>
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-            </div>
-            <h3 className="text-xl font-black">{data ? fmtNum(data.totals.grand_total, unit) : "—"}</h3>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">Combined Inventory</p>
-          </CardContent>
-        </Card>
-
         {/* Insight Badges */}
         <Card className="card-hover border-none bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm overflow-hidden relative group">
           <CardContent className="p-5 flex flex-col gap-1">
@@ -284,20 +266,6 @@ export default function StockDashboardPage() {
               <Badge variant="outline" className="text-[9px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5 font-bold">BY VOLUME</Badge>
             </div>
             <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-indigo-500/10 group-hover:scale-110 transition-transform" />
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-none bg-rose-50/50 dark:bg-rose-950/20 shadow-sm overflow-hidden relative group">
-          <CardContent className="p-5 flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400">Bottleneck</p>
-            {loading ? <Skeleton className="h-6 w-20" /> : (
-              <h3 className="text-lg font-black truncate">{insights?.bottleneck?.[0]?.replace(/_/g, " ") ?? "—"}</h3>
-            )}
-            <div className="flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 text-rose-500" />
-              <p className="text-[9px] font-bold text-muted-foreground uppercase">High Concentration</p>
-            </div>
-            <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-rose-500/10 group-hover:scale-110 transition-transform" />
           </CardContent>
         </Card>
       </div>
@@ -518,7 +486,7 @@ export default function StockDashboardPage() {
                                   title={`Outside Factory: ${((convertUnit(item.outside_factory, unit) / grandTotal) * 100).toFixed(1)}%`}
                                 />
                               )}
-                              {Object.entries(item.status_data).map(([key, val]) => {
+                              {Object.entries(item.status_data).filter(([key]) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__")).map(([key, val]) => {
                                 if (val <= 0) return null;
                                 const status = key.split("__")[0];
                                 const color = STATUS_META[status]?.barColor ?? "#cbd5e1";

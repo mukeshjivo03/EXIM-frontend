@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   Droplets,
   Gauge,
@@ -7,35 +8,46 @@ import {
   Container,
   Package,
   Layers,
+  RefreshCw,
+  Maximize2,
+  Minimize2,
+  AlertTriangle,
+  Filter,
+  IndianRupee,
 } from "lucide-react";
 
-import { getTanks, getTankItems, getItemWiseTankSummary, getTankSummary, getTankLayers, type Tank, type TankItem, type ItemWiseTankSummaryItem, type TankSummary, type TankLayersResponse } from "@/api/tank";
-import { useAuth } from "@/context/AuthContext";
-import { toastApiError } from "@/lib/errors";
+import {
+  getTanks,
+  getTankItems,
+  getItemWiseTankSummary,
+  getTankSummary,
+  getTankLayers,
+  type Tank,
+  type TankItem,
+  type ItemWiseTankSummaryItem,
+  type TankSummary,
+  type TankLayersResponse,
+} from "@/api/tank";
+
 import { getErrorMessage } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
+/* ── helpers ─────────────────────────────────────────────── */
 
 type Unit = "L" | "MT";
 const L_PER_MT = 1098.9;
@@ -59,7 +71,6 @@ function fillPercent(tank: Tank): number {
   return Math.min(100, Math.round((current / total) * 100));
 }
 
-/** Hex → rgba helper for glow / gradient effects */
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -67,7 +78,17 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* ─── SVG wave paths (two layers for realistic liquid surface) ─── */
+type GroupMode = "none" | "product" | "status";
+
+function getStatusBucket(pct: number): string {
+  if (pct === 0) return "Empty";
+  if (pct < 10) return "Critical Low";
+  if (pct <= 50) return "Half Full";
+  if (pct <= 90) return "Full";
+  return "Nearly Full";
+}
+
+/* ─── SVG wave paths ─── */
 
 function WaveSvg({ color, className }: { color: string; className?: string }) {
   return (
@@ -85,9 +106,9 @@ function WaveSvg({ color, className }: { color: string; className?: string }) {
   );
 }
 
+/* ── page ─────────────────────────────────────────────────── */
+
 export default function TankMonitoringPage() {
-  const { role } = useAuth();
-  const isFTR = role === "FTR";
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,50 +116,49 @@ export default function TankMonitoringPage() {
   const [itemSummary, setItemSummary] = useState<ItemWiseTankSummaryItem[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
-  const [unit, setUnit] = useState<Unit>("L");
+
+  // Persist unit
+  const [unit, setUnit] = useState<Unit>(() => {
+    const saved = localStorage.getItem("tank_monitoring_unit");
+    return saved === "MT" ? "MT" : "L";
+  });
+  useEffect(() => { localStorage.setItem("tank_monitoring_unit", unit); }, [unit]);
 
   // Rate breakdown dialog
   const [layersData, setLayersData] = useState<TankLayersResponse | null>(null);
   const [layersLoading, setLayersLoading] = useState(false);
 
-  async function openRateBreakdown(tankCode: string) {
-    setLayersLoading(true);
-    setLayersData(null);
+  // Kiosk mode
+  const [kiosk, setKiosk] = useState(false);
+
+  // Splash animation (triggers on refresh)
+  const [splashing, setSplashing] = useState(false);
+
+  // Group / filter
+  const [groupMode, setGroupMode] = useState<GroupMode>("none");
+  const [filterItem, setFilterItem] = useState("");
+
+  /* ── data fetching ─────────────────────────────────────── */
+
+  async function fetchTanks() {
+    setLoading(true);
+    setError("");
     try {
-      const data = await getTankLayers(tankCode);
-      setLayersData(data);
+      const [t, i] = await Promise.all([getTanks(), getTankItems()]);
+      setTanks((t ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
+      setTankItems(i ?? []);
     } catch (err) {
-      toastApiError(err, "Failed to load rate breakdown.");
+      setError(getErrorMessage(err, "Failed to load data"));
     } finally {
-      setLayersLoading(false);
+      setLoading(false);
     }
   }
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const [t, i] = await Promise.all([getTanks(), getTankItems()]);
-        setTanks((t ?? []).sort((a, b) => a.tank_code.localeCompare(b.tank_code, undefined, { numeric: true })));
-        setTankItems(i ?? []);
-      } catch (err) {
-        setError(getErrorMessage(err, "Failed to load data"));
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-    fetchItemSummary();
-    fetchTankSummary();
-  }, []);
 
   async function fetchTankSummary() {
     try {
       const data = await getTankSummary();
       setTankSummary(data);
-    } catch {
-      // non-critical
-    }
+    } catch { /* non-critical */ }
   }
 
   async function fetchItemSummary() {
@@ -146,22 +166,116 @@ export default function TankMonitoringPage() {
     try {
       const data = await getItemWiseTankSummary();
       setItemSummary(data.items);
-    } catch {
-      // non-critical
+    } catch { /* non-critical */ }
+    finally { setItemSummaryLoading(false); }
+  }
+
+  const refreshAll = useCallback(async () => {
+    setSplashing(true);
+    await Promise.all([fetchTanks(), fetchTankSummary(), fetchItemSummary()]);
+    setTimeout(() => setSplashing(false), 2000);
+  }, []);
+
+  useEffect(() => {
+    fetchTanks();
+    fetchItemSummary();
+    fetchTankSummary();
+  }, []);
+
+  // Track which tank we're viewing (keeps dialog open even on API error)
+  const [layersTankCode, setLayersTankCode] = useState<string | null>(null);
+  const [layersError, setLayersError] = useState("");
+
+  async function openRateBreakdown(tankCode: string) {
+    setLayersTankCode(tankCode);
+    setLayersLoading(true);
+    setLayersData(null);
+    setLayersError("");
+    try {
+      const data = await getTankLayers(tankCode);
+      setLayersData(data);
+    } catch (err) {
+      setLayersError(getErrorMessage(err, "Failed to load rate breakdown."));
     } finally {
-      setItemSummaryLoading(false);
+      setLayersLoading(false);
     }
   }
 
-  const colorMap = new Map(
-    tankItems.map((i) => [i.tank_item_code, i.color])
-  );
+  function closeRateBreakdown() {
+    setLayersTankCode(null);
+    setLayersData(null);
+    setLayersError("");
+  }
 
+  /* ── derived data ──────────────────────────────────────── */
+
+  const colorMap = new Map(tankItems.map((i) => [i.tank_item_code, i.color]));
+  const nameMap = new Map(tankItems.map((i) => [i.tank_item_code, i.tank_item_name]));
+
+  const uniqueItemCodes = useMemo(() => {
+    const codes = [...new Set(tanks.map((t) => t.item_code).filter(Boolean))] as string[];
+    return codes.sort();
+  }, [tanks]);
+
+  const filteredTanks = useMemo(() => {
+    if (!filterItem) return tanks;
+    return tanks.filter((t) => t.item_code === filterItem);
+  }, [tanks, filterItem]);
+
+  const groupedTanks = useMemo(() => {
+    if (groupMode === "none") return [{ label: "", tanks: filteredTanks }];
+
+    const groups = new Map<string, Tank[]>();
+    for (const tank of filteredTanks) {
+      let key: string;
+      if (groupMode === "product") {
+        key = tank.item_code
+          ? `${tank.item_code} — ${nameMap.get(tank.item_code) ?? ""}`
+          : "Unassigned";
+      } else {
+        key = getStatusBucket(fillPercent(tank));
+      }
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(tank);
+    }
+
+    // Sort groups by key, but put "Unassigned"/"Empty" last
+    const entries = [...groups.entries()].sort((a, b) => {
+      if (groupMode === "status") {
+        const order = ["Nearly Full", "Full", "Half Full", "Critical Low", "Empty"];
+        return order.indexOf(a[0]) - order.indexOf(b[0]);
+      }
+      if (a[0] === "Unassigned") return 1;
+      if (b[0] === "Unassigned") return -1;
+      return a[0].localeCompare(b[0]);
+    });
+
+    return entries.map(([label, tanks]) => ({ label, tanks }));
+  }, [filteredTanks, groupMode, nameMap]);
+
+  // Max item quantity for fill bar scaling in summary table
+  const maxItemQty = useMemo(() => {
+    if (itemSummary.length === 0) return 0;
+    return Math.max(...itemSummary.map((i) => i.quantity_in_liters));
+  }, [itemSummary]);
+
+  /* ── kiosk toggle ──────────────────────────────────────── */
+
+  useEffect(() => {
+    if (kiosk) {
+      document.documentElement.classList.add("kiosk-mode");
+    } else {
+      document.documentElement.classList.remove("kiosk-mode");
+    }
+    return () => document.documentElement.classList.remove("kiosk-mode");
+  }, [kiosk]);
+
+  /* ── render ────────────────────────────────────────────── */
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className={cn("p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page", kiosk && "p-4")}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Tank Monitoring</h1>
           <div className="flex items-center gap-1.5 mt-1">
@@ -169,46 +283,94 @@ export default function TankMonitoringPage() {
             <p className="text-sm text-muted-foreground">Live Tank Visual Display</p>
           </div>
         </div>
-        <div className="flex items-center rounded-lg border bg-muted p-0.5">
-          <button
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${unit === "L" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            onClick={() => setUnit("L")}
-          >
-            Liters
-          </button>
-          <button
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${unit === "MT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            onClick={() => setUnit("MT")}
-          >
-            MTS
-          </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Filter by item */}
+          <Select value={filterItem || "__all__"} onValueChange={(v) => setFilterItem(v === "__all__" ? "" : v)}>
+            <SelectTrigger className="w-[180px] h-9 text-xs">
+              <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="All Items" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Items</SelectItem>
+              {uniqueItemCodes.map((code) => (
+                <SelectItem key={code} value={code}>
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorMap.get(code) ?? "#94a3b8" }} />
+                    {code}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Group mode */}
+          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/50">
+            {([["none", "Grid"], ["product", "By Product"], ["status", "By Status"]] as [GroupMode, string][]).map(([mode, label]) => (
+              <button
+                key={mode}
+                onClick={() => setGroupMode(mode)}
+                className={cn(
+                  "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                  groupMode === mode ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Unit toggle */}
+          <div className="flex items-center rounded-lg border bg-muted p-0.5">
+            <button
+              className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", unit === "L" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+              onClick={() => setUnit("L")}
+            >
+              Liters
+            </button>
+            <button
+              className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", unit === "MT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+              onClick={() => setUnit("MT")}
+            >
+              MTS
+            </button>
+          </div>
+
+          {/* Refresh */}
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-2" onClick={refreshAll} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            Refresh
+          </Button>
+
+          {/* Kiosk */}
+          <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-2" onClick={() => setKiosk(!kiosk)} title={kiosk ? "Exit Kiosk Mode" : "Kiosk Mode"}>
+            {kiosk ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Tank Summary Cards */}
-      <div>
-        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-          Tank Summary
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-          <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${conv(Number(tankSummary.current_stock), unit)} ${unit}` : ""} loading={!tankSummary} />
-          <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${conv(Number(tankSummary.total_tank_capacity), unit)} ${unit}` : ""} loading={!tankSummary} />
-          <SummaryCard icon={Container} label="Total Tanks" value={tankSummary ? tankSummary.tank_count : ""} loading={!tankSummary} />
-          <SummaryCard icon={Package} label="Total Products" value={tankSummary ? tankSummary.item_count : ""} loading={!tankSummary} />
-          <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
+      {!kiosk && (
+        <div>
+          <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+            Tank Summary
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+            <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${conv(Number(tankSummary.current_stock), unit)} ${unit}` : ""} loading={!tankSummary} />
+            <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${conv(Number(tankSummary.total_tank_capacity), unit)} ${unit}` : ""} loading={!tankSummary} />
+            <SummaryCard icon={Container} label="Total Tanks" value={tankSummary ? tankSummary.tank_count : ""} loading={!tankSummary} />
+            <SummaryCard icon={Package} label="Total Products" value={tankSummary ? tankSummary.item_count : ""} loading={!tankSummary} />
+            <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading skeleton */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className={cn("grid gap-5", kiosk ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border bg-card p-5 flex flex-col items-center gap-3"
-            >
+            <div key={i} className="rounded-2xl border bg-card p-5 flex flex-col items-center gap-3">
               <Skeleton className="h-5 w-20" />
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-[240px] w-[130px] rounded-t-[40%] rounded-b-lg" />
@@ -224,200 +386,220 @@ export default function TankMonitoringPage() {
           <p className="text-xs">Add tanks in Tank Data to see them here.</p>
         </div>
       ) : (
-        /* ─── Tank grid ─── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {tanks.map((tank) => {
-            const pct = fillPercent(tank);
-            const color = tank.item_code
-              ? colorMap.get(tank.item_code) ?? null
-              : null;
-            const currentL = tank.current_capacity
-              ? formatCapacity(tank.current_capacity, unit)
-              : "0";
-            const totalL = formatCapacity(tank.tank_capacity, unit);
+        /* ─── Grouped Tank Grid ─── */
+        <div className="space-y-8">
+          {groupedTanks.map(({ label, tanks: groupTanks }) => (
+            <div key={label || "__all__"}>
+              {label && (
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{label}</h2>
+                  <div className="h-[1px] flex-1 bg-border/50" />
+                  <Badge variant="secondary" className="text-[10px]">{groupTanks.length}</Badge>
+                </div>
+              )}
+              <div className={cn("grid gap-5", kiosk ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
+                {groupTanks.map((tank) => {
+                  const pct = fillPercent(tank);
+                  const color = tank.item_code ? colorMap.get(tank.item_code) ?? null : null;
+                  const currentL = tank.current_capacity ? formatCapacity(tank.current_capacity, unit) : "0";
+                  const totalL = formatCapacity(tank.tank_capacity, unit);
+                  const fillHex = color ?? "#94a3b8";
+                  const fillSolid = hexToRgba(fillHex, 0.8);
+                  const fillLight = hexToRgba(fillHex, 0.5);
+                  const glowColor = hexToRgba(fillHex, 0.3);
 
-            // Derived colours
-            const fillHex = color ?? "#94a3b8"; // slate-400 fallback
-            const fillSolid = hexToRgba(fillHex, 0.8);
-            const fillLight = hexToRgba(fillHex, 0.5);
-            const glowColor = hexToRgba(fillHex, 0.3);
+                  const isCriticalHigh = pct > 90;
+                  const isCriticalLow = pct > 0 && pct < 10;
+                  const isEmpty = pct === 0;
+                  const isUnassigned = !tank.item_code;
 
-            return (
-              <div
-                key={tank.tank_code}
-                className="tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3"
-              >
-                {/* Tank Number */}
-                <h3 className="font-bold text-base tracking-wide">
-                  {tank.tank_code}
-                </h3>
-
-                {/* Item Code with color dot */}
-                <p className="text-xs text-muted-foreground font-medium">
-                  {tank.item_code ? (
-                    <span className="flex items-center gap-1.5">
-                      <span
-                        className="inline-block h-2.5 w-2.5 rounded-full border border-white/20"
-                        style={{ backgroundColor: fillHex }}
-                      />
-                      {tank.item_code}
-                    </span>
-                  ) : (
-                    "No Item Assigned"
-                  )}
-                </p>
-
-                {/* ─── Industrial Tank Visual ─── */}
-                <div className="relative flex items-start gap-2 my-1">
-                  {/* Level gauge (outside, left side) */}
-                  <div className="relative z-10 flex flex-col items-center" style={{ marginTop: 27, height: 190 }}>
-                    {/* Percentage label */}
-                    <span className="text-[9px] font-bold text-muted-foreground mb-1">{pct}%</span>
-                    {/* Gauge track */}
-                    <div className="relative flex-1 w-[5px] rounded-full border border-border/50 bg-muted overflow-hidden">
-                      <div
-                        className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000"
-                        style={{ height: `${pct}%`, backgroundColor: fillHex }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tank structure */}
-                  <div className="relative flex flex-col items-center">
-                  {/* Glow behind tank */}
-                  {pct > 0 && (
+                  return (
                     <div
-                      className="tank-glow absolute -inset-5 rounded-3xl blur-2xl pointer-events-none"
-                      style={{ backgroundColor: glowColor }}
-                    />
-                  )}
-
-                  {/* Dome cap */}
-                  <div className="relative z-10 w-[130px] h-[20px] rounded-t-[55%] border-2 border-b-0 border-border tank-dome overflow-hidden">
-                    <div className="absolute top-[4px] left-[25%] right-[25%] h-[4px] bg-white/10 rounded-full blur-[1px]" />
-                  </div>
-
-                  {/* Top flange */}
-                  <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-t-2 border-border tank-flange" />
-
-                  {/* Tank body */}
-                  <div className="tank-shell relative z-10 w-[130px] h-[190px] border-x-2 border-border overflow-hidden">
-                    {/* Reinforcement bands */}
-                    <div className="absolute top-[28%] left-0 right-0 h-[4px] tank-band z-20" />
-                    <div className="absolute top-[62%] left-0 right-0 h-[4px] tank-band z-20" />
-
-                    {/* Liquid fill */}
-                    <div
-                      className="absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out"
-                      style={{
-                        height: `${pct}%`,
-                        background: `linear-gradient(to top, ${fillSolid}, ${fillLight})`,
-                      }}
+                      key={tank.tank_code}
+                      className={cn(
+                        "tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3 cursor-pointer group relative",
+                        isCriticalHigh && "tank-critical-high",
+                        isCriticalLow && "tank-critical-low",
+                        (isEmpty || isUnassigned) && "tank-empty",
+                        splashing && "tank-splash",
+                      )}
+                      onClick={() => openRateBreakdown(tank.tank_code)}
+                      title="Click for rate breakdown"
                     >
-                      {/* Wave layer 1 (Uiverse.io-style animated waves) */}
-                      {pct > 0 && pct < 97 && (
-                        <div className="absolute -top-[8px] left-0 right-0 overflow-hidden tank-wave-1">
-                          <WaveSvg color={fillSolid} />
+                      {/* Critical badges */}
+                      {isCriticalHigh && (
+                        <div className="absolute -top-2 -right-2 z-20">
+                          <Badge className="bg-red-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                            <AlertTriangle className="h-3 w-3" /> {pct}%
+                          </Badge>
+                        </div>
+                      )}
+                      {isCriticalLow && (
+                        <div className="absolute -top-2 -right-2 z-20">
+                          <Badge className="bg-amber-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                            <AlertTriangle className="h-3 w-3" /> LOW
+                          </Badge>
                         </div>
                       )}
 
-                      {/* Wave layer 2 (offset for depth) */}
-                      {pct > 0 && pct < 97 && (
-                        <div className="absolute -top-[6px] left-0 right-0 overflow-hidden tank-wave-2 opacity-60">
-                          <WaveSvg color={fillLight} />
+                      {/* Tank Number */}
+                      <h3 className="font-bold text-base tracking-wide">{tank.tank_code}</h3>
+
+                      {/* Item Code */}
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {tank.item_code ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="inline-block h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: fillHex }} />
+                            {tank.item_code}
+                          </span>
+                        ) : (
+                          <span className="italic">No Item Assigned</span>
+                        )}
+                      </p>
+
+                      {/* ─── Industrial Tank Visual ─── */}
+                      <div className="relative flex items-start gap-2 my-1">
+                        {/* Level gauge */}
+                        <div className="relative z-10 flex flex-col items-center" style={{ marginTop: 27, height: 190 }}>
+                          <span className="text-[9px] font-bold text-muted-foreground mb-1">{pct}%</span>
+                          <div className="relative flex-1 w-[5px] rounded-full border border-border/50 bg-muted overflow-hidden">
+                            <div
+                              className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000"
+                              style={{ height: `${pct}%`, backgroundColor: fillHex }}
+                            />
+                          </div>
                         </div>
-                      )}
 
-                      {/* Vertical shine streak */}
-                      <div
-                        className="absolute inset-0 pointer-events-none"
-                        style={{
-                          background:
-                            "linear-gradient(to right, transparent 15%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.08) 62%, transparent 85%)",
-                        }}
-                      />
+                        {/* Tank structure */}
+                        <div className="relative flex flex-col items-center">
+                          {/* Glow behind tank */}
+                          {pct > 0 && (
+                            <div
+                              className={cn("tank-glow absolute -inset-5 rounded-3xl blur-2xl pointer-events-none", isCriticalHigh && "tank-glow-critical")}
+                              style={{ backgroundColor: glowColor }}
+                            />
+                          )}
+
+                          {/* Dome cap */}
+                          <div className="relative z-10 w-[130px] h-[20px] rounded-t-[55%] border-2 border-b-0 border-border tank-dome overflow-hidden">
+                            <div className="absolute top-[4px] left-[25%] right-[25%] h-[4px] bg-white/10 rounded-full blur-[1px]" />
+                          </div>
+
+                          {/* Top flange */}
+                          <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-t-2 border-border tank-flange" />
+
+                          {/* Tank body */}
+                          <div className="tank-shell relative z-10 w-[130px] h-[190px] border-x-2 border-border overflow-hidden">
+                            {/* Reinforcement bands */}
+                            <div className="absolute top-[28%] left-0 right-0 h-[4px] tank-band z-20" />
+                            <div className="absolute top-[62%] left-0 right-0 h-[4px] tank-band z-20" />
+
+                            {/* Liquid fill */}
+                            <div
+                              className="absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out"
+                              style={{
+                                height: `${pct}%`,
+                                background: `linear-gradient(to top, ${fillSolid}, ${fillLight})`,
+                              }}
+                            >
+                              {/* Wave layers */}
+                              {pct > 0 && pct < 97 && (
+                                <div className={cn("absolute -top-[8px] left-0 right-0 overflow-hidden tank-wave-1", splashing && "tank-wave-splash")}>
+                                  <WaveSvg color={fillSolid} />
+                                </div>
+                              )}
+                              {pct > 0 && pct < 97 && (
+                                <div className={cn("absolute -top-[6px] left-0 right-0 overflow-hidden tank-wave-2 opacity-60", splashing && "tank-wave-splash")}>
+                                  <WaveSvg color={fillLight} />
+                                </div>
+                              )}
+
+                              {/* Vertical shine streak */}
+                              <div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                  background:
+                                    "linear-gradient(to right, transparent 15%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.08) 62%, transparent 85%)",
+                                }}
+                              />
+                            </div>
+
+                            {/* Glass reflection on empty area */}
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)",
+                              }}
+                            />
+
+                            {/* Capacity text */}
+                            <div className="absolute inset-0 flex items-end justify-center pb-3 z-10">
+                              {pct > 15 ? (
+                                <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                                  {currentL} {unit}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold text-white/70">
+                                  {pct === 0 ? "Empty" : `${currentL} ${unit}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Bottom flange */}
+                          <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-b-2 border-border tank-flange" />
+
+                          {/* Support legs */}
+                          <div className="relative z-10 flex justify-between w-[118px]">
+                            <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
+                            <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
+                          </div>
+
+                          {/* Base plate */}
+                          <div className="relative z-10 w-[140px] h-[4px] rounded-b-sm tank-base" />
+                        </div>
+                      </div>
+
+                      {/* Fill progress bar */}
+                      <div className="w-full space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-1000"
+                              style={{ width: `${pct}%`, backgroundColor: fillHex }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold w-10 text-right">{pct}%</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>Current: {currentL} {unit}</span>
+                          <span>Total: {totalL} {unit}</span>
+                        </div>
+                      </div>
+
+                      {/* Rate breakdown hint */}
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                        <IndianRupee className="h-3 w-3" />
+                        <span>Click for rate breakdown</span>
+                      </div>
                     </div>
-
-                    {/* Glass reflection on empty area */}
-                    <div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)",
-                      }}
-                    />
-
-                    {/* Capacity text inside tank */}
-                    <div className="absolute inset-0 flex items-end justify-center pb-3 z-10">
-                      {pct > 15 ? (
-                        <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                          {currentL} {unit}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-white/70">
-                          {pct === 0 ? "Empty" : `${currentL} ${unit}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Bottom flange */}
-                  <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-b-2 border-border tank-flange" />
-
-                  {/* Support legs */}
-                  <div className="relative z-10 flex justify-between w-[118px]">
-                    <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
-                    <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
-                  </div>
-
-                  {/* Base plate */}
-                  <div className="relative z-10 w-[140px] h-[4px] rounded-b-sm tank-base" />
-                  </div>
-                </div>
-
-                {/* Fill progress bar */}
-                <div className="w-full space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{ width: `${pct}%`, backgroundColor: fillHex }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold w-10 text-right">{pct}%</span>
-                  </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>Current: {currentL} {unit}</span>
-                    <span>Total: {totalL} {unit}</span>
-                  </div>
-                </div>
-
-                {/* Rate Breakdown button */}
-                {!isFTR && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-1.5 text-xs"
-                    onClick={() => openRateBreakdown(tank.tank_code)}
-                  >
-                    <Layers className="h-3.5 w-3.5" />
-                    Rate Breakdown
-                  </Button>
-                )}
-
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
       {/* Item-wise Tank Summary */}
-      <Card className="card-hover shimmer-hover">
-        <CardHeader>
-          <CardTitle>Item-wise Tank Summary</CardTitle>
-          <CardDescription>{itemSummary.length} items</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {!kiosk && (
+        <Card className="card-hover shimmer-hover">
+          <CardHeader>
+            <CardTitle>Item-wise Tank Summary</CardTitle>
+            <CardDescription>{itemSummary.length} items</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {itemSummaryLoading ? (
               <div className="rounded-md border">
                 <Table>
@@ -464,39 +646,53 @@ export default function TankMonitoringPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itemSummary.map((item) => (
-                      <TableRow key={item.tank_item_code}>
-                        <TableCell>
-                          <div
-                            className="h-5 w-5 rounded-full border border-border"
-                            style={{ backgroundColor: item.color }}
-                            title={item.color}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{item.tank_item_code}</TableCell>
-                        <TableCell>{conv(item.quantity_in_liters, unit)}</TableCell>
-                        <TableCell>{conv(item.total_capacity, unit)}</TableCell>
-                        <TableCell>{item.tank_count}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {item.tank_numbers.map((tn) => (
-                              <Badge key={tn} variant="secondary" className="text-xs">
-                                {tn}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {itemSummary.map((item) => {
+                      const fillPct = maxItemQty > 0 ? (item.quantity_in_liters / maxItemQty) * 100 : 0;
+                      return (
+                        <TableRow key={item.tank_item_code}>
+                          <TableCell>
+                            <div
+                              className="h-5 w-5 rounded-full border border-border"
+                              style={{ backgroundColor: item.color }}
+                              title={item.color}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{item.tank_item_code}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <span className="font-medium">{conv(item.quantity_in_liters, unit)}</span>
+                              <div className="h-1.5 w-full max-w-[120px] rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-700"
+                                  style={{ width: `${fillPct}%`, backgroundColor: item.color }}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{conv(item.total_capacity, unit)}</TableCell>
+                          <TableCell>{item.tank_count}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {item.tank_numbers.map((tn) => (
+                                <Badge key={tn} variant="secondary" className="text-xs">
+                                  {tn}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
             )}
           </CardContent>
         </Card>
+      )}
 
       {/* Rate Breakdown Dialog */}
-      <Dialog open={layersLoading || !!layersData} onOpenChange={() => setLayersData(null)}>
+      <Dialog open={!!layersTankCode} onOpenChange={() => closeRateBreakdown()}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -504,7 +700,7 @@ export default function TankMonitoringPage() {
               Rate Breakdown
             </DialogTitle>
             <DialogDescription>
-              {layersData ? `Tank ${layersData.tank_code}` : "Loading..."}
+              {layersData ? `Tank ${layersData.tank_code}` : `Tank ${layersTankCode}`}
             </DialogDescription>
           </DialogHeader>
 
@@ -514,9 +710,10 @@ export default function TankMonitoringPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
+          ) : layersError ? (
+            <div className="py-8 text-center text-sm text-destructive">{layersError}</div>
           ) : layersData ? (
             <div className="space-y-4">
-              {/* Tank Info */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Tank Code</p>
@@ -540,7 +737,6 @@ export default function TankMonitoringPage() {
 
               <Separator />
 
-              {/* Layers */}
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                   Layers ({(layersData.layers ?? []).length})
@@ -573,7 +769,6 @@ export default function TankMonitoringPage() {
 
               <Separator />
 
-              {/* Totals */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Total Quantity</p>
@@ -592,7 +787,7 @@ export default function TankMonitoringPage() {
           ) : null}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLayersData(null)}>
+            <Button variant="outline" onClick={closeRateBreakdown}>
               Close
             </Button>
           </DialogFooter>

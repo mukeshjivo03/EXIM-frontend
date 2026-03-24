@@ -1,7 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { toastApiError } from "@/lib/errors";
-import { RefreshCw, Save, ExternalLink, PackageOpen, Calendar, TrendingUp } from "lucide-react";
+import {
+  RefreshCw,
+  Save,
+  ExternalLink,
+  PackageOpen,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Search,
+  AlertCircle,
+  BarChart3,
+  Hash,
+  Minus,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -9,7 +24,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -22,35 +36,26 @@ import {
   type PriceTrendsResponse,
 } from "@/api/dailyPrice";
 import { useDailyPrice } from "@/context/DailyPriceContext";
+import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
+/* ── constants ───────────────────────────────────────────── */
 
 const LINE_COLORS = [
-  "#2563eb", // blue
-  "#f97316", // orange
-  "#16a34a", // green
-  "#dc2626", // red
-  "#8b5cf6", // violet
-  "#0891b2", // cyan
-  "#d946ef", // fuchsia
-  "#ca8a04", // yellow
+  "#2563eb", "#f97316", "#16a34a", "#dc2626",
+  "#8b5cf6", "#0891b2", "#d946ef", "#ca8a04",
+  "#059669", "#e11d48", "#7c3aed", "#ea580c",
 ];
 
 function getPast7Days(): { value: string; label: string }[] {
@@ -61,56 +66,111 @@ function getPast7Days(): { value: string; label: string }[] {
     d.setDate(today.getDate() - i);
     const iso = d.toISOString().slice(0, 10);
     const label = d.toLocaleDateString("en-IN", {
-      weekday: "short",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      weekday: "short", day: "2-digit", month: "short", year: "numeric",
     });
     days.push({ value: iso, label: i === 0 ? `${label} (Today)` : label });
   }
   return days;
 }
 
+function fmtPrice(v: number | string, decimals = 2): string {
+  return Number(v).toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/* ── Delta badge component ───────────────────────────────── */
+
+function DeltaBadge({ current, previous }: { current: number; previous: number | null }) {
+  if (previous === null || previous === 0) return null;
+  const diff = current - previous;
+  const pct = (diff / previous) * 100;
+  if (Math.abs(pct) < 0.01) return null;
+  const isUp = diff > 0;
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded ml-1.5",
+      isUp ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+    )}>
+      {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+      {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
+
+/* ── Heatmap helper ──────────────────────────────────────── */
+
+function heatmapBg(val: number, min: number, max: number): string {
+  if (max === min) return "";
+  const intensity = (val - min) / (max - min);
+  // High = green tint, Low = red tint
+  if (intensity > 0.7) return `rgba(34, 197, 94, ${(intensity - 0.5) * 0.15})`;
+  if (intensity < 0.3) return `rgba(239, 68, 68, ${(0.5 - intensity) * 0.12})`;
+  return "";
+}
+
+/* ── page ─────────────────────────────────────────────────── */
+
 export default function DailyPricePage() {
   const { prices, count, fetched, setPrices, setCount, setFetched } = useDailyPrice();
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [justFetched, setJustFetched] = useState(false);
 
   // Trends chart
   const [trends, setTrends] = useState<PriceTrendsResponse | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
+  const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    async function loadTrends() {
-      setTrendsLoading(true);
-      try {
-        const data = await getPriceTrends();
-        setTrends(data);
-      } catch {
-        // non-critical
-      } finally {
-        setTrendsLoading(false);
-      }
-    }
-    loadTrends();
-  }, []);
-
-  // Transform trends API response into Recharts row format
-  const chartData = trends
-    ? trends.labels.map((label, i) => {
-        const row: Record<string, string | number> = { date: label };
-        for (const ds of trends.datasets) {
-          row[ds.label] = ds.data[i] ?? null;
-        }
-        return row;
-      })
-    : [];
-
-  // DB saved prices filter
+  // DB saved prices
   const past7Days = getPast7Days();
   const [selectedDate, setSelectedDate] = useState("");
+  const [compareDate, setCompareDate] = useState("");
   const [dbPrices, setDbPrices] = useState<DbDailyPrice[]>([]);
+  const [comparePrices, setComparePrices] = useState<DbDailyPrice[]>([]);
   const [dbLoading, setDbLoading] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
+
+  // Search filter
+  const [search, setSearch] = useState("");
+
+  // Previous day prices for delta calculation
+  const [prevDayPrices, setPrevDayPrices] = useState<DbDailyPrice[]>([]);
+
+  /* ── data loading ──────────────────────────────────────── */
+
+  async function loadTrends() {
+    setTrendsLoading(true);
+    try {
+      const data = await getPriceTrends();
+      setTrends(data);
+      // Default: select first commodity
+      if (data.datasets.length > 0 && selectedLabels.size === 0) {
+        const defaultLabel = data.datasets.find((d) => d.label.toLowerCase().includes("soya refined") && d.label.toLowerCase().includes("resale"));
+        setSelectedLabels(new Set(defaultLabel ? [defaultLabel.label] : [data.datasets[0].label]));
+      }
+    } catch { /* non-critical */ }
+    finally { setTrendsLoading(false); }
+  }
+
+  async function loadPrevDayPrices() {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const iso = yesterday.toISOString().slice(0, 10);
+      const data = await getDailyPricesByDate(iso);
+      setPrevDayPrices(data);
+    } catch { /* non-critical */ }
+  }
+
+  // Auto-fetch on page load if not already cached
+  useEffect(() => {
+    loadTrends();
+    loadPrevDayPrices();
+    if (!fetched) {
+      handleFetch();
+    }
+  }, []);
+
+  /* ── handlers ──────────────────────────────────────────── */
 
   async function handleFetch() {
     setFetching(true);
@@ -119,6 +179,8 @@ export default function DailyPricePage() {
       setPrices(res.preview_data);
       setCount(res.count);
       setFetched(true);
+      setJustFetched(true);
+      setTimeout(() => setJustFetched(false), 2000);
       toast.success(`Fetched ${res.count} commodity prices`);
     } catch (err) {
       toastApiError(err, "Failed to fetch prices");
@@ -129,22 +191,27 @@ export default function DailyPricePage() {
 
   async function handleDateFilter(date: string) {
     setSelectedDate(date);
-    if (!date) {
-      setDbPrices([]);
-      return;
-    }
+    if (!date) { setDbPrices([]); return; }
     setDbLoading(true);
     try {
       const data = await getDailyPricesByDate(date);
       setDbPrices(data);
-      if (data.length === 0) {
-        toast.info(`No saved prices found for ${date}`);
-      }
+      if (data.length === 0) toast.info(`No saved prices found for ${date}`);
     } catch (err) {
       toastApiError(err, "Failed to load saved prices");
-    } finally {
-      setDbLoading(false);
-    }
+    } finally { setDbLoading(false); }
+  }
+
+  async function handleCompareDate(date: string) {
+    setCompareDate(date);
+    if (!date) { setComparePrices([]); return; }
+    setCompareLoading(true);
+    try {
+      const data = await getDailyPricesByDate(date);
+      setComparePrices(data);
+    } catch (err) {
+      toastApiError(err, "Failed to load compare prices");
+    } finally { setCompareLoading(false); }
   }
 
   async function handleSave() {
@@ -154,24 +221,88 @@ export default function DailyPricePage() {
       toast.success(res.status);
     } catch (err) {
       toastApiError(err, "Failed to save prices");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
+
+  /* ── derived data ──────────────────────────────────────── */
+
+  const prevPriceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of prevDayPrices) map.set(p.commodity_name, Number(p.factory_price));
+    return map;
+  }, [prevDayPrices]);
+
+  const comparePriceMap = useMemo(() => {
+    const map = new Map<string, DbDailyPrice>();
+    for (const p of comparePrices) map.set(p.commodity_name, p);
+    return map;
+  }, [comparePrices]);
+
+  // Price range for heatmap (factory_kg across current prices)
+  const priceRange = useMemo(() => {
+    if (prices.length === 0) return { min: 0, max: 0 };
+    const vals = prices.map((p) => Number(p.factory_kg));
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [prices]);
+
+  const dbPriceRange = useMemo(() => {
+    if (dbPrices.length === 0) return { min: 0, max: 0 };
+    const vals = dbPrices.map((p) => Number(p.factory_price));
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [dbPrices]);
+
+  // KPI calculations
+  const kpis = useMemo(() => {
+    if (prices.length === 0) return null;
+    const factoryPrices = prices.map((p) => Number(p.factory_kg));
+    const avg = factoryPrices.reduce((a, b) => a + b, 0) / factoryPrices.length;
+    const highest = prices.reduce((a, b) => Number(a.factory_kg) > Number(b.factory_kg) ? a : b);
+    const lowest = prices.reduce((a, b) => Number(a.factory_kg) < Number(b.factory_kg) ? a : b);
+    return { avg, highest, lowest, count: prices.length };
+  }, [prices]);
+
+  // Filtered prices by search
+  const filteredPrices = useMemo(() => {
+    if (!search) return prices;
+    const q = search.toLowerCase();
+    return prices.filter((p) => p.commodity_name.toLowerCase().includes(q));
+  }, [prices, search]);
+
+  const filteredDbPrices = useMemo(() => {
+    if (!search) return dbPrices;
+    const q = search.toLowerCase();
+    return dbPrices.filter((p) => p.commodity_name.toLowerCase().includes(q));
+  }, [dbPrices, search]);
+
+  // Chart data
+  const chartData = useMemo(() => {
+    if (!trends) return [];
+    return trends.labels.map((label, i) => {
+      const row: Record<string, string | number | null> = { date: label };
+      for (const ds of trends.datasets) {
+        if (selectedLabels.has(ds.label)) row[ds.label] = ds.data[i] ?? null;
+      }
+      return row;
+    });
+  }, [trends, selectedLabels]);
+
+  const activeDatasets = trends?.datasets.filter((ds) => selectedLabels.has(ds.label)) ?? [];
+
+  /* ── render ────────────────────────────────────────────── */
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Daily Commodity Prices</h1>
           <p className="text-sm text-muted-foreground">
             Fetch today's commodity prices from the Google Sheet
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button className="btn-press" onClick={handleFetch} disabled={fetching}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${fetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={cn("h-4 w-4 mr-2", fetching && "animate-spin")} />
             {fetching ? "Fetching..." : "Fetch Prices"}
           </Button>
           {fetched && prices.length > 0 && (
@@ -193,15 +324,55 @@ export default function DailyPricePage() {
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Unsaved data warning */}
+      {fetched && prices.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Fetched prices are in preview. Click <strong>"Save to Database"</strong> to persist them.
+          </p>
+        </div>
+      )}
+
+      {/* KPI Summary Cards */}
+      {kpis && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <SummaryCard icon={Hash} label="Commodities" value={kpis.count} loading={false} />
+          <SummaryCard icon={BarChart3} label="Avg Factory Price" value={`₹ ${fmtPrice(kpis.avg)}`} loading={false} />
+          <SummaryCard icon={TrendingUp} label="Highest" value={`₹ ${fmtPrice(Number(kpis.highest.factory_kg))}`} loading={false} />
+          <SummaryCard icon={TrendingDown} label="Lowest" value={`₹ ${fmtPrice(Number(kpis.lowest.factory_kg))}`} loading={false} />
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search commodities..."
+          className="pl-9"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Fetched Prices Table */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <CardTitle>Commodity Prices</CardTitle>
-          <CardDescription>
-            {fetched
-              ? `${count} commodities fetched${prices.length > 0 ? ` — ${prices[0].fetched_date}` : ""}`
-              : "Click \"Fetch Prices\" to load data from the Google Sheet"}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Commodity Prices</CardTitle>
+              <CardDescription>
+                {fetched
+                  ? `${count} commodities fetched${prices.length > 0 ? ` — ${prices[0].fetched_date}` : ""}`
+                  : "Click \"Fetch Prices\" to load data from the Google Sheet"}
+              </CardDescription>
+            </div>
+            {fetched && prices.length > 0 && (
+              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest animate-pulse border-amber-300 text-amber-600 dark:text-amber-400">
+                LIVE PREVIEW
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -217,37 +388,41 @@ export default function DailyPricePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {prices.length === 0 ? (
+                {filteredPrices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-16">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <PackageOpen className="h-10 w-10 stroke-1" />
-                        <p className="text-sm font-medium">No prices loaded</p>
-                        <p className="text-xs">
-                          Fetch commodity prices from the Google Sheet to see them here.
-                        </p>
+                        <p className="text-sm font-medium">{search ? "No commodities match your search" : "No prices loaded"}</p>
+                        {!search && <p className="text-xs">Fetch commodity prices from the Google Sheet to see them here.</p>}
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  prices.map((item, idx) => (
-                    <TableRow key={item.commodity_name}>
-                      <TableCell className="font-medium">{idx + 1}</TableCell>
-                      <TableCell>{item.commodity_name}</TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.factory_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.packing_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.gst_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.gst_ltr).toLocaleString("en-IN", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredPrices.map((item, idx) => {
+                    const factoryVal = Number(item.factory_kg);
+                    const prevVal = prevPriceMap.get(item.commodity_name) ?? null;
+                    return (
+                      <TableRow
+                        key={item.commodity_name}
+                        className={cn(justFetched && "animate-in fade-in duration-500")}
+                        style={{ animationDelay: `${idx * 50}ms` }}
+                      >
+                        <TableCell className="font-medium">{idx + 1}</TableCell>
+                        <TableCell className="font-medium">{item.commodity_name}</TableCell>
+                        <TableCell
+                          className="text-right"
+                          style={{ backgroundColor: heatmapBg(factoryVal, priceRange.min, priceRange.max) }}
+                        >
+                          <span className="font-semibold">{fmtPrice(item.factory_kg)}</span>
+                          <DeltaBadge current={factoryVal} previous={prevVal} />
+                        </TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.packing_kg)}</TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.gst_kg)}</TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.gst_ltr, 4)}</TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -255,33 +430,49 @@ export default function DailyPricePage() {
         </CardContent>
       </Card>
 
-      {/* Saved Prices by Date */}
+      {/* Saved Prices by Date — with compare */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle>Saved Prices</CardTitle>
               <CardDescription>
                 {selectedDate
-                  ? `${dbPrices.length} commodities for ${selectedDate}`
+                  ? `${dbPrices.length} commodities for ${selectedDate}${compareDate ? ` vs ${compareDate}` : ""}`
                   : "Select a date to view saved prices from the database"}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedDate || "__none__"} onValueChange={(v) => handleDateFilter(v === "__none__" ? "" : v)}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Select date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Select date</SelectItem>
-                  {past7Days.map((d) => (
-                    <SelectItem key={d.value} value={d.value}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Select value={selectedDate || "__none__"} onValueChange={(v) => handleDateFilter(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select date</SelectItem>
+                    {past7Days.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedDate && (
+                <div className="flex items-center gap-2">
+                  <Minus className="h-4 w-4 text-muted-foreground" />
+                  <Select value={compareDate || "__none__"} onValueChange={(v) => handleCompareDate(v === "__none__" ? "" : v)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Compare with..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No comparison</SelectItem>
+                      {past7Days.filter((d) => d.value !== selectedDate).map((d) => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -299,7 +490,7 @@ export default function DailyPricePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dbLoading ? (
+                {dbLoading || compareLoading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><div className="h-4 w-6 bg-muted animate-pulse rounded" /></TableCell>
@@ -310,39 +501,40 @@ export default function DailyPricePage() {
                       <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
                     </TableRow>
                   ))
-                ) : dbPrices.length === 0 ? (
+                ) : filteredDbPrices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-16">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <PackageOpen className="h-10 w-10 stroke-1" />
                         <p className="text-sm font-medium">No saved prices</p>
                         <p className="text-xs">
-                          {selectedDate
-                            ? `No prices found for ${selectedDate}.`
-                            : "Select a date from the dropdown to view saved prices."}
+                          {selectedDate ? `No prices found for ${selectedDate}.` : "Select a date from the dropdown to view saved prices."}
                         </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  dbPrices.map((item, idx) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{idx + 1}</TableCell>
-                      <TableCell>{item.commodity_name}</TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.factory_price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.packing_cost_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.with_gst_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(item.with_gst_ltr).toLocaleString("en-IN", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredDbPrices.map((item, idx) => {
+                    const factoryVal = Number(item.factory_price);
+                    const comp = comparePriceMap.get(item.commodity_name);
+                    const compFactory = comp ? Number(comp.factory_price) : null;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{idx + 1}</TableCell>
+                        <TableCell className="font-medium">{item.commodity_name}</TableCell>
+                        <TableCell
+                          className="text-right"
+                          style={{ backgroundColor: heatmapBg(factoryVal, dbPriceRange.min, dbPriceRange.max) }}
+                        >
+                          <span className="font-semibold">{fmtPrice(item.factory_price)}</span>
+                          {compFactory !== null && <DeltaBadge current={factoryVal} previous={compFactory} />}
+                        </TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.packing_cost_kg)}</TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.with_gst_kg)}</TableCell>
+                        <TableCell className="text-right">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -351,19 +543,64 @@ export default function DailyPricePage() {
       </Card>
 
       {/* Price Trends Chart */}
-      <Card className="card-hover shimmer-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Price Trends
-          </CardTitle>
-          <CardDescription>
-            {trends
-              ? `${trends.datasets.length} commodities over ${trends.labels.length} days`
-              : "Loading price trends..."}
-          </CardDescription>
+      <Card className="card-hover shimmer-hover overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Price Trends</CardTitle>
+                <CardDescription>
+                  {trends
+                    ? `${trends.datasets.length} commodities over ${trends.labels.length} days`
+                    : "Loading price trends..."}
+                </CardDescription>
+              </div>
+            </div>
+          </div>
+
+          {/* Commodity toggle pills */}
+          {!trendsLoading && trends && (
+            <div className="flex items-center gap-2 flex-wrap mt-4 pt-4 border-t border-border/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[10px] font-bold uppercase tracking-widest px-2"
+                onClick={() => setSelectedLabels(new Set(trends.datasets.map((d) => d.label)))}
+              >
+                All
+              </Button>
+              <div className="h-4 w-[1px] bg-border mx-1" />
+              {trends.datasets.map((ds, i) => {
+                const color = LINE_COLORS[i % LINE_COLORS.length];
+                const active = selectedLabels.has(ds.label);
+                return (
+                  <button
+                    key={ds.label}
+                    onClick={() => setSelectedLabels((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(ds.label)) {
+                        if (next.size > 1) next.delete(ds.label);
+                      } else next.add(ds.label);
+                      return next;
+                    })}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all duration-300",
+                      active ? "text-white shadow-md scale-105" : "bg-transparent text-muted-foreground hover:border-foreground/40"
+                    )}
+                    style={active ? { backgroundColor: color, borderColor: color } : { borderColor: "hsl(var(--border))" }}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {ds.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {trendsLoading ? (
             <Skeleton className="h-[500px] w-full rounded-md" />
           ) : !trends || trends.datasets.length === 0 ? (
@@ -378,13 +615,13 @@ export default function DailyPricePage() {
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 14 }}
+                  tick={{ fontSize: 12, fontWeight: 600, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
                   padding={{ left: 10, right: 10 }}
                 />
                 <YAxis
-                  tick={{ fontSize: 14 }}
+                  tick={{ fontSize: 12, fontWeight: 600, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${v}`}
@@ -395,80 +632,42 @@ export default function DailyPricePage() {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     return (
-                      <div
-                        className="bg-card border border-border"
-                        style={{
-                          borderRadius: 8,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                          minWidth: 180,
-                          maxWidth: 280,
-                          overflow: "hidden",
-                          opacity: 1,
-                        }}
-                      >
-                        <div
-                          className="bg-muted border-b border-border text-foreground"
-                          style={{
-                            padding: "8px 14px",
-                            fontWeight: 700,
-                            fontSize: 14,
-                          }}
-                        >
-                          {label}
+                      <div className="rounded-2xl border bg-card shadow-2xl min-w-[220px] overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="bg-muted/50 border-b px-4 py-3">
+                          <p className="font-black text-xs uppercase tracking-widest">{label}</p>
                         </div>
-                        <div style={{ padding: "6px 0" }}>
-                          {payload.map((entry, idx) => (
-                            <div
-                              key={idx}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: 12,
-                                padding: "4px 14px",
-                                fontSize: 14,
-                                color: "inherit",
-                              }}
-                            >
-                              <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
-                                <span
-                                  style={{
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: "50%",
-                                    backgroundColor: entry.color,
-                                    flexShrink: 0,
-                                  }}
-                                />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {entry.name}
-                                </span>
+                        <div className="p-4 space-y-2.5">
+                          {payload.map((p) => (
+                            <div key={p.dataKey as string} className="flex items-center justify-between gap-6">
+                              <span className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                                <span className="text-[11px] font-bold uppercase truncate max-w-[120px]">{p.dataKey}</span>
                               </span>
-                              <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                                {entry.value != null ? `₹${Number(entry.value).toFixed(2)}` : "—"}
-                              </span>
+                              <span className="font-black text-sm">₹{(p.value as number)?.toFixed(2) ?? "—"}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     );
                   }}
-                  wrapperStyle={{ zIndex: 50, opacity: "1 !important" }}
+                  wrapperStyle={{ zIndex: 50 }}
                   allowEscapeViewBox={{ x: false, y: false }}
                 />
-                <Legend wrapperStyle={{ fontSize: "14px", paddingTop: "24px" }} />
-                {trends.datasets.map((ds, i) => (
-                  <Line
-                    key={ds.label}
-                    type="monotone"
-                    dataKey={ds.label}
-                    stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    connectNulls
-                  />
-                ))}
+                {activeDatasets.map((ds) => {
+                  const colorIdx = trends.datasets.findIndex((d) => d.label === ds.label);
+                  return (
+                    <Line
+                      key={ds.label}
+                      type="monotone"
+                      dataKey={ds.label}
+                      stroke={LINE_COLORS[colorIdx % LINE_COLORS.length]}
+                      strokeWidth={2.5}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      activeDot={{ r: 7, strokeWidth: 0 }}
+                      connectNulls
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           )}

@@ -130,7 +130,7 @@ export default function StockStatusPage() {
       ]);
       setRows(
         data
-          .filter((r) => !r.deleted)
+          .filter((r) => !r.deleted && r.status !== "COMPLETED")
           .sort((a, b) => {
             const oa = STATUS_ORDER[a.status] ?? 99;
             const ob = STATUS_ORDER[b.status] ?? 99;
@@ -158,7 +158,7 @@ export default function StockStatusPage() {
   async function fetchAllRows() {
     try {
       const data = await getStockStatuses();
-      setAllRows(data.filter((r) => !r.deleted));
+      setAllRows(data.filter((r) => !r.deleted && r.status !== "COMPLETED"));
     } catch {
       // non-critical
     }

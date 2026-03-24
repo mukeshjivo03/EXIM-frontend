@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Plus,
@@ -76,8 +77,10 @@ function fillColor(pct: number): string {
 }
 
 export default function TankDataPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { email, role } = useAuth();
   const canCreateDelete = role === "ADM" || role === "MNG";
+  const autoEditHandled = useRef(false);
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -131,7 +134,23 @@ export default function TankDataPage() {
   }
 
   useEffect(() => {
-    fetchData();
+    fetchData().then(() => {
+      // Auto-open edit dialog if ?edit=TANK_CODE is in URL
+      const editCode = searchParams.get("edit");
+      if (editCode && !autoEditHandled.current) {
+        autoEditHandled.current = true;
+        // Small delay to ensure tanks state is set
+        setTimeout(() => {
+          setTanks((prev) => {
+            const tank = prev.find((t) => t.tank_code === editCode);
+            if (tank) openEdit(tank);
+            return prev;
+          });
+          // Clean up the URL param
+          setSearchParams((p) => { p.delete("edit"); return p; }, { replace: true });
+        }, 100);
+      }
+    });
     fetchTankSummary();
   }, []);
 
