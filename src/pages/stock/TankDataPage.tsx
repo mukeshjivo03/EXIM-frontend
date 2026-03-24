@@ -23,6 +23,8 @@ import {
   getTankSummary,
   tankInward,
   tankOutward,
+  tankTransfer,
+  getSameTanks,
   updateTank,
   type Tank,
   type TankSummary,
@@ -97,13 +99,17 @@ export default function TankDataPage() {
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<Tank | null>(null);
-  const [editOperation, setEditOperation] = useState<"IN" | "OUT" | "">("")
+  const [editOperation, setEditOperation] = useState<"IN" | "OUT" | "TRANSFER" | "">("")
   const [editItemCode, setEditItemCode] = useState("");
   const [editSelectedEntry, setEditSelectedEntry] = useState("");
   const [editQuantity, setEditQuantity] = useState("");
   const [editing, setEditing] = useState(false);
   const [uniqueRMCodes, setUniqueRMCodes] = useState<string[]>([]);
   const [stockEntries, setStockEntries] = useState<StockEntryByRM[]>([]);
+
+  // Transfer state
+  const [transferTanks, setTransferTanks] = useState<import("@/api/tank").SameTank[]>([]);
+  const [transferDestination, setTransferDestination] = useState("");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -216,6 +222,8 @@ export default function TankDataPage() {
     setEditSelectedEntry("");
     setEditQuantity("");
     setStockEntries([]);
+    setTransferTanks([]);
+    setTransferDestination("");
     try {
       const rmCodes = await getUniqueRMCodes();
       setUniqueRMCodes(rmCodes);
@@ -245,8 +253,43 @@ export default function TankDataPage() {
     ? stockEntries.find((s) => String(s.id) === editSelectedEntry)
     : null;
 
+  async function loadTransferTanks(itemCode: string) {
+    try {
+      const tanks = await getSameTanks(itemCode);
+      setTransferTanks(tanks);
+    } catch {
+      setTransferTanks([]);
+    }
+  }
+
   async function handleEdit() {
     if (!editTarget) return;
+
+    if (editOperation === "TRANSFER") {
+      if (!transferDestination) {
+        toast.error("Please select a destination tank.");
+        return;
+      }
+      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
+        toast.error("Please enter a valid quantity.");
+        return;
+      }
+      const currentCap = Number(editTarget.current_capacity ?? 0);
+      if (Number(editQuantity) > currentCap) {
+        toast.error(`Quantity cannot exceed current stock (${currentCap} L).`);
+        return;
+      }
+      const destTank = transferTanks.find((t) => t.tank_code === transferDestination);
+      if (destTank) {
+        const destCurrent = Number(destTank.current_capacity ?? 0);
+        const destCapacity = Number(destTank.tank_capacity);
+        const available = destCapacity - destCurrent;
+        if (Number(editQuantity) > available) {
+          toast.error(`Destination tank only has ${available.toFixed(2)} L available space.`);
+          return;
+        }
+      }
+    }
 
     if (editOperation === "IN") {
       if (!editItemCode) {
@@ -296,7 +339,7 @@ export default function TankDataPage() {
           quantity: editQuantity.trim(),
           user: email ?? "",
         });
-      } else {
+      } else if (editOperation === "OUT") {
         await tankOutward({
           tank_code: editTarget.tank_code,
           quantity: editQuantity.trim(),
@@ -308,9 +351,17 @@ export default function TankDataPage() {
         if (remaining <= 0) {
           await updateTank(editTarget.tank_code, { current_capacity: null, item_code: null });
         }
+      } else if (editOperation === "TRANSFER") {
+        await tankTransfer({
+          source_tank_code: editTarget.tank_code,
+          destination_tank_code: transferDestination,
+          quantity: Number(editQuantity.trim()),
+          remarks: `Transfer to free up space in ${editTarget.tank_code}`,
+        });
       }
+      const opLabel = editOperation === "IN" ? "added" : editOperation === "OUT" ? "removed" : `transferred to ${transferDestination}`;
       toast.success(
-        `Tank "${editTarget.tank_code}" updated: ${editOperation === "IN" ? "added" : "removed"} ${editQuantity} L.`
+        `Tank "${editTarget.tank_code}" updated: ${opLabel} ${editQuantity} L.`
       );
       setEditTarget(null);
       fetchData();
@@ -569,11 +620,17 @@ export default function TankDataPage() {
               <Select
                 value={editOperation || "__none__"}
                 onValueChange={(v) => {
-                  setEditOperation(v === "__none__" ? "" : v as "IN" | "OUT");
+                  const op = v === "__none__" ? "" : v as "IN" | "OUT" | "TRANSFER";
+                  setEditOperation(op);
                   setEditItemCode("");
                   setEditSelectedEntry("");
                   setEditQuantity("");
                   setStockEntries([]);
+                  setTransferTanks([]);
+                  setTransferDestination("");
+                  if (op === "TRANSFER" && editTarget?.item_code) {
+                    loadTransferTanks(editTarget.item_code);
+                  }
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -583,6 +640,9 @@ export default function TankDataPage() {
                   <SelectItem value="__none__" className="text-muted-foreground">Choose</SelectItem>
                   <SelectItem value="IN">In</SelectItem>
                   <SelectItem value="OUT">Out</SelectItem>
+                  {editTarget?.item_code && editTarget?.current_capacity && Number(editTarget.current_capacity) > 0 && (
+                    <SelectItem value="TRANSFER">Transfer</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -653,7 +713,31 @@ export default function TankDataPage() {
               </>
             )}
 
-            {(editOperation === "OUT" || (editOperation === "IN" && editSelectedEntry)) && (
+            {editOperation === "TRANSFER" && (
+              <div className="space-y-2">
+                <Label>Destination Tank *</Label>
+                <Select
+                  value={transferDestination || "__none__"}
+                  onValueChange={(v) => setTransferDestination(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select destination tank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-muted-foreground">Select</SelectItem>
+                    {transferTanks
+                      .filter((t) => t.tank_code !== editTarget?.tank_code)
+                      .map((t) => (
+                        <SelectItem key={t.tank_code} value={t.tank_code}>
+                          {t.tank_code} — {t.item_code ?? "Empty"} ({Number(t.current_capacity ?? 0).toLocaleString("en-IN")} / {Number(t.tank_capacity).toLocaleString("en-IN")} L)
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {(editOperation === "OUT" || editOperation === "TRANSFER" || (editOperation === "IN" && editSelectedEntry)) && (
               <div className="space-y-2">
                 <Label htmlFor="edit-qty">
                   Quantity (L) *
@@ -662,9 +746,9 @@ export default function TankDataPage() {
                       (max: {Number(editSelectedStock.quantity_in_litre)} L)
                     </span>
                   )}
-                  {editOperation === "OUT" && editTarget && (
+                  {(editOperation === "OUT" || editOperation === "TRANSFER") && editTarget && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      (max: {editTarget.current_capacity ?? 0})
+                      (max: {editTarget.current_capacity ?? 0} L)
                     </span>
                   )}
                 </Label>
@@ -690,7 +774,7 @@ export default function TankDataPage() {
                       Unload All
                     </Button>
                   )}
-                  {editOperation === "OUT" && editTarget?.current_capacity && (
+                  {(editOperation === "OUT" || editOperation === "TRANSFER") && editTarget?.current_capacity && (
                     <Button
                       type="button"
                       variant="outline"
@@ -698,7 +782,7 @@ export default function TankDataPage() {
                       className="shrink-0 h-9"
                       onClick={() => setEditQuantity(String(editTarget.current_capacity))}
                     >
-                      Drain All
+                      {editOperation === "TRANSFER" ? "Transfer All" : "Drain All"}
                     </Button>
                   )}
                 </div>

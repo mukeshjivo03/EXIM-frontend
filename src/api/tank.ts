@@ -195,6 +195,31 @@ export async function tankOutward(data: TankOutwardPayload): Promise<void> {
   await api.post("/tank/outward/", data);
 }
 
+// ── Tank Transfer ─────────────────────────────────────────────
+
+export interface SameTank {
+  tank_code: string;
+  item_code: string | null;
+  current_capacity: string | null;
+  tank_capacity: string;
+}
+
+export async function getSameTanks(itemCode: string): Promise<SameTank[]> {
+  const res = await api.get<SameTank[]>("/tank/get-same-tanks/", { params: { item_code: itemCode } });
+  return res.data;
+}
+
+export interface TankTransferPayload {
+  source_tank_code: string;
+  destination_tank_code: string;
+  quantity: number;
+  remarks: string;
+}
+
+export async function tankTransfer(data: TankTransferPayload): Promise<void> {
+  await api.post("/tank/transfer/", data);
+}
+
 // ── Tank Logs ─────────────────────────────────────────────────
 
 export interface TankLogConsumption {

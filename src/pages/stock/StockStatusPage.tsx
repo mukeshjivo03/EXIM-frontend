@@ -547,6 +547,7 @@ export default function StockStatusPage() {
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Vendor</TableHead>
+                    <TableHead>Rate (&#8377;)</TableHead>
                     <TableHead>Qty (KG)</TableHead>
                     <TableHead>Total (&#8377;)</TableHead>
                     <TableHead>ETA</TableHead>
@@ -556,7 +557,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-16" />
                         </TableCell>
@@ -581,6 +582,7 @@ export default function StockStatusPage() {
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Vendor</TableHead>
+                    <TableHead>Rate (&#8377;)</TableHead>
                     <TableHead>Qty (KG)</TableHead>
                     <TableHead>Total (&#8377;)</TableHead>
                     <TableHead>ETA</TableHead>
@@ -590,7 +592,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-16">
+                      <TableCell colSpan={10} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <ClipboardList className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No stock statuses found</p>
@@ -635,15 +637,15 @@ export default function StockStatusPage() {
                               </span>
                             </div>
                           </TableCell>
+                          <TableCell className="tabular-nums">
+                            ₹{Number(row.rate).toLocaleString("en-IN")}
+                          </TableCell>
                           <TableCell className="relative">
                             <div
                               className="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-1000"
                               style={{ width: `${weightPercent}%` }}
                             />
-                            <div className="relative z-10 flex flex-col">
-                              <span className="font-bold">{Number(row.quantity).toLocaleString("en-IN")}</span>
-                              <span className="text-[10px] text-muted-foreground">Rate: ₹{row.rate}</span>
-                            </div>
+                            <span className="relative z-10 font-bold">{Number(row.quantity).toLocaleString("en-IN")}</span>
                           </TableCell>
                           <TableCell className="font-semibold text-primary">
                             ₹{Number(row.total).toLocaleString("en-IN")}
