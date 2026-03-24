@@ -16,6 +16,13 @@ import {
   Scale,
   Weight,
   Droplets,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  Ship,
+  Anchor,
+  Factory,
+  Warehouse,
 } from "lucide-react";
 
 import {
@@ -74,6 +81,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -96,6 +113,90 @@ function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" 
   }
 }
 
+function getEtaCountdown(eta: string) {
+  if (!eta) return null;
+  const target = new Date(eta);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  const diffTime = target.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return { text: "Today", variant: "warning" as const };
+  if (diffDays === 1) return { text: "Tomorrow", variant: "info" as const };
+  if (diffDays > 1) return { text: `In ${diffDays} days`, variant: "default" as const };
+  return { text: `${Math.abs(diffDays)} days ago`, variant: "muted" as const };
+}
+
+/* ── Status Timeline Component ────────────────────────────── */
+
+const JOURNEY_STEPS: { status: StockStatusChoice; label: string; icon: any }[] = [
+  { status: "IN_CONTRACT", label: "Contract", icon: FileText },
+  { status: "ON_THE_SEA", label: "Sea", icon: Ship },
+  { status: "MUNDRA_PORT", label: "Port", icon: Anchor },
+  { status: "ON_THE_WAY", label: "Transit", icon: Truck },
+  { status: "AT_REFINERY", label: "Refinery", icon: Factory },
+  { status: "UNDER_LOADING", label: "Underloading", icon: Package },
+  { status: "OTW_TO_REFINERY", label: "OTW", icon: Truck },
+  { status: "OUT_SIDE_FACTORY", label: "Outside Factory", icon: Truck },
+  { status: "KANDLA_STORAGE", label: "Tank", icon: Warehouse },
+];
+
+function StatusTimeline({ currentStatus }: { currentStatus: string }) {
+  const currentIndex = JOURNEY_STEPS.findIndex((s) => s.status === currentStatus);
+  const activeIndex = currentIndex === -1 ? 0 : currentIndex;
+
+  return (
+    <div className="py-6 overflow-x-auto">
+      <div className="flex items-center min-w-[700px] px-4">
+        {JOURNEY_STEPS.map((step, idx) => {
+          const isCompleted = idx < activeIndex;
+          const isActive = idx === activeIndex;
+          const Icon = step.icon;
+
+          return (
+            <div key={step.status} className="flex flex-1 items-center last:flex-none">
+              <div className="flex flex-col items-center gap-2 relative">
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 z-10 bg-background",
+                    isCompleted
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : isActive
+                      ? "border-primary text-primary shadow-[0_0_10px_rgba(var(--primary),0.3)] animate-pulse"
+                      : "border-muted text-muted-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider absolute -bottom-5 whitespace-nowrap",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {idx < JOURNEY_STEPS.length - 1 && (
+                <div className="flex-1 h-[2px] mx-2 bg-muted relative overflow-hidden">
+                  <div
+                    className={cn(
+                      "absolute inset-0 bg-primary transition-all duration-1000 origin-left",
+                      idx < activeIndex ? "scale-x-100" : "scale-x-0"
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ── component ────────────────────────────────────────────── */
 
 export default function StockStatusPage() {
@@ -104,6 +205,9 @@ export default function StockStatusPage() {
   const [rows, setRows] = useState<StockStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // dropdown data
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
@@ -118,6 +222,12 @@ export default function StockStatusPage() {
   const [fVendor, setFVendor] = useState("");
   const [fItem, setFItem] = useState("");
   const hasFilters = !!(fStatus || fVendor || fItem);
+
+  // Heatmap helper
+  const maxQty = useMemo(() => {
+    if (rows.length === 0) return 0;
+    return Math.max(...rows.map((r) => Number(r.quantity)));
+  }, [rows]);
 
   // create dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -138,7 +248,7 @@ export default function StockStatusPage() {
   const [cTransporterName, setCTransporterName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // view dialog
+  // view sheet
   const [viewData, setViewData] = useState<StockStatus | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
 
@@ -158,6 +268,9 @@ export default function StockStatusPage() {
   // delete
   const [deleteData, setDeleteData] = useState<StockStatus | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Bulk Actions
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   // all rows (unfiltered) for deriving filter options
   const [allRows, setAllRows] = useState<StockStatus[]>([]);
@@ -207,6 +320,7 @@ export default function StockStatusPage() {
           })
       );
       setSummary(insights.summary);
+      setSelectedIds(new Set()); // Reset selection
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load stock statuses"));
     } finally {
@@ -238,6 +352,73 @@ export default function StockStatusPage() {
     fetchAllRows();
     loadDropdowns();
   }, []);
+
+  /* ── Selection ─────────────────────────────────────────── */
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginated.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginated.map((r) => r.id)));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  /* ── Bulk Actions ──────────────────────────────────────── */
+
+  async function handleBulkArrive() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    setBulkProcessing(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const row = rows.find((r) => r.id === id);
+          if (!row) return Promise.resolve();
+          return arriveBatch({
+            stock_id: id,
+            weighed_qty: Number(row.quantity),
+            destination_status: "AT_REFINERY",
+            action: "TOLERATE",
+            created_by: email ?? "SYSTEM",
+          });
+        })
+      );
+      toast.success(`Bulk arrival completed for ${count} records.`);
+      await fetchList(currentFilters());
+    } catch (err) {
+      toastApiError(err, "Failed to complete bulk arrival.");
+    } finally {
+      setBulkProcessing(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    setBulkProcessing(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const row = rows.find((r) => r.id === id);
+          if (!row) return Promise.resolve();
+          return softDeleteStockStatus(row);
+        })
+      );
+      toast.success(`Bulk delete completed for ${count} records.`);
+      await fetchList(currentFilters());
+    } catch (err) {
+      toastApiError(err, "Failed to complete bulk delete.");
+    } finally {
+      setBulkProcessing(false);
+    }
+  }
 
   /* ── load dropdowns ────────────────────────────────────── */
 
@@ -483,7 +664,50 @@ export default function StockStatusPage() {
   /* ── render ──────────────────────────────────────────────── */
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page relative pb-20">
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 border border-primary/20 backdrop-blur-md">
+            <span className="text-sm font-bold flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              {selectedIds.size} Selected
+            </span>
+            <Separator orientation="vertical" className="h-6 bg-primary-foreground/20" />
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full gap-1.5"
+                disabled={bulkProcessing}
+                onClick={handleBulkArrive}
+              >
+                <Factory className="h-3.5 w-3.5" />
+                Arrive Refinery
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="rounded-full gap-1.5 bg-red-500 hover:bg-red-600 border-none"
+                disabled={bulkProcessing}
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -492,10 +716,12 @@ export default function StockStatusPage() {
             Track and manage stock statuses
           </p>
         </div>
-        <Button onClick={openCreate} className="btn-press gap-2">
-          <Plus className="h-4 w-4" />
-          Add Stock Status
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={openCreate} className="btn-press gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />
+            Add Stock Status
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -514,10 +740,64 @@ export default function StockStatusPage() {
         </div>
       </div>
 
+      {/* Presets */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={!fStatus && !fVendor && !fItem ? "default" : "outline"}
+          size="sm"
+          className="rounded-full"
+          onClick={clearFilters}
+        >
+          All
+        </Button>
+        <Button
+          variant={fStatus === "MUNDRA_PORT" ? "default" : "outline"}
+          size="sm"
+          className="rounded-full gap-1.5"
+          onClick={() => {
+            setFStatus("MUNDRA_PORT");
+            setFItem("");
+            setFVendor("");
+            fetchList({ status: "MUNDRA_PORT" });
+          }}
+        >
+          <Anchor className="h-3.5 w-3.5" />
+          At Port
+        </Button>
+        <Button
+          variant={fStatus === "ON_THE_SEA" ? "default" : "outline"}
+          size="sm"
+          className="rounded-full gap-1.5"
+          onClick={() => {
+            setFStatus("ON_THE_SEA");
+            setFItem("");
+            setFVendor("");
+            fetchList({ status: "ON_THE_SEA" });
+          }}
+        >
+          <Ship className="h-3.5 w-3.5" />
+          On Sea
+        </Button>
+        <Button
+          variant={fStatus === "ON_THE_WAY" ? "default" : "outline"}
+          size="sm"
+          className="rounded-full gap-1.5"
+          onClick={() => {
+            setFStatus("ON_THE_WAY");
+            setFItem("");
+            setFVendor("");
+            fetchList({ status: "ON_THE_WAY" });
+          }}
+        >
+          <Truck className="h-3.5 w-3.5" />
+          In Transit
+        </Button>
+      </div>
+
       {/* Filters */}
       <div>
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          Filters
+          Detailed Filters
         </h2>
       <Card>
         <CardContent className="pt-6">
@@ -612,8 +892,12 @@ export default function StockStatusPage() {
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <CardTitle>Stock Statuses</CardTitle>
-          <CardDescription>{rows.length} records</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Stock Statuses</CardTitle>
+              <CardDescription>{rows.length} records</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -621,14 +905,14 @@ export default function StockStatusPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10"></TableHead>
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Vendor</TableHead>
-                    <TableHead>Rate (&#8377;)</TableHead>
                     <TableHead>Qty (KG)</TableHead>
                     <TableHead>Total (&#8377;)</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>ETA</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -646,18 +930,23 @@ export default function StockStatusPage() {
               </Table>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-10 px-4">
+                      <Checkbox
+                        checked={selectedIds.size === paginated.length && paginated.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Vendor</TableHead>
-                    <TableHead>Rate (&#8377;)</TableHead>
                     <TableHead>Qty (KG)</TableHead>
                     <TableHead>Total (&#8377;)</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>ETA</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -673,54 +962,113 @@ export default function StockStatusPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((row, idx) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="text-muted-foreground">
-                          {(page - 1) * perPage + idx + 1}
-                        </TableCell>
-                        <TableCell className="font-medium">{row.item_code}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusBadgeVariant(row.status)}>
-                            {formatStatus(row.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{row.vendor_code}</TableCell>
-                        <TableCell>{Number(row.rate).toLocaleString("en-IN")}</TableCell>
-                        <TableCell>{Number(row.quantity).toLocaleString("en-IN")}</TableCell>
-                        <TableCell className="font-medium">{Number(row.total).toLocaleString("en-IN")}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {fmtDateTime(row.created_at)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openView(row.id)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openEdit(row)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setDeleteData(row)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    paginated.map((row, idx) => {
+                      const countdown = getEtaCountdown(row.eta ?? "");
+                      const weightPercent = maxQty > 0 ? (Number(row.quantity) / maxQty) * 100 : 0;
+
+                      return (
+                        <TableRow key={row.id} className={cn(selectedIds.has(row.id) && "bg-primary/5")}>
+                          <TableCell className="px-4">
+                            <Checkbox
+                              checked={selectedIds.has(row.id)}
+                              onCheckedChange={() => toggleSelect(row.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {(page - 1) * perPage + idx + 1}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-bold">{row.item_code}</span>
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-tight">
+                                {tankItems.find((i) => i.tank_item_code === row.item_code)?.tank_item_name ?? ""}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusBadgeVariant(row.status)} className="capitalize font-medium shadow-none">
+                              {formatStatus(row.status).toLowerCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col max-w-[150px]">
+                              <span className="truncate">{row.vendor_code}</span>
+                              <span className="text-[10px] text-muted-foreground truncate uppercase">
+                                {vendors.find((v) => v.card_code === row.vendor_code)?.card_name ?? ""}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="relative">
+                            <div
+                              className="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-1000"
+                              style={{ width: `${weightPercent}%` }}
+                            />
+                            <div className="relative z-10 flex flex-col">
+                              <span className="font-bold">{Number(row.quantity).toLocaleString("en-IN")}</span>
+                              <span className="text-[10px] text-muted-foreground">Rate: ₹{row.rate}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold text-primary">
+                            ₹{Number(row.total).toLocaleString("en-IN")}
+                          </TableCell>
+                          <TableCell>
+                            {countdown ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-medium">{fmtDateTime(row.eta ?? "").split(",")[0]}</span>
+                                <div className={cn(
+                                  "flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full w-fit",
+                                  countdown.variant === "warning" ? "bg-amber-100 text-amber-700" :
+                                  countdown.variant === "info" ? "bg-blue-100 text-blue-700" :
+                                  countdown.variant === "muted" ? "bg-muted text-muted-foreground" :
+                                  "bg-primary/10 text-primary"
+                                )}>
+                                  <Clock className="h-3 w-3" />
+                                  {countdown.text}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              {row.location && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-blue-500 hover:text-blue-600"
+                                  asChild
+                                >
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <MapPin className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openView(row.id)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openEdit(row)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -951,184 +1299,164 @@ export default function StockStatusPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── View Dialog ──────────────────────────────────────── */}
-      <Dialog open={viewLoading || !!viewData} onOpenChange={() => setViewData(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ── View Sheet ───────────────────────────────────────── */}
+      <Sheet open={viewLoading || !!viewData} onOpenChange={() => setViewData(null)}>
+        <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
               Stock Status Details
-            </DialogTitle>
-            <DialogDescription>
-              {viewData ? `Record #${viewData.id}` : "Loading..."}
-            </DialogDescription>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription>
+              {viewData ? `Detailed view of record #${viewData.id}` : "Loading record data..."}
+            </SheetDescription>
+          </SheetHeader>
 
           {viewLoading ? (
-            <div className="space-y-4 py-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
+            <div className="space-y-6 p-6">
+              <Skeleton className="h-32 w-full" />
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
             </div>
           ) : viewData ? (
-            <div className="space-y-5 py-2">
-              {/* Item Information */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Package className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-                    Item Information
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pl-6">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Item Code</p>
-                    <p className="text-sm font-medium">{viewData.item_code}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Item Name</p>
-                    <p className="text-sm font-medium">
-                      {tankItems.find((i) => i.tank_item_code === viewData.item_code)?.tank_item_name ?? "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <Badge variant={statusBadgeVariant(viewData.status)} className="mt-0.5">
-                      {formatStatus(viewData.status)}
-                    </Badge>
-                  </div>
-                </div>
+            <div className="space-y-8 p-6">
+              {/* Journey Timeline */}
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50 shadow-inner">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 px-2">
+                  Logistical Journey
+                </h3>
+                <StatusTimeline currentStatus={viewData.status} />
               </div>
 
-              <Separator />
-
-              {/* Vendor Information */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-                    Vendor Information
-                  </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Item Information */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Item Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 pl-2">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Item Code</p>
+                      <p className="text-sm font-semibold">{viewData.item_code}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Item Name</p>
+                      <p className="text-sm font-medium">
+                        {tankItems.find((i) => i.tank_item_code === viewData.item_code)?.tank_item_name ?? "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Status</p>
+                      <Badge variant={statusBadgeVariant(viewData.status)} className="mt-0.5">
+                        {formatStatus(viewData.status)}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                {(() => {
-                  const v = vendors.find((v) => v.card_code === viewData.vendor_code);
-                  return (
-                    <div className="grid grid-cols-2 gap-3 pl-6">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Vendor Code</p>
-                        <p className="text-sm font-medium">{viewData.vendor_code}</p>
+
+                {/* Vendor Information */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <Truck className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Vendor Information</h3>
+                  </div>
+                  {(() => {
+                    const v = vendors.find((v) => v.card_code === viewData.vendor_code);
+                    return (
+                      <div className="grid grid-cols-1 gap-3 pl-2">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Vendor Code</p>
+                          <p className="text-sm font-semibold">{viewData.vendor_code}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Vendor Name</p>
+                          <p className="text-sm font-medium">{v?.card_name ?? "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Vendor Group</p>
+                          <p className="text-sm font-medium">{v?.u_main_group ?? "—"}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Vendor Name</p>
-                        <p className="text-sm font-medium">{v?.card_name ?? "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Vendor Group</p>
-                        <p className="text-sm font-medium">{v?.u_main_group ?? "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Vendor Address</p>
-                        <p className="text-sm font-medium">
-                          {v ? [v.state, v.country].filter(Boolean).join(", ") || "—" : "—"}
-                        </p>
+                    );
+                  })()}
+                </div>
+
+                {/* Pricing & Quantity */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <IndianRupee className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Pricing Detail</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 pl-2">
+                    <div className="flex justify-between items-center bg-muted/50 p-2 rounded-lg">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground">Rate</span>
+                      <span className="text-sm font-semibold">₹ {fmtNum(Number(viewData.rate))}</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-muted/50 p-2 rounded-lg">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground">Quantity</span>
+                      <span className="text-sm font-semibold">{fmtNum(Number(viewData.quantity))} KG</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-primary/5 p-2 rounded-lg border border-primary/10">
+                      <span className="text-[10px] uppercase font-bold text-primary">Total Value</span>
+                      <span className="text-base font-black text-primary">₹ {fmtNum(Number(viewData.total))}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logistics */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Logistics Info</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 pl-2">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Vehicle / Transporter</p>
+                      <p className="text-sm font-medium">{viewData.vehicle_number || "—"} / {viewData.transporter_name || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Current Location</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{viewData.location || "—"}</p>
+                        {viewData.location && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(viewData.location)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-600"
+                          >
+                            <MapPin className="h-3 w-3" />
+                          </a>
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
-              </div>
-
-              <Separator />
-
-              {/* Pricing Detail */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <IndianRupee className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-                    Pricing Detail
-                  </h3>
-                </div>
-                <div className="grid grid-cols-3 gap-3 pl-6">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rate (&#8377;)</p>
-                    <p className="text-sm font-medium">{viewData.rate}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Quantity (KG)</p>
-                    <p className="text-sm font-medium">{viewData.quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total (&#8377;)</p>
-                    <p className="text-sm font-semibold">{viewData.total}</p>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Estimated Arrival (ETA)</p>
+                      <p className="text-sm font-medium">{viewData.eta ? fmtDateTime(viewData.eta) : "—"}</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Transport & Location */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-                    Transport & Location
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pl-6">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Vehicle Number</p>
-                    <p className="text-sm font-medium">{viewData.vehicle_number || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Transporter Name</p>
-                    <p className="text-sm font-medium">{viewData.transporter_name || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="text-sm font-medium">{viewData.location || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">ETA</p>
-                    <p className="text-sm font-medium">{viewData.eta || "—"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Record Information */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-                    Record Information
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pl-6">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Created By</p>
-                    <p className="text-sm font-medium">{viewData.created_by}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Created At</p>
-                    <p className="text-sm font-medium">{fmtDateTime(viewData.created_at)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Record ID</p>
-                    <p className="text-sm font-medium">{viewData.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Deleted</p>
-                    <p className="text-sm font-medium">{viewData.deleted ? "Yes" : "No"}</p>
-                  </div>
-                </div>
+              {/* metadata */}
+              <div className="bg-muted/20 p-4 rounded-lg text-[10px] grid grid-cols-2 gap-4 text-muted-foreground uppercase tracking-widest font-bold">
+                <div>Created By: <span className="text-foreground">{viewData.created_by}</span></div>
+                <div>Created At: <span className="text-foreground">{fmtDateTime(viewData.created_at)}</span></div>
+                <div>Record ID: <span className="text-foreground">#{viewData.id}</span></div>
               </div>
             </div>
           ) : null}
 
-          <DialogFooter className="flex-row justify-between sm:justify-between">
+          <SheetFooter className="absolute bottom-0 left-0 w-full bg-background border-t p-6 flex flex-row items-center justify-between">
             <Button
               variant="destructive"
-              className="gap-1.5"
+              className="gap-2 rounded-full"
               onClick={() => {
                 if (viewData) {
                   setDeleteData(viewData);
@@ -1137,14 +1465,28 @@ export default function StockStatusPage() {
               }}
             >
               <Trash2 className="h-4 w-4" />
-              Delete
+              Delete Record
             </Button>
-            <Button variant="outline" onClick={() => setViewData(null)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="flex gap-2">
+              <Button variant="outline" className="rounded-full px-6" onClick={() => setViewData(null)}>
+                Close
+              </Button>
+              <Button
+                className="rounded-full px-6 gap-2"
+                onClick={() => {
+                  if (viewData) {
+                    openEdit(viewData);
+                    setViewData(null);
+                  }
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Edit Dialog ──────────────────────────────────────── */}
       <Dialog open={!!editData} onOpenChange={() => setEditData(null)}>
