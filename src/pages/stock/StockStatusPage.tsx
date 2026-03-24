@@ -26,6 +26,9 @@ import {
   createStockStatus,
   updateStockStatus,
   softDeleteStockStatus,
+  moveStock,
+  dispatchStock,
+  arriveBatch,
   STATUS_CHOICES,
   type StockStatus,
   type StockStatusChoice,
@@ -148,6 +151,8 @@ export default function StockStatusPage() {
   const [eLocation, setELocation] = useState("");
   const [eEta, setEEta] = useState("");
   const [eTransporterName, setETransporterName] = useState("");
+  const [eTransferType, setETransferType] = useState<"bulk" | "batch" | "">("");
+  const [eAction, setEAction] = useState<"RETAIN" | "TOLERATE" | "DEBIT" | "">("");
   const [editing, setEditing] = useState(false);
 
   // delete
@@ -353,6 +358,8 @@ export default function StockStatusPage() {
     setELocation(row.location ?? "");
     setEEta(row.eta ?? "");
     setETransporterName(row.transporter_name ?? "");
+    setETransferType("");
+    setEAction("");
     await loadDropdowns();
   }
 
@@ -363,78 +370,65 @@ export default function StockStatusPage() {
       return;
     }
 
-    const oldQty = Number(editData.quantity);
     const newQty = Number(eQuantity.trim());
-    const statusChanged = eStatus !== editData.status;
-    const qtyChanged = newQty !== oldQty;
-
-    // Cannot change quantity without changing status
-    if (qtyChanged && !statusChanged) {
-      toast.error("You must select a new status when changing the quantity.");
-      return;
-    }
-
-    // New quantity cannot exceed existing quantity
-    if (newQty > oldQty) {
-      toast.error("New quantity cannot be greater than the existing quantity.");
-      return;
-    }
-
     if (newQty <= 0) {
       toast.error("Quantity must be greater than 0.");
       return;
     }
 
+    if (eStatus !== editData.status) {
+      if (eStatus !== "AT_REFINERY" && !eTransferType) {
+        toast.error("Please select a Transfer Type.");
+        return;
+      }
+      if (!eAction) {
+        toast.error("Please select an Action.");
+        return;
+      }
+    }
+
     setEditing(true);
     try {
-      if (statusChanged && qtyChanged && newQty < oldQty) {
-        // Split: update existing with new qty + new status,
-        // create a new record for remaining qty with old status
-        const remainingQty = (oldQty - newQty).toFixed(2);
-        await Promise.all([
-          updateStockStatus(editData.id, {
-            item_code: editData.item_code,
-            status: eStatus,
-            vendor_code: editData.vendor_code,
-            rate: eRate.trim(),
-            quantity: eQuantity.trim(),
-            created_by: editData.created_by,
-            vehicle_number: eVehicleNumber.trim() || undefined,
-            location: eLocation.trim() || undefined,
-            eta: eEta.trim() || undefined,
-            transporter_name: eTransporterName.trim() || undefined,
-          }),
-          createStockStatus({
-            item_code: editData.item_code,
-            status: editData.status,
-            vendor_code: editData.vendor_code,
-            rate: eRate.trim(),
-            quantity: remainingQty,
-            created_by: editData.created_by,
-            vehicle_number: editData.vehicle_number || undefined,
-            location: editData.location || undefined,
-            eta: editData.eta || undefined,
-            transporter_name: editData.transporter_name || undefined,
-          }),
-        ]);
-        toast.success(
-          `Stock split: ${eQuantity.trim()} KG moved to ${formatStatus(eStatus)}, ${remainingQty} KG remains as ${formatStatus(editData.status)}.`
-        );
+      if (eStatus !== editData.status) {
+        if (eStatus === "AT_REFINERY") {
+          await arriveBatch({
+            stock_id: editData.id,
+            weighed_qty: newQty,
+            destination_status: eStatus,
+            action: eAction,
+            created_by: email ?? "SYSTEM",
+          });
+          toast.success("Stock arrived (Arrive Batch).");
+        } else if (eTransferType === "bulk") {
+          await moveStock({
+            stock_id: editData.id,
+            new_quantity: newQty,
+            new_status: eStatus,
+            action: eAction,
+            created_by: email ?? "SYSTEM",
+          });
+          toast.success("Stock moved (Bulk).");
+        } else if (eTransferType === "batch") {
+          await dispatchStock({
+            stock_id: editData.id,
+            quantity: newQty,
+            destination_status: eStatus,
+            action: eAction,
+            created_by: email ?? "SYSTEM",
+          });
+          toast.success("Stock dispatched (Batch).");
+        }
       } else {
-        // Status change only (or no change) — update normally
+        // Just updating other fields (metadata) - normal PUT
         await updateStockStatus(editData.id, {
-          item_code: editData.item_code,
-          status: eStatus,
-          vendor_code: editData.vendor_code,
           rate: eRate.trim(),
           quantity: eQuantity.trim(),
-          created_by: editData.created_by,
           vehicle_number: eVehicleNumber.trim() || undefined,
           location: eLocation.trim() || undefined,
           eta: eEta.trim() || undefined,
           transporter_name: eTransporterName.trim() || undefined,
         });
-        toast.success("Stock status updated.");
+        toast.success("Stock status metadata updated.");
       }
       setEditData(null);
       await Promise.all([fetchList(currentFilters()), fetchOverallSummary(), fetchAllRows()]);
@@ -1200,7 +1194,25 @@ export default function StockStatusPage() {
             })()}
             <div className="space-y-2">
               <Label>Status *</Label>
-              <Select value={eStatus} onValueChange={(v) => setEStatus(v as StockStatusChoice)}>
+              <Select value={eStatus} onValueChange={(v) => {
+                const s = v as StockStatusChoice;
+                setEStatus(s);
+                if (s !== editData?.status) {
+                   if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT") {
+                     setETransferType("bulk");
+                   } else if (s === "UNDER_LOADING" || s === "OTW_TO_REFINERY") {
+                     setETransferType("batch");
+                   } else {
+                     setETransferType("");
+                   }
+                   
+                   if (s === "MUNDRA_PORT") {
+                     setEAction("TOLERATE");
+                   } else {
+                     setEAction("");
+                   }
+                }
+              }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -1213,6 +1225,47 @@ export default function StockStatusPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {eStatus !== editData?.status && (
+              <>
+                {eStatus !== "AT_REFINERY" && 
+                 eStatus !== "OUT_SIDE_FACTORY" && 
+                 eStatus !== "ON_THE_WAY" && 
+                 eStatus !== "MUNDRA_PORT" && 
+                 eStatus !== "UNDER_LOADING" && 
+                 eStatus !== "OTW_TO_REFINERY" && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Label>Transfer Type *</Label>
+                    <Select value={eTransferType} onValueChange={(v) => setETransferType(v as "bulk" | "batch")}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select transfer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bulk">Bulk</SelectItem>
+                        <SelectItem value="batch">Batch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {(eTransferType || eStatus === "AT_REFINERY" || eStatus === "OUT_SIDE_FACTORY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Label>Action *</Label>
+                    <Select value={eAction} onValueChange={(v) => setEAction(v as any)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select action" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {eStatus !== "OUT_SIDE_FACTORY" && <SelectItem value="RETAIN">Retain</SelectItem>}
+                        <SelectItem value="TOLERATE">Tolerate</SelectItem>
+                        <SelectItem value="DEBIT">Debit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
+
             <Separator />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1236,6 +1289,11 @@ export default function StockStatusPage() {
                   value={eQuantity}
                   onChange={(e) => setEQuantity(e.target.value)}
                 />
+                {editData && eQuantity && Number(eQuantity) !== Number(editData.quantity) && (
+                  <p className={`text-xs font-medium mt-1.5 ${Number(editData.quantity) - Number(eQuantity) > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    Difference: {Number(editData.quantity) - Number(eQuantity) > 0 ? "+" : ""}{fmtNum(Number(editData.quantity) - Number(eQuantity))} KG
+                  </p>
+                )}
               </div>
             </div>
             <Separator />

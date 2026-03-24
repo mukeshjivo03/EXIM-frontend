@@ -153,6 +153,39 @@ export async function getStockEntriesByRM(itemCode: string): Promise<StockEntryB
   return res.data ?? [];
 }
 
+export async function moveStock(data: {
+  stock_id: number;
+  new_quantity: number;
+  new_status: string;
+  action: string;
+  created_by: string;
+}): Promise<StockStatus> {
+  const res = await api.post<StockStatus>("/stock-status/move/", data);
+  return res.data;
+}
+
+export async function dispatchStock(data: {
+  stock_id: number;
+  quantity: number;
+  destination_status: string;
+  action: string;
+  created_by: string;
+}): Promise<StockStatus> {
+  const res = await api.post<StockStatus>("/stock-status/dispatch/", data);
+  return res.data;
+}
+
+export async function arriveBatch(data: {
+  stock_id: number;
+  weighed_qty: number;
+  destination_status: string;
+  action: string;
+  created_by: string;
+}): Promise<StockStatus> {
+  const res = await api.post<StockStatus>("/stock-status/arrive-batch/", data);
+  return res.data;
+}
+
 export async function softDeleteStockStatus(record: StockStatus): Promise<StockStatus> {
   const res = await api.patch<StockStatus>(`/stock-status/${record.id}/`, {
     deleted: true,
