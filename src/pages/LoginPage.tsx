@@ -270,14 +270,14 @@ export default function LoginPage() {
       {/* Ocean section — bottom half */}
       <div className="absolute bottom-0 left-0 right-0 h-[45%] overflow-hidden pointer-events-none">
         {/* Back wave */}
-        <div className="absolute bottom-0 left-0 w-[200%] ocean-wave-back" style={{ height: "80%" }}>
+        <div className="absolute bottom-0 left-0 w-[200%] ocean-wave-back" style={{ height: "50%" }}>
           <svg viewBox="0 0 2880 120" preserveAspectRatio="none" className="w-full h-full" aria-hidden="true">
             <path d={WAVE_BACK} className="login-wave-back" />
           </svg>
         </div>
 
         {/* Mid wave */}
-        <div className="absolute bottom-0 left-0 w-[200%] ocean-wave-mid" style={{ height: "65%" }}>
+        <div className="absolute bottom-0 left-0 w-[200%] ocean-wave-mid" style={{ height: "40%" }}>
           <svg viewBox="0 0 2880 120" preserveAspectRatio="none" className="w-full h-full" aria-hidden="true">
             <path d={WAVE_MID} className="login-wave-mid" />
           </svg>
@@ -286,16 +286,15 @@ export default function LoginPage() {
         {/* Cargo Ship sailing */}
         <div
           className="absolute z-[5] login-ship-sail pointer-events-none"
-          style={{ bottom: "15%", width: "200px", height: "110px" }}
+          style={{ bottom: "-8%", width: "440px", height: "240px" }}
         >
           <div className="ship-bob w-full h-full">
             <CargoShip />
           </div>
         </div>
 
-
         {/* Front wave */}
-        <div className="absolute bottom-0 left-0 w-[200%] z-[6] ocean-wave-front" style={{ height: "50%" }}>
+        <div className="absolute bottom-0 left-0 w-[200%] z-[6] ocean-wave-front" style={{ height: "30%" }}>
           <svg viewBox="0 0 2880 120" preserveAspectRatio="none" className="w-full h-full" aria-hidden="true">
             <path d={WAVE_FRONT} className="login-wave-front" />
             <path d={WAVE_FOAM} fill="none" stroke="white" strokeWidth="1" opacity="0.1" />

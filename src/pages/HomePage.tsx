@@ -24,10 +24,10 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
-import { getStockSummary, getStockLogs, type StockLog } from "@/api/stockStatus";
+import { getStockSummary, getStockLogs } from "@/api/stockStatus";
 import { getTankSummary } from "@/api/tank";
-import { getSyncLogs, type SyncLog } from "@/api/sapSync";
-import { fmtDateTime, fmtNum } from "@/lib/formatters";
+import { getSyncLogs } from "@/api/sapSync";
+import { fmtDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -86,46 +86,95 @@ const CATEGORY_STYLES = {
   Administration: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white",
 };
 
-/* ── Cargo Ship SVG ────────────────────────────────────────── */
+/* ── Cargo Ship SVG (matches login page) ─────────────────── */
 function CargoShip() {
   return (
     <svg viewBox="0 0 520 180" fill="none" overflow="visible" aria-hidden="true">
       <defs>
-        <linearGradient id="hullSteel" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="heroHullSteel" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#5A6B7A" />
           <stop offset="35%" stopColor="#6E7F8E" />
           <stop offset="100%" stopColor="#4A5A68" />
         </linearGradient>
-        <linearGradient id="hullAF" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="heroHullAF" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#7A2828" />
           <stop offset="100%" stopColor="#5C1E1E" />
         </linearGradient>
-        <linearGradient id="bridgeGrad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="heroBridgeGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#E2E6EA" />
           <stop offset="100%" stopColor="#C8CED4" />
         </linearGradient>
       </defs>
-      <path d="M50,95 L50,125 L460,125 L440,95 Z" fill="url(#hullSteel)" stroke="#3D4D5C" strokeWidth="0.5" />
-      <path d="M50,125 L32,158 L465,158 L460,125 Z" fill="url(#hullAF)" />
+      {/* Hull */}
+      <path d="M50,95 L50,125 L460,125 L440,95 Z" fill="url(#heroHullSteel)" stroke="#3D4D5C" strokeWidth="0.5" />
+      <path d="M50,125 L32,158 L465,158 L460,125 Z" fill="url(#heroHullAF)" />
       <line x1="42" y1="125" x2="462" y2="125" stroke="#8A9AAA" strokeWidth="1" opacity="0.45" />
-      <path d="M50,95 L18,125 L32,158 L50,125 Z" fill="url(#hullAF)" />
-      <path d="M50,95 L18,125 L50,125 Z" fill="url(#hullSteel)" stroke="#3D4D5C" strokeWidth="0.5" />
+      <path d="M50,95 L18,125 L32,158 L50,125 Z" fill="url(#heroHullAF)" />
+      <path d="M50,95 L18,125 L50,125 Z" fill="url(#heroHullSteel)" stroke="#3D4D5C" strokeWidth="0.5" />
       <ellipse cx="20" cy="154" rx="7" ry="4.5" fill="#5C1E1E" opacity="0.8" />
+      {/* Deck */}
       <rect x="58" y="87" width="378" height="10" rx="1" fill="#4A5568" stroke="#3D4050" strokeWidth="0.3" />
-      <rect x="65"  y="55" width="40" height="32" rx="1.5" fill="#A63D32" stroke="#8A2D24" strokeWidth="0.5" />
+      {/* Containers — row 1 */}
+      <rect x="65" y="55" width="40" height="32" rx="1.5" fill="#A63D32" stroke="#8A2D24" strokeWidth="0.5" />
       <rect x="108" y="55" width="40" height="32" rx="1.5" fill="#2D5B8A" stroke="#1E4670" strokeWidth="0.5" />
       <rect x="151" y="55" width="40" height="32" rx="1.5" fill="#4B7B4B" stroke="#3A6338" strokeWidth="0.5" />
       <rect x="194" y="55" width="40" height="32" rx="1.5" fill="#8B7030" stroke="#6E5820" strokeWidth="0.5" />
       <rect x="237" y="55" width="40" height="32" rx="1.5" fill="#5C5C5C" stroke="#444444" strokeWidth="0.5" />
       <rect x="280" y="55" width="40" height="32" rx="1.5" fill="#7B4B2A" stroke="#5E3A1E" strokeWidth="0.5" />
       <rect x="323" y="55" width="40" height="32" rx="1.5" fill="#A63D32" stroke="#8A2D24" strokeWidth="0.5" />
+      {/* Containers — row 2 */}
+      <rect x="65" y="21" width="40" height="32" rx="1.5" fill="#2D5B8A" stroke="#1E4670" strokeWidth="0.5" />
+      <rect x="108" y="21" width="40" height="32" rx="1.5" fill="#7B4B2A" stroke="#5E3A1E" strokeWidth="0.5" />
+      <rect x="151" y="21" width="40" height="32" rx="1.5" fill="#A63D32" stroke="#8A2D24" strokeWidth="0.5" />
+      <rect x="194" y="21" width="40" height="32" rx="1.5" fill="#4B7B4B" stroke="#3A6338" strokeWidth="0.5" />
+      <rect x="237" y="21" width="40" height="32" rx="1.5" fill="#8B7030" stroke="#6E5820" strokeWidth="0.5" />
+      <rect x="280" y="21" width="40" height="32" rx="1.5" fill="#5C5C5C" stroke="#444444" strokeWidth="0.5" />
+      {/* Containers — row 3 (pyramid) */}
+      <rect x="108" y="-13" width="40" height="32" rx="1.5" fill="#5C5C5C" stroke="#444444" strokeWidth="0.5" />
+      <rect x="151" y="-13" width="40" height="32" rx="1.5" fill="#2D5B8A" stroke="#1E4670" strokeWidth="0.5" />
+      <rect x="194" y="-13" width="40" height="32" rx="1.5" fill="#7B4B2A" stroke="#5E3A1E" strokeWidth="0.5" />
+      <rect x="237" y="-13" width="40" height="32" rx="1.5" fill="#A63D32" stroke="#8A2D24" strokeWidth="0.5" />
+      {/* Container seam lines */}
+      {[65, 108, 151, 194, 237, 280, 323].map((x) => (
+        <line key={`s1-${x}`} x1={x + 20} y1={57} x2={x + 20} y2={85} stroke="rgba(0,0,0,0.1)" strokeWidth="0.4" />
+      ))}
+      {[65, 108, 151, 194, 237, 280].map((x) => (
+        <line key={`s2-${x}`} x1={x + 20} y1={23} x2={x + 20} y2={51} stroke="rgba(0,0,0,0.1)" strokeWidth="0.4" />
+      ))}
+      {/* Crane/rigging */}
       <line x1="372" y1="87" x2="372" y2="20" stroke="#5A6B7A" strokeWidth="2.5" />
       <line x1="372" y1="22" x2="348" y2="48" stroke="#5A6B7A" strokeWidth="1.5" />
-      <rect x="382" y="50" width="52" height="37" rx="2" fill="url(#bridgeGrad)" stroke="#A0A8B0" strokeWidth="0.4" />
-      <rect x="384" y="30" width="46" height="22" rx="2" fill="url(#bridgeGrad)" stroke="#A0A8B0" strokeWidth="0.4" />
-      <circle cx="406" cy="0"   r="4"   fill="#5A6A7A" className="ship-smoke smoke-1" />
-      <circle cx="404" cy="-7"  r="5.5" fill="#5A6A7A" className="ship-smoke smoke-2" />
-      <circle cx="401" cy="-16" r="7"   fill="#5A6A7A" className="ship-smoke smoke-3" />
+      <line x1="372" y1="22" x2="396" y2="48" stroke="#718096" strokeWidth="0.8" opacity="0.5" />
+      <line x1="348" y1="48" x2="348" y2="62" stroke="#8A9AAA" strokeWidth="0.5" strokeDasharray="2 2" />
+      {/* Bridge */}
+      <rect x="382" y="50" width="52" height="37" rx="2" fill="url(#heroBridgeGrad)" stroke="#A0A8B0" strokeWidth="0.4" />
+      <rect x="384" y="30" width="46" height="22" rx="2" fill="url(#heroBridgeGrad)" stroke="#A0A8B0" strokeWidth="0.4" />
+      <rect x="378" y="28" width="58" height="3" rx="1" fill="#B0B8C0" />
+      {/* Bridge windows */}
+      {[387, 400, 413].map((x) => (
+        <rect key={`wu-${x}`} x={x} y="34" width="10" height="7" rx="1" fill="#6B8DAB" opacity="0.85" />
+      ))}
+      {[386, 398, 410, 422].map((x) => (
+        <rect key={`wl-${x}`} x={x} y="56" width="9" height="6" rx="0.8" fill="#6B8DAB" opacity="0.6" />
+      ))}
+      {/* Funnel / smokestack */}
+      <rect x="398" y="6" width="16" height="24" rx="1.5" fill="#2D3748" stroke="#1A2332" strokeWidth="0.4" />
+      <rect x="398" y="16" width="16" height="5" rx="0.5" fill="#A63D32" />
+      <rect x="394" y="4" width="24" height="3" rx="1" fill="#1A2332" />
+      {/* Antenna */}
+      <line x1="406" y1="4" x2="406" y2="-10" stroke="#718096" strokeWidth="1.5" />
+      <line x1="399" y1="-6" x2="413" y2="-6" stroke="#718096" strokeWidth="1" />
+      <circle cx="406" cy="-10" r="1.8" fill="#A0AEC0" stroke="#8090A0" strokeWidth="0.4" />
+      {/* Smoke */}
+      <circle cx="406" cy="0" r="4" fill="#5A6A7A" className="ship-smoke smoke-1" />
+      <circle cx="404" cy="-7" r="5.5" fill="#5A6A7A" className="ship-smoke smoke-2" />
+      <circle cx="401" cy="-16" r="7" fill="#5A6A7A" className="ship-smoke smoke-3" />
+      {/* Bow anchor */}
+      <circle cx="40" cy="100" r="2.5" fill="none" stroke="#8A9AAA" strokeWidth="0.8" />
+      <line x1="40" y1="102.5" x2="40" y2="108" stroke="#8A9AAA" strokeWidth="0.8" />
+      {/* Bow wake spray */}
+      <path d="M14,150 Q6,142 12,134" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+      <path d="M10,155 Q0,146 8,136" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
     </svg>
   );
 }
@@ -228,6 +277,9 @@ export default function HomePage() {
           <div className="relative overflow-hidden rounded-3xl h-[220px] sm:h-[260px] border border-black/10 dark:border-white/5 shadow-2xl group/hero">
             <div className="absolute inset-0 banner-sky" />
             <div className="absolute inset-0 banner-horizon" />
+            <div className="absolute inset-0 banner-text-overlay z-[1]" />
+            <div className="banner-haze banner-haze-1" />
+            <div className="banner-haze banner-haze-2" />
             
             {/* Functional Stats Overlay */}
             <div className="absolute top-6 right-6 z-20 flex gap-3">
@@ -274,7 +326,7 @@ export default function HomePage() {
                 <path d={WAVE_MID} className="wave-fill-mid" />
               </svg>
             </div>
-            <div className="absolute z-[7] ship-sail pointer-events-none" style={{ bottom: "-5%", width: "280px", height: "155px" }}>
+            <div className="absolute z-[5] ship-sail pointer-events-none" style={{ bottom: "-12%", width: "280px", height: "155px" }}>
               <div className="ship-bob w-full h-full">
                 <CargoShip />
               </div>
