@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { 
-  RefreshCw, 
-  Factory, 
-  PackageOpen, 
-
-  EyeOff, 
-  Eye, 
+import {
+  RefreshCw,
+  Factory,
+  PackageOpen,
+  EyeOff,
+  Eye,
   ChevronRight,
-  Info
+  Info,
+  Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
@@ -189,6 +190,51 @@ export default function StockDashboardPage() {
     });
   }, [data, hideZeroRows, tankQtyMap]);
 
+  /* ── Export to Excel ─────────────────────────────────────── */
+
+  function exportToExcel() {
+    if (!data) return;
+
+    const rows: Record<string, string | number>[] = [];
+
+    for (const item of displayItems) {
+      const tankVal = tankQtyMap.get(item.item_code) ?? 0;
+      const row: Record<string, string | number> = { "RM Code": item.item_code };
+      row["In Factory"] = unit === "LTR" ? tankVal : Number(convertFromLiters(tankVal, unit).toFixed(3));
+      row["Outside Factory"] = Number(convertUnit(item.outside_factory, unit).toFixed(3));
+
+      for (const group of statusGroups) {
+        for (const { key, vendor } of group.vendors) {
+          const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
+          row[colLabel] = Number(convertUnit(item.status_data[key] ?? 0, unit).toFixed(3));
+        }
+      }
+
+      const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
+      row["Total"] = Math.round(grandTotal);
+      rows.push(row);
+    }
+
+    // Grand total row
+    const totalRow: Record<string, string | number> = { "RM Code": "GRAND TOTAL" };
+    totalRow["In Factory"] = Number(convertFromLiters(tankInFactoryTotal, unit).toFixed(3));
+    totalRow["Outside Factory"] = Number(convertUnit(data.totals.outside_factory, unit).toFixed(3));
+    for (const group of statusGroups) {
+      for (const { key, vendor } of group.vendors) {
+        const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
+        totalRow[colLabel] = Number(convertUnit(data.totals.status_vendor_totals[key] ?? 0, unit).toFixed(3));
+      }
+    }
+    totalRow["Total"] = Number(convertUnit(data.totals.grand_total, unit).toFixed(3));
+    rows.push(totalRow);
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock Dashboard");
+    XLSX.writeFile(wb, `Stock_Dashboard_${UNIT_LABELS[unit]}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Exported to Excel");
+  }
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 lg:space-y-8 animate-page pb-20">
       {/* Header */}
@@ -227,6 +273,10 @@ export default function StockDashboardPage() {
           <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={fetchData} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
+          </Button>
+          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={exportToExcel} disabled={!data}>
+            <Download className="h-4 w-4" />
+            Export
           </Button>
         </div>
       </div>
@@ -363,7 +413,7 @@ export default function StockDashboardPage() {
                       );
                     })}
                     <th className="px-4 py-4 text-center font-black bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-widest">
-                      DISTRIBUTION
+                      TOTAL
                     </th>
                   </tr>
                   <tr className="bg-muted/20 border-b shadow-sm">
@@ -463,47 +513,9 @@ export default function StockDashboardPage() {
                           );
                         })}
 
-                        {/* DISTRIBUTION BAR CELL */}
-                        <td className="px-4 py-3 bg-muted/20 border-l border-border/50">
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between items-center text-[10px] font-black">
-                              <span className="text-primary tracking-tighter">TOTAL</span>
-                              <span className="tabular-nums">{Math.round(grandTotal).toLocaleString("en-IN")}</span>
-                            </div>
-                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex shadow-inner">
-                              {/* Proportional Bars */}
-                              {tankVal > 0 && (
-                                <div 
-                                  className="h-full bg-blue-500 transition-all duration-1000" 
-                                  style={{ width: `${(convertFromLiters(tankVal, unit) / grandTotal) * 100}%` }}
-                                  title={`In Factory: ${((convertFromLiters(tankVal, unit) / grandTotal) * 100).toFixed(1)}%`}
-                                />
-                              )}
-                              {item.outside_factory > 0 && (
-                                <div 
-                                  className="h-full bg-amber-500 transition-all duration-1000" 
-                                  style={{ width: `${(convertUnit(item.outside_factory, unit) / grandTotal) * 100}%` }}
-                                  title={`Outside Factory: ${((convertUnit(item.outside_factory, unit) / grandTotal) * 100).toFixed(1)}%`}
-                                />
-                              )}
-                              {Object.entries(item.status_data).filter(([key]) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__")).map(([key, val]) => {
-                                if (val <= 0) return null;
-                                const status = key.split("__")[0];
-                                const color = STATUS_META[status]?.barColor ?? "#cbd5e1";
-                                return (
-                                  <div 
-                                    key={key}
-                                    className="h-full transition-all duration-1000" 
-                                    style={{ 
-                                      width: `${(convertUnit(val, unit) / grandTotal) * 100}%`,
-                                      backgroundColor: color 
-                                    }}
-                                    title={`${status}: ${((convertUnit(val, unit) / grandTotal) * 100).toFixed(1)}%`}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </div>
+                        {/* TOTAL CELL */}
+                        <td className="px-4 py-3 text-center tabular-nums font-black bg-muted/20 border-l border-border/50">
+                          {Math.round(grandTotal).toLocaleString("en-IN")}
                         </td>
                       </tr>
                     );
