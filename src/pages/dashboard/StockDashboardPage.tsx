@@ -1,15 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { RefreshCw, Factory, PackageOpen, Layers } from "lucide-react";
+import { 
+  RefreshCw, 
+  Factory, 
+  PackageOpen, 
+  Layers, 
+  EyeOff, 
+  Eye, 
+  TrendingUp, 
+  AlertTriangle,
+  ChevronRight,
+  Info
+} from "lucide-react";
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type Unit = "KG" | "MTS" | "LTR";
 
@@ -48,22 +60,20 @@ function fmtLiters(n: number, unit: Unit) {
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
-const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string; headerBg: string }> = {
-  IN_FACTORY:      { label: "In Factory",      variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
-  OUT_SIDE_FACTORY:{ label: "Outside Factory", variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
-  ON_THE_WAY:      { label: "On The Way",      variant: "default",   className: "bg-yellow-500 text-white border-yellow-500",headerBg: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200" },
-  UNDER_LOADING:   { label: "Under Loading",   variant: "default",   className: "bg-yellow-500 text-white border-yellow-500",headerBg: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200" },
-  AT_REFINERY:     { label: "At Refinery",     variant: "default",   className: "bg-pink-500 text-white border-pink-500",    headerBg: "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-200" },
-  OTW_TO_REFINERY: { label: "OTW to Refinery", variant: "default",   className: "bg-pink-500 text-white border-pink-500",    headerBg: "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-200" },
-  ON_THE_SEA:      { label: "On The Sea",      variant: "default",   className: "bg-blue-500 text-white border-blue-500",    headerBg: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200" },
-  IN_CONTRACT:     { label: "In Contract",     variant: "default",   className: "bg-indigo-500 text-white border-indigo-500",headerBg: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200" },
-  KANDLA_STORAGE:  { label: "Kandla Storage",  variant: "default",   className: "bg-orange-500 text-white border-orange-500",headerBg: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" },
-  MUNDRA_PORT:     { label: "Mundra Port",     variant: "default",   className: "bg-orange-500 text-white border-orange-500",headerBg: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" },
-  IN_TRANSIT:      { label: "In Transit",      variant: "default",   className: "bg-blue-500 text-white border-blue-500",    headerBg: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200" },
-  PENDING:         { label: "Pending",         variant: "secondary", className: "bg-amber-500 text-white border-amber-500",  headerBg: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200" },
-  PROCESSING:      { label: "Processing",      variant: "default",   className: "bg-purple-500 text-white border-purple-500",headerBg: "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200" },
-  COMPLETED:       { label: "Completed",       variant: "default",   className: "bg-green-500 text-white border-green-500",  headerBg: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200" },
-  DELIVERED:       { label: "Delivered",        variant: "default",   className: "bg-teal-500 text-white border-teal-500",    headerBg: "bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200" },
+const STATUS_META: Record<string, { label: string; variant: string; className: string; headerBg: string; barColor: string }> = {
+  IN_FACTORY:      { label: "In Factory",      variant: "default",   className: "bg-green-500",  headerBg: "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200", barColor: "#22c55e" },
+  OUT_SIDE_FACTORY:{ label: "Outside Factory", variant: "default",   className: "bg-emerald-500",headerBg: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200", barColor: "#10b981" },
+  ON_THE_WAY:      { label: "On The Way",      variant: "default",   className: "bg-yellow-500", headerBg: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200", barColor: "#eab308" },
+  UNDER_LOADING:   { label: "Under Loading",   variant: "default",   className: "bg-amber-500",  headerBg: "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200", barColor: "#f59e0b" },
+  AT_REFINERY:     { label: "At Refinery",     variant: "default",   className: "bg-pink-500",   headerBg: "bg-pink-50 dark:bg-pink-900/20 text-pink-800 dark:text-pink-200", barColor: "#ec4899" },
+  OTW_TO_REFINERY: { label: "OTW to Refinery", variant: "default",   className: "bg-rose-500",   headerBg: "bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-200", barColor: "#f43f5e" },
+  ON_THE_SEA:      { label: "On The Sea",      variant: "default",   className: "bg-blue-500",   headerBg: "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200", barColor: "#3b82f6" },
+  IN_CONTRACT:     { label: "In Contract",     variant: "default",   className: "bg-indigo-500", headerBg: "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200", barColor: "#6366f1" },
+  KANDLA_STORAGE:  { label: "Kandla Storage",  variant: "default",   className: "bg-orange-500", headerBg: "bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200", barColor: "#f97316" },
+  MUNDRA_PORT:     { label: "Mundra Port",     variant: "default",   className: "bg-orange-600", headerBg: "bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-100", barColor: "#ea580c" },
+  IN_TRANSIT:      { label: "In Transit",      variant: "default",   className: "bg-sky-500",    headerBg: "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-200", barColor: "#0ea5e9" },
+  PENDING:         { label: "Pending",         variant: "secondary", className: "bg-slate-500",  headerBg: "bg-slate-50 dark:bg-slate-900/20 text-slate-800 dark:text-slate-200", barColor: "#64748b" },
+  PROCESSING:      { label: "Processing",      variant: "default",   className: "bg-purple-500", headerBg: "bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200", barColor: "#a855f7" },
 };
 
 /* ── component ────────────────────────────────────────────────── */
@@ -74,18 +84,20 @@ export default function StockDashboardPage() {
   const [tankSummary, setTankSummary] = useState<ItemWiseTankSummary | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Persistence: initialize from localStorage or default to "MTS"
+  // UX States
+  const [hideZeroRows, setHideZeroRows] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [hoveredCol, setHoveredCol] = useState<string | null>(null);
+
   const [unit, setUnit] = useState<Unit>(() => {
     const saved = localStorage.getItem("stock_dashboard_unit");
     return (saved === "KG" || saved === "MTS" || saved === "LTR") ? saved : "MTS";
   });
 
-  // Update localStorage when unit changes
   useEffect(() => {
     localStorage.setItem("stock_dashboard_unit", unit);
   }, [unit]);
 
-  // Map item_code → quantity in liters from tank data
   const tankQtyMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const item of tankSummary?.items ?? []) {
@@ -116,7 +128,8 @@ export default function StockDashboardPage() {
     fetchData();
   }, []);
 
-  /* Derive ordered column keys, excluding COMPLETED status */
+  /* ── Calculations & Derived Data ── */
+
   const colKeys = useMemo(
     () =>
       data
@@ -127,7 +140,6 @@ export default function StockDashboardPage() {
     [data]
   );
 
-  /* Group colKeys by status for spanning headers */
   const statusGroups = useMemo(() => {
     const groups: { status: string; vendors: { key: string; vendor: string }[] }[] = [];
     const seen = new Map<string, number>();
@@ -143,7 +155,6 @@ export default function StockDashboardPage() {
     return groups;
   }, [colKeys]);
 
-  // Set of keys that are the last vendor in their status group — these get thick right borders
   const lastKeyPerGroup = useMemo(() => {
     const set = new Set<string>();
     for (const group of statusGroups) {
@@ -152,222 +163,411 @@ export default function StockDashboardPage() {
     return set;
   }, [statusGroups]);
 
+  // Max value for heatmapping
+  const maxCellValue = useMemo(() => {
+    if (!data) return 0;
+    let max = 0;
+    data.items.forEach(item => {
+      max = Math.max(max, item.outside_factory, ...Object.values(item.status_data));
+    });
+    return max;
+  }, [data]);
+
+  // Top Insights
+  const insights = useMemo(() => {
+    if (!data) return null;
+    const topItem = [...data.items].sort((a, b) => b.total - a.total)[0];
+    const statusTotals = Object.entries(data.totals.status_vendor_totals).reduce((acc, [key, val]) => {
+      const status = key.split("__")[0];
+      acc[status] = (acc[status] || 0) + val;
+      return acc;
+    }, {} as Record<string, number>);
+    const bottleneck = Object.entries(statusTotals).sort((a, b) => b[1] - a[1])[0];
+    return { topItem, bottleneck };
+  }, [data]);
+
+  // Filtered rows based on hideZeroRows
+  const displayItems = useMemo(() => {
+    if (!data) return [];
+    if (!hideZeroRows) return data.items;
+    return data.items.filter(item => {
+      const tankVal = tankQtyMap.get(item.item_code) ?? 0;
+      return tankVal > 0 || item.total > 0;
+    });
+  }, [data, hideZeroRows, tankQtyMap]);
+
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-6 lg:space-y-8 animate-page pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Stock Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Overview of raw material stock across statuses and vendors</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Stock Dashboard</h1>
+          <p className="text-sm text-muted-foreground font-medium mt-1">Multi-dimensional inventory analytics</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center border rounded-md overflow-hidden">
-            {(["KG", "MTS", "LTR"] as Unit[]).map((u) => (
-              <button
-                key={u}
-                onClick={() => setUnit(u)}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  unit === u
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background hover:bg-muted text-muted-foreground"
-                }`}
-              >
-                {UNIT_LABELS[u]}
-              </button>
-            ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl border border-border/50">
+            <Button 
+              variant={hideZeroRows ? "secondary" : "ghost"} 
+              size="sm" 
+              className="h-8 rounded-lg gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+              onClick={() => setHideZeroRows(!hideZeroRows)}
+            >
+              {hideZeroRows ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              {hideZeroRows ? "Showing Active" : "Hide Empty"}
+            </Button>
+            <div className="w-[1px] h-4 bg-border mx-1" />
+            <div className="flex items-center">
+              {(["KG", "MTS", "LTR"] as Unit[]).map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setUnit(u)}
+                  className={cn(
+                    "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                    unit === u ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {UNIT_LABELS[u]}
+                </button>
+              ))}
+            </div>
           </div>
-          <Button variant="outline" className="btn-press gap-2" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={fetchData} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
         </div>
       </div>
 
-      {/* ── Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">In Factory</CardTitle>
-            <div className="rounded-md bg-blue-50 dark:bg-blue-900/50 p-2">
-              <Factory className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      {/* ── Summary & Insights ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="card-hover border-none bg-blue-50/50 dark:bg-blue-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">In Factory</p>
+              <Factory className="h-4 w-4 text-blue-500" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${fmtLiters(tankInFactoryTotal, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
+            <h3 className="text-xl font-black">{data ? fmtLiters(tankInFactoryTotal, unit) : "—"}</h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">{UNIT_LABELS[unit]} Volume</p>
           </CardContent>
         </Card>
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Outside Factory</CardTitle>
-            <div className="rounded-md bg-amber-50 dark:bg-amber-900/50 p-2">
-              <PackageOpen className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+
+        <Card className="card-hover border-none bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Outside Factory</p>
+              <PackageOpen className="h-4 w-4 text-amber-500" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${fmtNum(data.summary.outside_factory_total, unit)} ${UNIT_LABELS[unit]}` : "—"}</p>}
+            <h3 className="text-xl font-black">{data ? fmtNum(data.summary.outside_factory_total, unit) : "—"}</h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Logistical Stock</p>
           </CardContent>
         </Card>
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Items</CardTitle>
-            <div className="rounded-md bg-green-50 dark:bg-green-900/50 p-2">
-              <Layers className="h-5 w-5 text-green-600 dark:text-green-400" />
+
+        <Card className="card-hover border-none bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Total Asset</p>
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="text-base sm:text-lg md:text-2xl font-bold break-words">{data ? `${data.summary.active_items} item codes` : "—"}</p>}
+            <h3 className="text-xl font-black">{data ? fmtNum(data.totals.grand_total, unit) : "—"}</h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Combined Inventory</p>
+          </CardContent>
+        </Card>
+
+        {/* Insight Badges */}
+        <Card className="card-hover border-none bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm overflow-hidden relative group">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Top Item</p>
+            {loading ? <Skeleton className="h-6 w-20" /> : (
+              <h3 className="text-lg font-black truncate">{insights?.topItem?.item_code ?? "—"}</h3>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[9px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5 font-bold">BY VOLUME</Badge>
+            </div>
+            <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-indigo-500/10 group-hover:scale-110 transition-transform" />
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover border-none bg-rose-50/50 dark:bg-rose-950/20 shadow-sm overflow-hidden relative group">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400">Bottleneck</p>
+            {loading ? <Skeleton className="h-6 w-20" /> : (
+              <h3 className="text-lg font-black truncate">{insights?.bottleneck?.[0]?.replace(/_/g, " ") ?? "—"}</h3>
+            )}
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3 text-rose-500" />
+              <p className="text-[9px] font-bold text-muted-foreground uppercase">High Concentration</p>
+            </div>
+            <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-rose-500/10 group-hover:scale-110 transition-transform" />
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Detail Table ── */}
-      <div className="-mx-6">
-        <div className="px-6 mb-3">
-          <h2 className="text-lg font-bold">Stock Detail — Item × Status × Vendor</h2>
-          <p className="text-sm text-muted-foreground">Quantities per item broken down by status and vendor. Grand total shown in the last column.</p>
-        </div>
-        {loading ? (
-          <div className="px-6 space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
+      {/* ── Table Matrix ── */}
+      <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="border-b bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Inventory Matrix</CardTitle>
+              <CardDescription className="text-xs">RM × Status × Vendor Pivot</CardDescription>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
+                <span>Hover Row/Col to highlight</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
+                <span>Heatmap intensity</span>
+              </div>
+            </div>
           </div>
-        ) : !data || data.items.length === 0 ? (
-          <div className="mx-6 flex items-center justify-center h-40 text-muted-foreground text-sm border rounded-md">
-            No stock data available
-          </div>
-        ) : (
-          <div className="border-y shadow-sm overflow-x-auto">
-              <table className="w-full table-fixed text-xs" style={{ borderCollapse: "collapse" }}>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+              <table className="w-full table-fixed text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
-                  <col style={{ width: 110 }} />
-                  <col style={{ width: `${90 / (colKeys.length + 3)}%` }} />
-                  <col style={{ width: `${90 / (colKeys.length + 3)}%` }} />
-                  {colKeys.map((k) => <col key={k} style={{ width: `${90 / (colKeys.length + 3)}%` }} />)}
-                  <col style={{ width: 72 }} />
+                  <col style={{ width: 150 }} />
+                  <col style={{ width: 90 }} />
+                  <col style={{ width: 90 }} />
+                  {colKeys.map((k) => <col key={k} style={{ width: 100 }} />)}
+                  <col style={{ width: 140 }} />
                 </colgroup>
                 <thead>
-                  {/* Row 1: Status group headers */}
-                  <tr className="border-b">
-                    <th rowSpan={2} className="sticky left-0 z-10 bg-muted/40 px-2 py-2 text-left font-bold border-r-2 text-xs">
-                      Item Code
+                  <tr className="bg-muted/50 border-b">
+                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left font-black uppercase tracking-widest border-r-2 border-border/50 text-sm">
+                      RM CODE
                     </th>
-                    <th rowSpan={2} onClick={() => navigate("/stock-dashboard/IN_FACTORY")} className="px-1 py-2 text-center font-bold border-r-2 text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 cursor-pointer hover:brightness-95 select-none leading-tight">
-                      In<br/>Factory
+                    <th 
+                      onClick={() => navigate("/stock-dashboard/IN_FACTORY")}
+                      onMouseEnter={() => setHoveredCol("IN_FACTORY")}
+                      onMouseLeave={() => setHoveredCol(null)}
+                      className={cn(
+                        "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        hoveredCol === "IN_FACTORY" ? "bg-green-100 dark:bg-green-900/40" : "bg-green-50/30 dark:bg-green-900/10"
+                      )}
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-green-600">IN FACTORY</span>
+                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
+                      </div>
                     </th>
-                    <th rowSpan={2} onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")} className="px-1 py-2 text-center font-bold border-r-2 text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 cursor-pointer hover:brightness-95 select-none leading-tight">
-                      Outside<br/>Factory
+                    <th 
+                      onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")}
+                      onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
+                      onMouseLeave={() => setHoveredCol(null)}
+                      className={cn(
+                        "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-amber-50/30 dark:bg-amber-900/10"
+                      )}
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-amber-600">OUTSIDE</span>
+                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
+                      </div>
                     </th>
                     {statusGroups.map((group) => {
                       const meta = STATUS_META[group.status];
-                      const headerBg = meta?.headerBg ?? "bg-muted/40";
-                      const label = meta?.label ?? group.status.replace(/_/g, " ");
                       return (
                         <th
                           key={group.status}
                           colSpan={group.vendors.length}
                           onClick={() => navigate(`/stock-dashboard/${group.status}`)}
-                          className={`px-1 py-2 text-center font-bold border-r-2 text-xs cursor-pointer hover:brightness-95 select-none leading-tight ${headerBg}`}
+                          onMouseEnter={() => setHoveredCol(group.status)}
+                          onMouseLeave={() => setHoveredCol(null)}
+                          className={cn(
+                            "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-all hover:brightness-95 group",
+                            meta?.headerBg,
+                            hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
+                          )}
                         >
-                          {label.toUpperCase()}
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="truncate">{group.status.replace(/_/g, " ")}</span>
+                            <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
+                          </div>
                         </th>
                       );
                     })}
-                    <th rowSpan={2} className="px-1 py-2 text-center font-bold border-l bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-xs">
-                      TOTAL
+                    <th className="px-4 py-4 text-center font-black bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-widest">
+                      DISTRIBUTION
                     </th>
                   </tr>
-                  {/* Row 2: Vendor sub-headers */}
-                  <tr className="border-b bg-muted/20">
+                  <tr className="bg-muted/20 border-b shadow-sm">
+                    <th className="sticky left-0 z-30 bg-muted px-4 py-2 border-r-2 border-border/50" />
+                    <th className="border-r-2 border-border/50 bg-green-50/10" />
+                    <th className="border-r-2 border-border/50 bg-amber-50/10" />
                     {statusGroups.map((group) =>
                       group.vendors.map(({ key, vendor }) => (
-                        <th key={key} title={vendor} className={`px-2 py-2 text-center font-medium text-xs text-muted-foreground overflow-hidden ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`}>
-                          <span className="block truncate">{vendor}</span>
+                        <th 
+                          key={key} 
+                          title={vendor}
+                          onMouseEnter={() => setHoveredCol(key)}
+                          onMouseLeave={() => setHoveredCol(null)}
+                          className={cn(
+                            "px-2 py-2 text-center font-bold text-[9px] text-muted-foreground truncate transition-colors",
+                            lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20",
+                            hoveredCol === key ? "bg-primary/5 text-primary" : ""
+                          )}
+                        >
+                          {vendor}
                         </th>
                       ))
                     )}
+                    <th className="bg-blue-50/20" />
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((item, idx) => (
-                    <tr
-                      key={item.item_code}
-                      className={`border-b transition-colors hover:bg-accent/30 ${idx % 2 === 0 ? "" : "bg-muted/20"}`}
-                    >
-                      <td className="sticky left-0 z-10 px-2 py-1.5 font-mono font-semibold truncate border-r-2 bg-card text-xs">
-                        {item.item_code}
-                      </td>
-                      <td className="px-1 py-1.5 text-center tabular-nums border-r-2 text-xs" title={fmtLiters(tankQtyMap.get(item.item_code) ?? 0, unit)}>
-                        {(tankQtyMap.get(item.item_code) ?? 0) > 0 ? (
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{fmtLiters(tankQtyMap.get(item.item_code) ?? 0, unit)}</span>
-                        ) : (
-                          <span className="text-muted-foreground/40">·</span>
-                        )}
-                      </td>
-                      <td className="px-1 py-1.5 text-center tabular-nums border-r-2 text-xs" title={fmtNum(item.outside_factory, unit)}>
-                        {item.outside_factory > 0 ? (
-                          <span className="text-amber-600 dark:text-amber-400 font-semibold">{fmtNum(item.outside_factory, unit)}</span>
-                        ) : (
-                          <span className="text-muted-foreground/40">·</span>
-                        )}
-                      </td>
-                      {colKeys.map((key) => {
-                        const val = item.status_data[key] ?? 0;
-                        return (
-                          <td key={key} className={`px-1 py-1.5 text-center tabular-nums text-xs ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`} title={val > 0 ? fmtNum(val, unit) : undefined}>
-                            {val > 0 ? (
-                              <span className="font-semibold">{fmtNum(val, unit)}</span>
-                            ) : (
-                              <span className="text-muted-foreground/40">·</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                      {(() => {
-                        const tankVal = convertFromLiters(tankQtyMap.get(item.item_code) ?? 0, unit);
-                        const restVal = convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
-                        const total = tankVal + restVal;
-                        const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                        return (
-                          <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/20 text-xs" title={formatted}>
-                            {formatted}
-                          </td>
-                        );
-                      })()}
-                    </tr>
-                  ))}
+                  {displayItems.map((item, idx) => {
+                    const tankVal = tankQtyMap.get(item.item_code) ?? 0;
+                    const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
 
-                  {/* Totals row */}
-                  <tr className="border-t-2 bg-muted/40 font-bold text-xs">
-                    <td className="sticky left-0 z-10 px-2 py-1.5 border-r-2 bg-muted/40">Total</td>
-                    <td className="px-1 py-1.5 text-center tabular-nums border-r-2 text-blue-600 dark:text-blue-400" title={fmtLiters(tankInFactoryTotal, unit)}>
+                    return (
+                      <tr
+                        key={item.item_code}
+                        onMouseEnter={() => setHoveredRow(item.item_code)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                        className={cn(
+                          "border-b transition-all group/row",
+                          idx % 2 === 0 ? "bg-card" : "bg-muted/10",
+                          hoveredRow === item.item_code ? "bg-primary/5 shadow-inner scale-[1.002] z-10 relative" : ""
+                        )}
+                      >
+                        <td className={cn(
+                          "sticky left-0 z-20 px-4 py-3 font-mono font-black border-r-2 border-border/50 transition-colors",
+                          hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
+                        )}>
+                          {item.item_code}
+                        </td>
+                        
+                        {/* IN FACTORY CELL */}
+                        <td className={cn(
+                          "px-2 py-3 text-center tabular-nums font-bold transition-all border-r-2 border-border/50",
+                          hoveredCol === "IN_FACTORY" ? "bg-green-500/10" : ""
+                        )}>
+                          {tankVal > 0 ? (
+                            <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
+                          ) : <span className="opacity-20">·</span>}
+                        </td>
+
+                        {/* OUTSIDE CELL */}
+                        <td className={cn(
+                          "px-2 py-3 text-center tabular-nums font-bold transition-all border-r-2 border-border/50",
+                          hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-500/10" : ""
+                        )}>
+                          {item.outside_factory > 0 ? (
+                            <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
+                          ) : <span className="opacity-20">·</span>}
+                        </td>
+
+                        {/* STATUS MATRIX CELLS */}
+                        {colKeys.map((key) => {
+                          const val = item.status_data[key] ?? 0;
+                          const intensity = maxCellValue > 0 ? (val / maxCellValue) : 0;
+                          const status = key.split("__")[0];
+                          
+                          return (
+                            <td 
+                              key={key} 
+                              className={cn(
+                                "px-2 py-3 text-center tabular-nums transition-all relative group/cell",
+                                lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20",
+                                hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
+                              )}
+                            >
+                              {val > 0 ? (
+                                <>
+                                  <div 
+                                    className="absolute inset-0 bg-primary pointer-events-none transition-opacity duration-500" 
+                                    style={{ opacity: intensity * 0.4 }} 
+                                  />
+                                  <span className="relative z-10 font-bold group-hover/cell:scale-110 transition-transform inline-block">
+                                    {fmtNum(val, unit)}
+                                  </span>
+                                </>
+                              ) : <span className="opacity-20">·</span>}
+                            </td>
+                          );
+                        })}
+
+                        {/* DISTRIBUTION BAR CELL */}
+                        <td className="px-4 py-3 bg-muted/20 border-l border-border/50">
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-center text-[10px] font-black">
+                              <span className="text-primary tracking-tighter">TOTAL</span>
+                              <span className="tabular-nums">{Math.round(grandTotal).toLocaleString("en-IN")}</span>
+                            </div>
+                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex shadow-inner">
+                              {/* Proportional Bars */}
+                              {tankVal > 0 && (
+                                <div 
+                                  className="h-full bg-blue-500 transition-all duration-1000" 
+                                  style={{ width: `${(convertFromLiters(tankVal, unit) / grandTotal) * 100}%` }}
+                                  title={`In Factory: ${((convertFromLiters(tankVal, unit) / grandTotal) * 100).toFixed(1)}%`}
+                                />
+                              )}
+                              {item.outside_factory > 0 && (
+                                <div 
+                                  className="h-full bg-amber-500 transition-all duration-1000" 
+                                  style={{ width: `${(convertUnit(item.outside_factory, unit) / grandTotal) * 100}%` }}
+                                  title={`Outside Factory: ${((convertUnit(item.outside_factory, unit) / grandTotal) * 100).toFixed(1)}%`}
+                                />
+                              )}
+                              {Object.entries(item.status_data).map(([key, val]) => {
+                                if (val <= 0) return null;
+                                const status = key.split("__")[0];
+                                const color = STATUS_META[status]?.barColor ?? "#cbd5e1";
+                                return (
+                                  <div 
+                                    key={key}
+                                    className="h-full transition-all duration-1000" 
+                                    style={{ 
+                                      width: `${(convertUnit(val, unit) / grandTotal) * 100}%`,
+                                      backgroundColor: color 
+                                    }}
+                                    title={`${status}: ${((convertUnit(val, unit) / grandTotal) * 100).toFixed(1)}%`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Totals Row */}
+                  <tr className="bg-muted/80 backdrop-blur-md font-black text-xs border-t-2 border-primary/20">
+                    <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-widest">Grand Total</td>
+                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border/50 text-blue-600 dark:text-blue-400">
                       {fmtLiters(tankInFactoryTotal, unit)}
                     </td>
-                    <td className="px-1 py-1.5 text-center tabular-nums border-r-2 text-amber-600 dark:text-amber-400" title={fmtNum(data.totals.outside_factory, unit)}>
-                      {fmtNum(data.totals.outside_factory, unit)}
+                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border/50 text-amber-600 dark:text-amber-400">
+                      {fmtNum(data?.totals.outside_factory ?? 0, unit)}
                     </td>
                     {colKeys.map((key) => (
-                      <td key={key} className={`px-1 py-1.5 text-center tabular-nums ${lastKeyPerGroup.has(key) ? "border-r-[3px]" : "border-r"}`} title={fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}>
-                        {fmtNum(data.totals.status_vendor_totals[key] ?? 0, unit)}
+                      <td key={key} className={cn(
+                        "px-2 py-4 text-center tabular-nums",
+                        lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20"
+                      )}>
+                        {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
                       </td>
                     ))}
-                    {(() => {
-                      const tankVal = convertFromLiters(tankInFactoryTotal, unit);
-                      const restVal = convertUnit(data.totals.outside_factory + colKeys.reduce((sum, k) => sum + (data.totals.status_vendor_totals[k] ?? 0), 0), unit);
-                      const total = tankVal + restVal;
-                      const formatted = total.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                      return (
-                        <td className="px-1 py-1.5 text-center tabular-nums font-bold border-l bg-muted/60 text-primary" title={formatted}>
-                          {formatted}
-                        </td>
-                      );
-                    })()}
+                    <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground shadow-2xl rounded-bl-xl">
+                      {fmtNum(data?.totals.grand_total ?? 0, unit)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
