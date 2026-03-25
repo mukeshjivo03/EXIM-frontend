@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Search, Lock } from "lucide-react";
 
 import {
   updateStockStatus,
@@ -37,6 +37,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Props {
   data: StockStatus | null;
@@ -58,7 +64,24 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [eTransporterName, setETransporterName] = useState("");
   const [eTransferType, setETransferType] = useState<"bulk" | "batch" | "">("");
   const [eAction, setEAction] = useState<"RETAIN" | "TOLERATE" | "DEBIT" | "">("");
+  const [eJobWorkVendor, setEJobWorkVendor] = useState("");
+  const [jobWorkSearch, setJobWorkSearch] = useState("");
+  const [jobWorkOpen, setJobWorkOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+
+  // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
+  const jobWorkLocked = data?.status === "AT_REFINERY" && !!data?.job_work_vendor;
+
+  // Filtered vendor list for job work combobox
+  const filteredVendors = useMemo(() => {
+    if (!jobWorkSearch.trim()) return vendors;
+    const q = jobWorkSearch.toLowerCase();
+    return vendors.filter(
+      (v) =>
+        v.card_code.toLowerCase().includes(q) ||
+        v.card_name.toLowerCase().includes(q)
+    );
+  }, [vendors, jobWorkSearch]);
 
   // Populate form when data changes
   useEffect(() => {
@@ -72,6 +95,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setETransporterName(data.transporter_name ?? "");
       setETransferType("");
       setEAction("");
+      setEJobWorkVendor(data.job_work_vendor ?? "");
+      setJobWorkSearch("");
     }
   }, [data]);
 
@@ -97,6 +122,10 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
         toast.error("Please select an Action.");
         return;
       }
+      if (eStatus === "AT_REFINERY" && !eJobWorkVendor.trim()) {
+        toast.error("Please enter or select a Job Work vendor.");
+        return;
+      }
     }
 
     setEditing(true);
@@ -109,6 +138,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             destination_status: eStatus,
             action: eAction,
             created_by: email,
+            job_work_vendor: eJobWorkVendor.trim(),
           });
           toast.success("Stock arrived (Arrive Batch).");
         } else if (eTransferType === "bulk") {
@@ -193,6 +223,18 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               <p className="text-sm font-medium">{vendor?.state ?? "—"}</p>
             </div>
           </div>
+
+          {/* Job Work Vendor — locked read-only display when already saved */}
+          {jobWorkLocked && (
+            <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Job Work Vendor</p>
+                <p className="text-sm font-semibold">{data.job_work_vendor}</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Status *</Label>
             <Select value={eStatus} onValueChange={(v) => {
@@ -263,6 +305,62 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                       <SelectItem value="DEBIT">Debit</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {/* Job Work Vendor — combobox: type freely or pick from vendor list */}
+              {eStatus === "AT_REFINERY" && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Label>Job Work Vendor *</Label>
+                  <Popover open={jobWorkOpen} onOpenChange={setJobWorkOpen}>
+                    <PopoverTrigger asChild>
+                      <div className="relative">
+                        <Input
+                          placeholder="Type vendor name or select from list..."
+                          value={eJobWorkVendor}
+                          onChange={(e) => {
+                            setEJobWorkVendor(e.target.value);
+                            setJobWorkSearch(e.target.value);
+                            if (!jobWorkOpen) setJobWorkOpen(true);
+                          }}
+                          onFocus={() => setJobWorkOpen(true)}
+                          className="pr-8"
+                        />
+                        <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0"
+                      align="start"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                      <div className="max-h-[200px] overflow-y-auto">
+                        {filteredVendors.length === 0 ? (
+                          <p className="text-sm text-muted-foreground p-3 text-center">No vendors found</p>
+                        ) : (
+                          filteredVendors.map((v) => (
+                            <button
+                              key={v.card_code}
+                              type="button"
+                              className={cn(
+                                "w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
+                                eJobWorkVendor === `${v.card_code} - ${v.card_name}` && "bg-accent"
+                              )}
+                              onClick={() => {
+                                setEJobWorkVendor(`${v.card_code} - ${v.card_name}`);
+                                setJobWorkOpen(false);
+                                setJobWorkSearch("");
+                              }}
+                            >
+                              <span className="font-medium">{v.card_code}</span>
+                              <span className="text-muted-foreground"> — {v.card_name}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-[10px] text-muted-foreground">Type a custom name or pick from vendor list</p>
                 </div>
               )}
             </>

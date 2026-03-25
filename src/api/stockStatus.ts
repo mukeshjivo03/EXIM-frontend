@@ -31,6 +31,7 @@ export interface StockStatus {
   location?: string;
   eta?: string;
   transporter_name?: string;
+  job_work_vendor?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -182,6 +183,7 @@ export async function arriveBatch(data: {
   destination_status: string;
   action: string;
   created_by: string;
+  job_work_vendor?: string;
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/arrive-batch/", data);
   return res.data;
