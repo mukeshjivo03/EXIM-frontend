@@ -116,11 +116,11 @@ export default function TankItemsPage() {
   );
 
   // Bulk selection
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const allOnPageSelected =
     paginatedItems.length > 0 &&
-    paginatedItems.every((item) => selectedIds.has(item.id));
+    paginatedItems.every((item) => selectedIds.has(item.tank_item_code));
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<TankItem | null>(null);
@@ -250,7 +250,7 @@ export default function TankItemsPage() {
       toast.success(`Tank item "${name}" deleted.`);
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        next.delete(deleteTarget.id);
+        next.delete(deleteTarget.tank_item_code);
         return next;
       });
       await fetchItems();
@@ -271,7 +271,7 @@ export default function TankItemsPage() {
 
   // Bulk delete
   async function handleBulkDelete() {
-    const toDelete = items.filter((item) => selectedIds.has(item.id));
+    const toDelete = items.filter((item) => selectedIds.has(item.tank_item_code));
     if (toDelete.length === 0) return;
     setBulkDeleting(true);
     let successCount = 0;
@@ -356,11 +356,11 @@ export default function TankItemsPage() {
   }
 
   // Toggle selection
-  function toggleSelect(id: number) {
+  function toggleSelect(code: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
       return next;
     });
   }
@@ -369,13 +369,13 @@ export default function TankItemsPage() {
     if (allOnPageSelected) {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        paginatedItems.forEach((item) => next.delete(item.id));
+        paginatedItems.forEach((item) => next.delete(item.tank_item_code));
         return next;
       });
     } else {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        paginatedItems.forEach((item) => next.add(item.id));
+        paginatedItems.forEach((item) => next.add(item.tank_item_code));
         return next;
       });
     }
@@ -666,14 +666,14 @@ export default function TankItemsPage() {
                       <TableRow
                         key={item.id}
                         className={
-                          selectedIds.has(item.id) ? "bg-muted/50" : ""
+                          selectedIds.has(item.tank_item_code) ? "bg-muted/50" : ""
                         }
                       >
                         {canEdit && (
                           <TableCell>
                             <Checkbox
-                              checked={selectedIds.has(item.id)}
-                              onCheckedChange={() => toggleSelect(item.id)}
+                              checked={selectedIds.has(item.tank_item_code)}
+                              onCheckedChange={() => toggleSelect(item.tank_item_code)}
                               aria-label={`Select ${item.tank_item_name}`}
                             />
                           </TableCell>
@@ -799,7 +799,7 @@ export default function TankItemsPage() {
                       item.color,
                       customColors
                     );
-                    const isSelected = selectedIds.has(item.id);
+                    const isSelected = selectedIds.has(item.tank_item_code);
 
                     return (
                       <div
@@ -815,7 +815,7 @@ export default function TankItemsPage() {
                           <div className="absolute top-2 left-2">
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => toggleSelect(item.id)}
+                              onCheckedChange={() => toggleSelect(item.tank_item_code)}
                               aria-label={`Select ${item.tank_item_name}`}
                             />
                           </div>
