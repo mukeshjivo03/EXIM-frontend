@@ -56,6 +56,7 @@ export interface StockStatusFilters {
   item?: string;
 }
 
+
 export interface StockInsightsSummary {
   total_value: number;
   total_qty: number;

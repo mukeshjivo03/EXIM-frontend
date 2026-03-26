@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { login } from "@/api/auth";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,10 @@ import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const APP_VERSION = __APP_VERSION__;
+const REMEMBER_KEY = "login-remember-email";
 
 /* ── Cargo Ship SVG (same as HomePage) ─────────────────────── */
 function CargoShip() {
@@ -111,17 +115,10 @@ function RouteMap() {
       className="absolute inset-0 w-full h-full opacity-[0.08] dark:opacity-[0.06]"
       aria-hidden="true"
     >
-      {/* Simplified world coastline hints */}
-      {/* India */}
       <path d="M650,140 Q680,160 670,200 Q660,240 640,260 Q630,250 635,220 Q640,180 650,140 Z" fill="currentColor" opacity="0.3" />
-      {/* Africa east coast */}
       <path d="M500,120 Q510,180 490,240 Q480,200 500,120 Z" fill="currentColor" opacity="0.2" />
-      {/* Southeast Asia */}
       <path d="M800,160 Q820,180 810,210 Q790,200 800,160 Z" fill="currentColor" opacity="0.2" />
-      {/* Europe */}
       <path d="M380,80 Q400,60 420,70 Q440,80 430,100 Q410,90 380,80 Z" fill="currentColor" opacity="0.2" />
-
-      {/* Shipping route — dashed curved line */}
       <path
         d="M200,180 Q350,120 500,160 Q600,190 650,200 Q700,210 800,180 Q900,150 1000,170"
         stroke="currentColor"
@@ -131,15 +128,11 @@ function RouteMap() {
         fill="none"
         className="login-route-line"
       />
-
-      {/* Port markers */}
       <circle cx="200" cy="180" r="5" fill="currentColor" opacity="0.5" />
       <circle cx="500" cy="160" r="4" fill="currentColor" opacity="0.4" />
       <circle cx="650" cy="200" r="5" fill="currentColor" opacity="0.5" />
       <circle cx="800" cy="180" r="4" fill="currentColor" opacity="0.4" />
       <circle cx="1000" cy="170" r="5" fill="currentColor" opacity="0.5" />
-
-      {/* Port labels */}
       <text x="185" y="170" fontSize="10" fill="currentColor" opacity="0.4">PORT</text>
       <text x="635" y="220" fontSize="10" fill="currentColor" opacity="0.4">INDIA</text>
       <text x="985" y="160" fontSize="10" fill="currentColor" opacity="0.4">PORT</text>
@@ -149,7 +142,6 @@ function RouteMap() {
 
 /* ── Stars background (dark mode only) ─────────────────────── */
 function Stars() {
-  // Deterministic star positions
   const stars = [
     { x: 5, y: 8, r: 1.2, o: 0.9, d: 0 },
     { x: 12, y: 3, r: 0.8, o: 0.6, d: 0.5 },
@@ -208,11 +200,25 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem(REMEMBER_KEY) ?? "");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem(REMEMBER_KEY));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [shaking, setShaking] = useState(false);
+
+  // Auto-dismiss error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setError(""), 5000);
+    }
+    return () => clearTimeout(errorTimerRef.current);
+  }, [error]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -227,6 +233,13 @@ export default function LoginPage() {
       localStorage.setItem("user_name", name);
       localStorage.setItem("user_email", email);
 
+      // Remember me
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_KEY, email);
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+
       setAuth(name, role, email);
       navigate("/");
     } catch (err) {
@@ -235,6 +248,9 @@ export default function LoginPage() {
       } else {
         setError("Login failed");
       }
+      // Shake animation
+      setShaking(true);
+      setTimeout(() => setShaking(false), 500);
     } finally {
       setLoading(false);
     }
@@ -251,6 +267,13 @@ export default function LoginPage() {
         {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         {theme === "dark" ? "Light" : "Dark"}
       </button>
+
+      {/* Version badge */}
+      {APP_VERSION && (
+        <span className="absolute bottom-4 right-5 z-50 text-[10px] text-gray-400 dark:text-gray-600">
+          v{APP_VERSION}
+        </span>
+      )}
 
       {/* Stars (dark mode only) */}
       <Stars />
@@ -303,7 +326,12 @@ export default function LoginPage() {
       </div>
 
       {/* Login Card */}
-      <div className="login-card relative z-20 w-full max-w-lg rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#1e293b]/90 backdrop-blur-xl p-12 py-14 shadow-2xl">
+      <div
+        ref={cardRef}
+        className={`login-card relative z-20 w-full max-w-lg rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#1e293b]/90 backdrop-blur-xl p-12 py-14 shadow-2xl ${
+          shaking ? "animate-shake" : ""
+        }`}
+      >
         {/* Header */}
         <div className="text-center space-y-3 mb-10">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
@@ -319,37 +347,85 @@ export default function LoginPage() {
               id="username"
               type="text"
               placeholder="Enter your email"
-              className="h-11 login-input bg-white/60 dark:bg-[#0f172a] border-gray-300 dark:border-white/10 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="h-11 login-input bg-white/60 dark:bg-[#0f172a] border-gray-300 dark:border-white/10 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/30 dark:focus-visible:border-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              className="h-11 login-input bg-white/60 dark:bg-[#0f172a] border-gray-300 dark:border-white/10 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                className="h-11 pr-10 login-input bg-white/60 dark:bg-[#0f172a] border-gray-300 dark:border-white/10 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/30 dark:focus-visible:border-blue-500"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                onClick={() => setShowPassword((p) => !p)}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
 
+          {/* Remember me */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="remember"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked === true)}
+            />
+            <label
+              htmlFor="remember"
+              className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none"
+            >
+              Remember me
+            </label>
+          </div>
+
+          {/* Error */}
           {error && (
-            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+            <p className="text-sm text-red-500 dark:text-red-400 animate-in fade-in duration-200">
+              {error}
+            </p>
           )}
 
           <Button
             type="submit"
-            className="w-full h-11 text-[15px] btn-press"
+            className="w-full h-11 text-[15px] btn-press gap-2"
             disabled={loading}
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
           </Button>
+
+          {/* Enter key hint */}
+          {!loading && (
+            <p className="text-center text-[11px] text-gray-400 dark:text-gray-600">
+              Press <kbd className="inline-flex items-center rounded border bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-1 py-0.5 text-[10px] font-mono">Enter</kbd> to sign in
+            </p>
+          )}
         </form>
       </div>
     </div>

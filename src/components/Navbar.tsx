@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Moon, Sun, Search, Trash2, Menu } from "lucide-react";
+import { Moon, Sun, Search, Trash2, Menu, Loader2, Clock } from "lucide-react";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,45 @@ import { useTheme } from "@/context/ThemeContext";
 import { getRmItem, getFgItem, getVendor, deleteRmItem, deleteFgItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
 import { getTankItem, deleteTankItem, type TankItem } from "@/api/tank";
 
+const HISTORY_KEY = "navbar-search-history";
+const MAX_HISTORY = 5;
+
+function getSearchHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(code: string) {
+  const prev = getSearchHistory().filter((c) => c !== code);
+  const next = [code, ...prev].slice(0, MAX_HISTORY);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+}
+
 export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { theme, toggleTheme } = useTheme();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory);
+
+  // Ctrl+K / Cmd+K to focus search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const [rmItem, setRmItem] = useState<SapItem | null>(null);
   const [fgItem, setFgItem] = useState<SapItem | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -33,8 +66,11 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
     const code = query.trim();
     if (!code) return;
 
+    setHistoryOpen(false);
     setSearching(true);
     setSearchError("");
+    saveSearchHistory(code);
+    setSearchHistory(getSearchHistory());
     setRmItem(null);
     setFgItem(null);
     setVendor(null);
@@ -224,14 +260,69 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            <div className="flex items-center gap-1">
-              <Input
-                placeholder="Search by code"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-32 sm:w-48 md:w-64 h-9"
-              />
+            <div className="relative flex items-center gap-1">
+              <div className="relative">
+                <Input
+                  ref={searchInputRef}
+                  placeholder="Search by code"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setHistoryOpen(!e.target.value.trim() && searchHistory.length > 0);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    if (!query.trim() && searchHistory.length > 0) setHistoryOpen(true);
+                  }}
+                  onBlur={() => setTimeout(() => setHistoryOpen(false), 200)}
+                  className="w-32 sm:w-48 md:w-64 h-9 pr-14"
+                />
+                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground pointer-events-none">
+                  Ctrl K
+                </kbd>
+
+                {/* Search history dropdown */}
+                {historyOpen && searchHistory.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 rounded-md border bg-popover shadow-md z-50">
+                    <div className="flex items-center justify-between px-3 py-1.5">
+                      <span className="text-xs text-muted-foreground">Recent</span>
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          localStorage.removeItem(HISTORY_KEY);
+                          setSearchHistory([]);
+                          setHistoryOpen(false);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {searchHistory.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setQuery(code);
+                          setHistoryOpen(false);
+                          // Trigger search after setting query
+                          setTimeout(() => searchInputRef.current?.form?.requestSubmit?.(), 0);
+                        }}
+                        onClick={() => {
+                          setQuery(code);
+                          setHistoryOpen(false);
+                        }}
+                      >
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{code}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -239,7 +330,11 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 onClick={handleSearch}
                 disabled={searching || !query.trim()}
               >
-                <Search className="h-4 w-4" />
+                {searching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
               </Button>
             </div>
 

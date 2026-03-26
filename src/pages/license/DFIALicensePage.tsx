@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  FileText,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import {
   getDFIALicenseHeaders,
@@ -27,7 +35,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -45,10 +59,68 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const STATUS_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   OPEN: "default",
   CLOSE: "secondary",
 };
+
+/* ── Sort types ──────────────────────────────────────────── */
+
+type SortKey =
+  | "file_no"
+  | "status"
+  | "issue_date"
+  | "export_validity"
+  | "import_validity"
+  | "export_in_mts"
+  | "import_in_mts"
+  | "fob_value_inr"
+  | "fob_value_usd"
+  | "fob_exchange_rate"
+  | "cif_value_inr"
+  | "cif_value_usd"
+  | "cif_exchange_rate";
+type SortDir = "asc" | "desc";
+
+/* ── Validity helpers ────────────────────────────────────── */
+
+function daysUntil(dateStr: string): number | null {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.ceil(
+    (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function validityBadge(dateStr: string) {
+  const days = daysUntil(dateStr);
+  if (days === null) return null;
+  if (days < 0)
+    return (
+      <Badge
+        variant="destructive"
+        className="text-[10px] px-1.5 py-0 ml-1.5"
+      >
+        Expired
+      </Badge>
+    );
+  if (days <= 30)
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] px-1.5 py-0 ml-1.5 border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400"
+      >
+        {days}d left
+      </Badge>
+    );
+  return null;
+}
 
 const EMPTY_FORM: DFIALicenseHeaderPayload = {
   file_no: "",
@@ -72,7 +144,9 @@ export default function DFIALicensePage() {
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState<DFIALicenseHeaderPayload>({ ...EMPTY_FORM });
+  const [form, setForm] = useState<DFIALicenseHeaderPayload>({
+    ...EMPTY_FORM,
+  });
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -80,21 +154,83 @@ export default function DFIALicensePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DFIALicenseHeader | null>(null);
   const [editForm, setEditForm] = useState<DFIALicenseHeaderPayload>({
-    file_no: "", issue_date: "", export_validity: "", export_in_mts: "", fob_value_inr: "", fob_exchange_rate: "",
-    import_validity: "", import_in_mts: "", cif_value_inr: "", cif_exchange_rate: "", status: "OPEN",
+    ...EMPTY_FORM,
   });
   const [editFormError, setEditFormError] = useState("");
   const [updating, setUpdating] = useState(false);
 
   // Delete
-  const [deleteTarget, setDeleteTarget] = useState<DFIALicenseHeader | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DFIALicenseHeader | null>(
+    null
+  );
   const [deleting, setDeleting] = useState(false);
+
+  // Sort
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   // Pagination
   const [page, setPage] = useState(1);
   const perPage = 20;
-  const totalPages = Math.max(1, Math.ceil(headers.length / perPage));
-  const paginated = headers.slice((page - 1) * perPage, page * perPage);
+
+  const sortedHeaders = useMemo(() => {
+    if (!sortKey) return headers;
+    const copy = [...headers];
+    copy.sort((a, b) => {
+      let cmp = 0;
+      const aVal = a[sortKey as keyof DFIALicenseHeader] ?? "";
+      const bVal = b[sortKey as keyof DFIALicenseHeader] ?? "";
+      if (
+        [
+          "export_in_mts",
+          "import_in_mts",
+          "fob_value_inr",
+          "fob_value_usd",
+          "fob_exchange_rate",
+          "cif_value_inr",
+          "cif_value_usd",
+          "cif_exchange_rate",
+        ].includes(sortKey)
+      ) {
+        cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
+      } else {
+        cmp = String(aVal).localeCompare(String(bVal));
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return copy;
+  }, [headers, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedHeaders.length / perPage));
+  const paginated = sortedHeaders.slice(
+    (page - 1) * perPage,
+    page * perPage
+  );
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ column }: { column: SortKey }) {
+    if (sortKey !== column)
+      return (
+        <ArrowUpDown className="h-3 w-3 text-muted-foreground/50 ml-1 inline" />
+      );
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3 w-3 ml-1 inline" />
+    ) : (
+      <ArrowDown className="h-3 w-3 ml-1 inline" />
+    );
+  }
+
+  const skeletonCols = 15;
+
+  /* ── Fetch ───────────────────────────────────────────────── */
 
   async function fetchHeaders() {
     setLoading(true);
@@ -112,6 +248,8 @@ export default function DFIALicensePage() {
   useEffect(() => {
     fetchHeaders();
   }, []);
+
+  /* ── CRUD ────────────────────────────────────────────────── */
 
   function openCreate() {
     setForm({ ...EMPTY_FORM });
@@ -131,7 +269,10 @@ export default function DFIALicensePage() {
         const data = err.response?.data;
         if (typeof data === "object" && data !== null) {
           const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .map(
+              ([key, val]) =>
+                `${key}: ${Array.isArray(val) ? val.join(", ") : val}`
+            )
             .join("; ");
           setFormError(messages);
         } else {
@@ -178,7 +319,10 @@ export default function DFIALicensePage() {
         const data = err.response?.data;
         if (typeof data === "object" && data !== null) {
           const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .map(
+              ([key, val]) =>
+                `${key}: ${Array.isArray(val) ? val.join(", ") : val}`
+            )
             .join("; ");
           setEditFormError(messages);
         } else {
@@ -207,23 +351,7 @@ export default function DFIALicensePage() {
     }
   }
 
-  const columns = [
-    "#",
-    "File No",
-    "Status",
-    "Issue Date",
-    "Export Validity",
-    "Import Validity",
-    "Export (MTS)",
-    "Import (MTS)",
-    "FOB (INR)",
-    "FOB (USD)",
-    "FOB Rate",
-    "CIF (INR)",
-    "CIF (USD)",
-    "CIF Rate",
-    "Actions",
-  ];
+  /* ── Render ──────────────────────────────────────────────── */
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
@@ -235,7 +363,10 @@ export default function DFIALicensePage() {
             View and manage DFIA licenses
           </p>
         </div>
-        <Button onClick={openCreate} className="btn-press">Create DFIA License</Button>
+        <Button onClick={openCreate} className="btn-press gap-2">
+          <Plus className="h-4 w-4" />
+          Create DFIA License
+        </Button>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -244,7 +375,10 @@ export default function DFIALicensePage() {
       <Card className="card-hover shimmer-hover">
         <CardHeader>
           <CardTitle>DFIA Licenses</CardTitle>
-          <CardDescription>{headers.length} license{headers.length !== 1 ? "s" : ""} found</CardDescription>
+          <CardDescription>
+            {sortedHeaders.length} license
+            {sortedHeaders.length !== 1 ? "s" : ""} found
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -252,16 +386,20 @@ export default function DFIALicensePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {columns.map((col) => (
-                      <TableHead key={col}>{col}</TableHead>
+                    {Array.from({ length: skeletonCols }).map((_, i) => (
+                      <TableHead key={i}>
+                        <Skeleton className="h-4 w-16" />
+                      </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {columns.map((col) => (
-                        <TableCell key={col}><Skeleton className="h-4 w-20" /></TableCell>
+                      {Array.from({ length: skeletonCols }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))}
@@ -273,65 +411,191 @@ export default function DFIALicensePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {columns.map((col) => (
-                      <TableHead key={col} className={col.includes("INR") || col.includes("USD") || col.includes("MTS") || col.includes("Rate") ? "text-right" : col === "Actions" ? "text-right" : ""}>
-                        {col}
-                      </TableHead>
-                    ))}
+                    <TableHead>#</TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("file_no")}>
+                        File No<SortIcon column="file_no" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("status")}>
+                        Status<SortIcon column="status" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("issue_date")}>
+                        Issue Date<SortIcon column="issue_date" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("export_validity")}>
+                        Export Validity<SortIcon column="export_validity" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("import_validity")}>
+                        Import Validity<SortIcon column="import_validity" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("export_in_mts")}>
+                        Export (MTS)<SortIcon column="export_in_mts" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("import_in_mts")}>
+                        Import (MTS)<SortIcon column="import_in_mts" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_value_inr")}>
+                        FOB (INR)<SortIcon column="fob_value_inr" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_value_usd")}>
+                        FOB (USD)<SortIcon column="fob_value_usd" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_exchange_rate")}>
+                        FOB Rate<SortIcon column="fob_exchange_rate" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_inr")}>
+                        CIF (INR)<SortIcon column="cif_value_inr" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_usd")}>
+                        CIF (USD)<SortIcon column="cif_value_usd" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_exchange_rate")}>
+                        CIF Rate<SortIcon column="cif_exchange_rate" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={columns.length} className="py-16">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <TableCell colSpan={skeletonCols} className="py-16">
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <FileText className="h-10 w-10 stroke-1" />
-                          <p className="text-sm font-medium">No DFIA licenses found</p>
-                          <p className="text-xs">Licenses will appear here once created.</p>
+                          <p className="font-medium">
+                            No DFIA licenses found
+                          </p>
+                          <p className="text-sm">
+                            Create your first DFIA license to get started.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={openCreate}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create DFIA License
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((h, i) => (
-                      <TableRow key={h.file_no} className={`cursor-pointer hover:bg-muted/50 ${h.status === "CLOSE" ? "opacity-50" : ""}`} onClick={() => navigate(`/license/dfia-license/${encodeURIComponent(h.file_no)}`)}>
-                        <TableCell className="font-medium">{(page - 1) * perPage + i + 1}</TableCell>
-                        <TableCell>
-                          <span className="text-primary underline underline-offset-4 font-medium">{h.file_no}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_VARIANT[h.status] ?? "outline"}>{h.status}</Badge>
-                        </TableCell>
-                        <TableCell>{fmtDate(h.issue_date)}</TableCell>
-                        <TableCell>{fmtDate(h.export_validity)}</TableCell>
-                        <TableCell>{fmtDate(h.import_validity)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.export_in_mts)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.import_in_mts)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.fob_value_inr)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.fob_value_usd)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.fob_exchange_rate)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.cif_value_inr)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.cif_value_usd)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(h.cif_exchange_rate)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            onClick={(e) => { e.stopPropagation(); openEdit(h); }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(h); }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    paginated.map((h, i) => {
+                      const isClosed = h.status === "CLOSE";
+                      return (
+                        <TableRow
+                          key={h.file_no}
+                          className={`cursor-pointer hover:bg-muted/50 ${isClosed ? "opacity-40 line-through decoration-muted-foreground/30" : ""}`}
+                          onClick={() =>
+                            navigate(
+                              `/license/dfia-license/${encodeURIComponent(h.file_no)}`
+                            )
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {(page - 1) * perPage + i + 1}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-primary underline underline-offset-4 font-medium">
+                              {h.file_no}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={STATUS_VARIANT[h.status] ?? "outline"}
+                            >
+                              {h.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{fmtDate(h.issue_date)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {fmtDate(h.export_validity)}
+                              {!isClosed && validityBadge(h.export_validity)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {fmtDate(h.import_validity)}
+                              {!isClosed && validityBadge(h.import_validity)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.export_in_mts)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.import_in_mts)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.fob_value_inr)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.fob_value_usd)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.fob_exchange_rate)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.cif_value_inr)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.cif_value_usd)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {fmtDecimal(h.cif_exchange_rate)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEdit(h);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget(h);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -339,7 +603,13 @@ export default function DFIALicensePage() {
           )}
 
           {!loading && (
-            <Pagination page={page} totalPages={totalPages} totalItems={headers.length} perPage={perPage} onPageChange={setPage} />
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={sortedHeaders.length}
+              perPage={perPage}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>
@@ -349,7 +619,9 @@ export default function DFIALicensePage() {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create DFIA License</DialogTitle>
-            <DialogDescription>Fill in the details to create a new DFIA license.</DialogDescription>
+            <DialogDescription>
+              Fill in the details to create a new DFIA license.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-2">
@@ -360,9 +632,7 @@ export default function DFIALicensePage() {
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPEN">OPEN</SelectItem>
                   <SelectItem value="CLOSE">CLOSE</SelectItem>
@@ -423,7 +693,9 @@ export default function DFIALicensePage() {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit DFIA License</DialogTitle>
-            <DialogDescription>Editing <strong>{editTarget?.file_no}</strong>. File No cannot be changed.</DialogDescription>
+            <DialogDescription>
+              Editing <strong>{editTarget?.file_no}</strong>. File No cannot be changed.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-2">
@@ -434,9 +706,7 @@ export default function DFIALicensePage() {
             <div className="space-y-2">
               <Label htmlFor="edit_status">Status</Label>
               <Select value={editForm.status} onValueChange={(val) => setEditForm({ ...editForm, status: val })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPEN">OPEN</SelectItem>
                   <SelectItem value="CLOSE">CLOSE</SelectItem>
@@ -498,12 +768,20 @@ export default function DFIALicensePage() {
           <DialogHeader>
             <DialogTitle>Delete DFIA License</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.file_no}</strong>? This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget?.file_no}</strong>? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

@@ -235,10 +235,12 @@ export interface TankLogConsumption {
 export interface TankLog {
   id: number;
   tank_code: string;
-  log_type: "INWARD" | "OUTWARD";
+  log_type: "INWARD" | "OUTWARD" | "TRANSFER";
   quantity: string;
   stock_status_id?: number;
   tank_layer_id?: number;
+  source_tank_code?: string;
+  destination_tank_code?: string;
   remarks: string;
   created_at: string;
   created_by: string;

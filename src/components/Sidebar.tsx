@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   CircleUser,
   LogOut,
@@ -87,13 +87,45 @@ interface SidebarProps {
   mobileOpen?: boolean;
 }
 
+function SectionLabel({
+  label,
+  collapsed,
+  isActive,
+}: {
+  label: string;
+  collapsed: boolean;
+  isActive: boolean;
+}) {
+  if (collapsed) return null;
+  return (
+    <span
+      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
+        isActive
+          ? "text-foreground"
+          : "text-muted-foreground"
+      }`}
+    >
+      {isActive && (
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary mr-1.5 align-middle" />
+      )}
+      {label}
+    </span>
+  );
+}
+
 export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProps) {
   const { role, name, email, clearAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = role === "ADM";
   const isAdminOrManager = role === "ADM" || role === "MNG";
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+
+  // Check if any link in a section is active
+  function isSectionActive(links: { to: string }[]) {
+    return links.some((link) => location.pathname.startsWith(link.to));
+  }
 
   async function handleLogout() {
     try {
@@ -176,11 +208,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
           {/* ── Stock section (Tank pages: all roles, Stock Status: ADM|MNG) ── */}
           <Separator className="my-3" />
 
-          {!collapsed && (
-            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Stock
-            </span>
-          )}
+          <SectionLabel label="Stock" collapsed={collapsed} isActive={isSectionActive(stockLinks)} />
 
           {stockLinks.map((link) => {
             // Stock Status & Stock Updation Logs require ADM|MNG; Tank pages are for all authenticated users
@@ -210,11 +238,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Commodity Price
-                </span>
-              )}
+              <SectionLabel label="Commodity Price" collapsed={collapsed} isActive={isSectionActive(commodityLinks)} />
 
               {commodityLinks.map((link) => (
                 <NavLink
@@ -241,11 +265,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Accounts
-                </span>
-              )}
+              <SectionLabel label="Accounts" collapsed={collapsed} isActive={isSectionActive(accountsLinks)} />
 
               {accountsLinks.map((link) => (
                 <NavLink
@@ -272,11 +292,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Contracts
-                </span>
-              )}
+              <SectionLabel label="Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
 
               {contractsLinks.map((link) => (
                 <NavLink
@@ -303,11 +319,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  License
-                </span>
-              )}
+              <SectionLabel label="License" collapsed={collapsed} isActive={isSectionActive(licenseLinks)} />
 
               {licenseLinks.map((link) => (
                 <NavLink
@@ -334,11 +346,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              {!collapsed && (
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Administration
-                </span>
-              )}
+              <SectionLabel label="Administration" collapsed={collapsed} isActive={isSectionActive(adminLinks)} />
 
               {adminLinks.map((link) => (
                 <NavLink

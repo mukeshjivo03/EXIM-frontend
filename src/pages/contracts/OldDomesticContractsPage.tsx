@@ -128,7 +128,6 @@ export default function OldDomesticContractsPage() {
     let count = 0;
     for (const r of filteredRows) {
       const qty = Number(r.contract_qty) || 0;
-      const rate = Number(r.contract_rate) || 0;
       const val = Number(r.basic_amount) || 0;
       totalQty += qty;
       totalValue += val;

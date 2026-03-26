@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
   RefreshCw,
   Eye,
   Pencil,
@@ -68,6 +74,19 @@ function statusVariant(s: string): "default" | "secondary" | "outline" {
   return "outline";
 }
 
+/* ── sort types ──────────────────────────────────────────── */
+
+type SortKey = "po_number" | "po_date" | "product_name" | "vendor" | "grpo_date" | "contract_qty" | "contract_rate" | "contract_value" | "status";
+type SortDir = "asc" | "desc";
+
+function hasShortage(row: PO): boolean {
+  const load = Number(row.load_qty) || 0;
+  const unload = Number(row.unload_qty) || 0;
+  if (load === 0 || unload === 0) return false;
+  const diff = Math.abs(load - unload);
+  return diff / load > 0.02; // >2% difference
+}
+
 /* ── component ────────────────────────────────────────────── */
 
 export default function DomesticContractsPage() {
@@ -75,6 +94,7 @@ export default function DomesticContractsPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // search & filters
   const [search, setSearch] = useState("");
@@ -84,6 +104,13 @@ export default function DomesticContractsPage() {
   const [filterPoDateFrom, setFilterPoDateFrom] = useState("");
   const [filterPoDateTo, setFilterPoDateTo] = useState("");
   const [page, setPage] = useState(1);
+
+  // sort
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // expandable rows
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   // Pre-compute searchable string per row once (only recomputes when rows change)
   const searchIndex = useMemo(
@@ -116,7 +143,7 @@ export default function DomesticContractsPage() {
   const vendorOptions = useMemo(() => [...new Set(rows.map((r) => r.vendor).filter(Boolean))].sort(), [rows]);
   const statusOptions = useMemo(() => [...new Set(rows.map((r) => r.status).filter(Boolean))].sort(), [rows]);
   const filteredRows = useMemo(() => {
-    let result = rows;
+    let result = [...rows];
 
     if (filterProduct !== "all") result = result.filter((r) => r.product_name === filterProduct);
     if (filterVendor !== "all") result = result.filter((r) => r.vendor === filterVendor);
@@ -127,11 +154,83 @@ export default function DomesticContractsPage() {
     const q = search.trim().toLowerCase();
     if (q) result = result.filter((r) => {
       const idx = rows.indexOf(r);
-      return searchIndex[idx].includes(q);
+      return searchIndex[idx]?.includes(q);
     });
 
+    // Sort
+    if (sortKey) {
+      result.sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case "po_number":
+            cmp = (a.po_number ?? "").localeCompare(b.po_number ?? "");
+            break;
+          case "po_date":
+            cmp = (a.po_date ?? "").localeCompare(b.po_date ?? "");
+            break;
+          case "product_name":
+            cmp = (a.product_name ?? "").localeCompare(b.product_name ?? "");
+            break;
+          case "vendor":
+            cmp = (a.vendor ?? "").localeCompare(b.vendor ?? "");
+            break;
+          case "grpo_date":
+            cmp = (a.grpo_date ?? "").localeCompare(b.grpo_date ?? "");
+            break;
+          case "contract_qty":
+            cmp = (Number(a.contract_qty) || 0) - (Number(b.contract_qty) || 0);
+            break;
+          case "contract_rate":
+            cmp = (Number(a.contract_rate) || 0) - (Number(b.contract_rate) || 0);
+            break;
+          case "contract_value":
+            cmp = (Number(a.contract_value) || 0) - (Number(b.contract_value) || 0);
+            break;
+          case "status":
+            cmp = (a.status ?? "").localeCompare(b.status ?? "");
+            break;
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+
     return result;
-  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDateFrom, filterPoDateTo]);
+  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDateFrom, filterPoDateTo, sortKey, sortDir]);
+
+  // Status counts
+  const statusCounts = useMemo(() => {
+    const open = rows.filter((r) => r.status === "O").length;
+    const closed = rows.filter((r) => r.status === "C").length;
+    return { open, closed };
+  }, [rows]);
+
+  // Shortage rows count
+  const shortageCount = useMemo(() => filteredRows.filter(hasShortage).length, [filteredRows]);
+
+  // Sort handler
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ column }: { column: SortKey }) {
+    if (sortKey !== column) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50 ml-1 inline" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1 inline" /> : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+  }
+
+  // Expand toggle
+  function toggleExpand(id: number) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // summary stats from filtered data
   const summary = useMemo(() => {
@@ -174,7 +273,7 @@ export default function DomesticContractsPage() {
   const [eVehicleNo, setEVehicleNo] = useState("");
   const [eBiltyNo, setEBiltyNo] = useState("");
   const [eBiltyDate, setEBiltyDate] = useState("");
-  const [eGrpoNo, setEGrpoNo] = useState("");
+  const [_eGrpoNo, setEGrpoNo] = useState("");
   const [eGrpoDate, setEGrpoDate] = useState("");
   const [eInvoiceNo, setEInvoiceNo] = useState("");
   const [eBasicAmount, setEBasicAmount] = useState("");
@@ -218,6 +317,7 @@ export default function DomesticContractsPage() {
       await syncPOs();
       toast.success("Sync complete. Loading contracts...");
       await fetchList();
+      setLastSyncTime(new Date());
     } catch (err) {
       toastApiError(err, "Sync failed");
     } finally {
@@ -332,12 +432,31 @@ export default function DomesticContractsPage() {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Domestic Contracts</h1>
           <p className="text-sm text-muted-foreground">
             Purchase orders and contract data from SAP
+            {lastSyncTime && (
+              <span className="text-muted-foreground/60">
+                {" "}&middot; Last synced{" "}
+                {lastSyncTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
           </p>
+          {/* Status count badges */}
+          {rows.length > 0 && (
+            <div className="flex items-center gap-2 mt-1.5">
+              <Badge variant="default" className="text-xs">Open: {statusCounts.open}</Badge>
+              <Badge variant="secondary" className="text-xs">Closed: {statusCounts.closed}</Badge>
+              {shortageCount > 0 && (
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700 gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {shortageCount} shortage{shortageCount > 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
@@ -582,22 +701,59 @@ export default function DomesticContractsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>PO Date</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>GRPO Date</TableHead>
-                    <TableHead>Qty (MTS)</TableHead>
-                    <TableHead>Rate (₹)</TableHead>
-                    <TableHead>Value (₹)</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-8" />
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("po_number")}>
+                        PO Number<SortIcon column="po_number" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("po_date")}>
+                        PO Date<SortIcon column="po_date" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("product_name")}>
+                        Product<SortIcon column="product_name" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("vendor")}>
+                        Vendor<SortIcon column="vendor" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("grpo_date")}>
+                        GRPO Date<SortIcon column="grpo_date" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("contract_qty")}>
+                        Qty (MTS)<SortIcon column="contract_qty" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("contract_rate")}>
+                        Rate (₹)<SortIcon column="contract_rate" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("contract_value")}>
+                        Value (₹)<SortIcon column="contract_value" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("status")}>
+                        Status<SortIcon column="status" />
+                      </button>
+                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16">
+                      <TableCell colSpan={11} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <FileCheck className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No contracts found</p>
@@ -606,53 +762,121 @@ export default function DomesticContractsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.po_number}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{fmtDate(row.po_date)}</TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={row.product_name}>{row.product_name}</TableCell>
-                        <TableCell className="max-w-[180px] truncate" title={row.vendor}>{row.vendor}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{fmtDate(row.grpo_date)}</TableCell>
-                        <TableCell>{row.contract_qty ? fmtDecimal(row.contract_qty) : "—"}</TableCell>
-                        <TableCell>₹{row.contract_rate ? fmtDecimal(row.contract_rate) : "—"}</TableCell>
-                        <TableCell className="font-medium">₹{row.contract_value ? fmtDecimal(row.contract_value) : "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusVariant(row.status)}>
-                            {statusLabel(row.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setViewData(row)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openEdit(row)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setDeleteData(row)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    paginated.map((row) => {
+                      const shortage = hasShortage(row);
+                      const isExpanded = expandedIds.has(row.id);
+
+                      return (
+                        <>
+                          <TableRow
+                            key={row.id}
+                            className={shortage ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}
+                          >
+                            {/* Expand toggle */}
+                            <TableCell className="pr-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => toggleExpand(row.id)}
+                              >
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-1.5">
+                                {row.po_number}
+                                {shortage && <span title="Load/Unload mismatch"><AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" /></span>}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{fmtDate(row.po_date)}</TableCell>
+                            <TableCell className="max-w-[200px] truncate" title={row.product_name}>{row.product_name}</TableCell>
+                            <TableCell className="max-w-[180px] truncate" title={row.vendor}>{row.vendor}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{fmtDate(row.grpo_date)}</TableCell>
+                            <TableCell>{row.contract_qty ? fmtDecimal(row.contract_qty) : "—"}</TableCell>
+                            <TableCell>₹{row.contract_rate ? fmtDecimal(row.contract_rate) : "—"}</TableCell>
+                            <TableCell className="font-medium">₹{row.contract_value ? fmtDecimal(row.contract_value) : "—"}</TableCell>
+                            <TableCell>
+                              <Badge variant={statusVariant(row.status)}>
+                                {statusLabel(row.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewData(row)}>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteData(row)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Expandable detail row */}
+                          {isExpanded && (
+                            <TableRow key={`${row.id}-detail`} className="bg-muted/30 hover:bg-muted/30">
+                              <TableCell colSpan={11} className="py-3 px-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2 text-sm">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Load Qty</p>
+                                    <p className="font-medium">{row.load_qty ? fmtDecimal(row.load_qty) : "—"} MTS</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Unload Qty</p>
+                                    <p className={`font-medium ${shortage ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                                      {row.unload_qty ? fmtDecimal(row.unload_qty) : "—"} MTS
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Allowance</p>
+                                    <p className="font-medium">{row.allowance ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Transporter</p>
+                                    <p className="font-medium">{row.transporter ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Vehicle No</p>
+                                    <p className="font-medium">{row.vehicle_no ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Bilty No</p>
+                                    <p className="font-medium">{row.bilty_no ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Bilty Date</p>
+                                    <p className="font-medium">{fmtDate(row.bilty_date)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Invoice No</p>
+                                    <p className="font-medium">{row.invoice_no || "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Basic Amount</p>
+                                    <p className="font-medium">₹ {row.basic_amount ? fmtDecimal(row.basic_amount) : "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Landed Cost</p>
+                                    <p className="font-medium">₹ {row.landed_cost ? fmtDecimal(row.landed_cost) : "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Net Amount</p>
+                                    <p className="font-semibold">₹ {row.net_amount ? fmtDecimal(row.net_amount) : "—"}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })
                   )}
                 </TableBody>
+
               </Table>
             </div>
           )}
