@@ -78,7 +78,6 @@ function relativeTime(dateStr: string): string {
 }
 
 type LogType = "INWARD" | "OUTWARD" | "TRANSFER";
-type FilterType = "ALL" | LogType;
 type DateRange = "all" | "today" | "7d" | "30d" | "custom";
 
 function logLabel(type: LogType): string {
@@ -118,7 +117,6 @@ export default function TankLogsPage() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<FilterType>("ALL");
   const [dateRange, setDateRange] = useState<DateRange>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -156,16 +154,13 @@ export default function TankLogsPage() {
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [search, typeFilter, dateRange, customFrom, customTo]);
+  }, [search, dateRange, customFrom, customTo]);
 
   /* ── filtering ──────────────────────────────────── */
 
   const filteredLogs = useMemo(() => {
     const now = new Date();
     return logs.filter((log) => {
-      // Type filter
-      if (typeFilter !== "ALL" && log.log_type !== typeFilter) return false;
-
       // Search
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -200,7 +195,7 @@ export default function TankLogsPage() {
 
       return true;
     });
-  }, [logs, search, typeFilter, dateRange, customFrom, customTo]);
+  }, [logs, search, dateRange, customFrom, customTo]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / perPage));
   const paginatedLogs = filteredLogs.slice(
@@ -327,43 +322,6 @@ export default function TankLogsPage() {
             </div>
           )}
 
-          {/* Type filter tabs */}
-          <div className="flex gap-1 mt-3">
-            {(
-              [
-                { key: "ALL", label: "All" },
-                { key: "INWARD", label: "Inward" },
-                { key: "OUTWARD", label: "Outward" },
-                { key: "TRANSFER", label: "Transfer" },
-              ] as { key: FilterType; label: string }[]
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  typeFilter === tab.key
-                    ? tab.key === "INWARD"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                      : tab.key === "OUTWARD"
-                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
-                        : tab.key === "TRANSFER"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
-                          : "bg-muted text-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-                onClick={() => setTypeFilter(tab.key)}
-              >
-                {tab.label}
-                {!loading && (
-                  <span className="ml-1.5 text-xs opacity-70">
-                    {tab.key === "ALL"
-                      ? logs.length
-                      : logs.filter((l) => l.log_type === tab.key).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -420,27 +378,23 @@ export default function TankLogsPage() {
                           <Container className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
                             {search.trim() ||
-                            typeFilter !== "ALL" ||
                             dateRange !== "all"
                               ? "No logs match your filters"
                               : "No tank logs yet"}
                           </p>
                           <p className="text-sm">
                             {search.trim() ||
-                            typeFilter !== "ALL" ||
                             dateRange !== "all"
                               ? "Try adjusting your search or filters."
                               : "Logs will appear here when tank operations are performed."}
                           </p>
                           {(search.trim() ||
-                            typeFilter !== "ALL" ||
                             dateRange !== "all") && (
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => {
                                 setSearch("");
-                                setTypeFilter("ALL");
                                 setDateRange("all");
                               }}
                             >
