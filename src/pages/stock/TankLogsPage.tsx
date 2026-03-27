@@ -3,8 +3,6 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpFromLine,
-  ChevronDown,
-  ChevronRight,
   Container,
   Download,
   Eye,
@@ -128,9 +126,6 @@ export default function TankLogsPage() {
   // View dialog
   const [viewTarget, setViewTarget] = useState<TankLog | null>(null);
 
-  // Expandable rows
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
-
   // Pagination
   const [page, setPage] = useState(1);
   const perPage = 20;
@@ -140,24 +135,8 @@ export default function TankLogsPage() {
     setError("");
     try {
       const data = await getTankLogs();
-      // Deduplicate transfer logs: backend creates two entries per transfer
-      // (one per tank). Keep only the source-side entry so each transfer
-      // shows as a single "from → to" row.
-      const seen = new Set<string>();
-      const deduped = data.filter((log) => {
-        if (log.log_type !== "TRANSFER") return true;
-        const src = log.source_tank_code;
-        const dst = log.destination_tank_code;
-        if (!src || !dst) return true;
-        // Build a key from both tanks + quantity + timestamp (truncated to minute)
-        const ts = log.created_at.slice(0, 16);
-        const key = [src, dst, log.quantity, ts].sort().join("|");
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
       setLogs(
-        deduped.sort(
+        data.sort(
           (a, b) =>
             new Date(b.created_at).getTime() -
             new Date(a.created_at).getTime()
@@ -191,11 +170,9 @@ export default function TankLogsPage() {
       if (search.trim()) {
         const q = search.toLowerCase();
         if (
-          !log.tank_code.toLowerCase().includes(q) &&
-          !log.created_by.toLowerCase().includes(q) &&
-          !log.remarks?.toLowerCase().includes(q) &&
-          !(log.source_tank_code?.toLowerCase().includes(q)) &&
-          !(log.destination_tank_code?.toLowerCase().includes(q))
+          !(log.vehicle_number?.toLowerCase().includes(q)) &&
+          !(log.party?.toLowerCase().includes(q)) &&
+          !log.created_by.toLowerCase().includes(q)
         )
           return false;
       }
@@ -231,38 +208,6 @@ export default function TankLogsPage() {
     page * perPage
   );
 
-  /* ── summary stats ──────────────────────────────── */
-
-  const stats = useMemo(() => {
-    const inward = filteredLogs.filter((l) => l.log_type === "INWARD");
-    const outward = filteredLogs.filter((l) => l.log_type === "OUTWARD");
-    const transfer = filteredLogs.filter((l) => l.log_type === "TRANSFER");
-    const inVol = inward.reduce((s, l) => s + Number(l.quantity), 0);
-    const outVol = outward.reduce((s, l) => s + Number(l.quantity), 0);
-    const transferVol = transfer.reduce((s, l) => s + Number(l.quantity), 0);
-    return {
-      total: filteredLogs.length,
-      inCount: inward.length,
-      outCount: outward.length,
-      transferCount: transfer.length,
-      inVol,
-      outVol,
-      transferVol,
-      netVol: inVol - outVol,
-    };
-  }, [filteredLogs]);
-
-  /* ── expand toggle ──────────────────────────────── */
-
-  function toggleExpand(id: number) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   /* ── excel export ───────────────────────────────── */
 
   function handleExport() {
@@ -272,18 +217,15 @@ export default function TankLogsPage() {
     }
 
     const rows = filteredLogs.map((log) => ({
-      "Tank Code": log.tank_code,
+      "Vehicle Number": log.vehicle_number || "—",
+      "Party": log.party || "—",
       "Log Type": log.log_type,
-      ...(log.log_type === "TRANSFER"
-        ? {
-            "Source Tank": log.source_tank_code || "",
-            "Destination Tank": log.destination_tank_code || "",
-          }
-        : {}),
+      "Rate (₹)": log.rate ? Number(log.rate) : "",
+      "Value (₹)": log.rate ? Number(log.rate) * Number(log.quantity) : "",
       "Quantity (L)": Number(log.quantity),
-      Remarks: log.remarks || "",
       "Created At": formatDate(log.created_at),
       "Created By": log.created_by,
+      "Stock Status ID": log.stock_status ?? "",
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -321,75 +263,6 @@ export default function TankLogsPage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Total Logs</p>
-            <p className="text-2xl font-bold mt-0.5">
-              {loading ? <Skeleton className="h-8 w-16" /> : stats.total}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ArrowDownToLine className="h-3 w-3 text-green-600" /> Inward
-            </p>
-            {loading ? (
-              <Skeleton className="h-8 w-20 mt-1" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold mt-0.5 text-green-600 dark:text-green-400">
-                  {stats.inCount}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.inVol.toLocaleString("en-IN")} L
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ArrowUpFromLine className="h-3 w-3 text-orange-600" /> Outward
-            </p>
-            {loading ? (
-              <Skeleton className="h-8 w-20 mt-1" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold mt-0.5 text-orange-600 dark:text-orange-400">
-                  {stats.outCount}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.outVol.toLocaleString("en-IN")} L
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ArrowRightLeft className="h-3 w-3 text-blue-600" /> Transfer
-            </p>
-            {loading ? (
-              <Skeleton className="h-8 w-20 mt-1" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold mt-0.5 text-blue-600 dark:text-blue-400">
-                  {stats.transferCount}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.transferVol.toLocaleString("en-IN")} L
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
@@ -499,9 +372,11 @@ export default function TankLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead>Tank Code</TableHead>
+                    <TableHead>Vehicle Number</TableHead>
+                    <TableHead>Party</TableHead>
                     <TableHead>Log Type</TableHead>
+                    <TableHead>Rate (&#8377;)</TableHead>
+                    <TableHead>Value (&#8377;)</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Created By</TableHead>
@@ -511,27 +386,11 @@ export default function TankLogsPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell>
-                        <Skeleton className="h-4 w-4" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-16" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-5 w-20" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-20" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-28" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-32" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="h-8 w-8 ml-auto" />
-                      </TableCell>
+                      {Array.from({ length: 9 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -542,9 +401,11 @@ export default function TankLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead>Tank Code</TableHead>
+                    <TableHead>Vehicle Number</TableHead>
+                    <TableHead>Party</TableHead>
                     <TableHead>Log Type</TableHead>
+                    <TableHead>Rate (&#8377;)</TableHead>
+                    <TableHead>Value (&#8377;)</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Created By</TableHead>
@@ -554,7 +415,7 @@ export default function TankLogsPage() {
                 <TableBody>
                   {paginatedLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-16">
+                      <TableCell colSpan={9} className="py-16">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <Container className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
@@ -591,159 +452,65 @@ export default function TankLogsPage() {
                     </TableRow>
                   ) : (
                     paginatedLogs.map((log) => {
-                      const hasConsumptions =
-                        log.log_type === "OUTWARD" &&
-                        log.consumptions?.length > 0;
-                      const isExpanded = expandedIds.has(log.id);
                       const rel = relativeTime(log.created_at);
+                      const rate = Number(log.rate ?? 0);
+                      const qty = Number(log.quantity);
+                      const value = rate * qty;
 
                       return (
-                        <>
-                          <TableRow
-                            key={log.id}
-                            className={
-                              isExpanded ? "border-b-0 bg-muted/30" : ""
-                            }
-                          >
-                            {/* Expand toggle */}
-                            <TableCell className="w-10">
-                              {hasConsumptions ? (
-                                <button
-                                  type="button"
-                                  className="p-0.5 rounded hover:bg-muted transition-colors"
-                                  onClick={() => toggleExpand(log.id)}
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </button>
-                              ) : null}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {log.log_type === "TRANSFER" &&
-                              log.source_tank_code &&
-                              log.destination_tank_code ? (
-                                <div className="flex items-center gap-1.5 text-sm">
-                                  <span className="font-semibold">{log.source_tank_code}</span>
-                                  <span className="text-blue-500">→</span>
-                                  <span className="font-semibold">{log.destination_tank_code}</span>
-                                </div>
-                              ) : (
-                                log.tank_code
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={`gap-1 ${logBadgeClass(log.log_type)}`}
-                              >
-                                {logIcon(log.log_type)}
-                                {logLabel(log.log_type)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                {logIcon(log.log_type)}
-                                <span className="font-medium">
-                                  {Number(log.quantity).toLocaleString(
-                                    "en-IN"
-                                  )}{" "}
-                                  L
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p>{formatDate(log.created_at)}</p>
-                                {rel && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {rel}
-                                  </p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>{log.created_by}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setViewTarget(log)}
-                                title="View details"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-
-                          {/* Expanded consumptions row */}
-                          {hasConsumptions && isExpanded && (
-                            <TableRow
-                              key={`${log.id}-expand`}
-                              className="bg-muted/30"
+                        <TableRow key={log.id}>
+                          <TableCell className="font-medium">
+                            {log.vehicle_number || "—"}
+                          </TableCell>
+                          <TableCell>
+                            {log.party || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={`gap-1 ${logBadgeClass(log.log_type)}`}
                             >
-                              <TableCell colSpan={7} className="p-0">
-                                <div className="px-6 py-3 pl-12">
-                                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                                    Consumptions (
-                                    {log.consumptions.length})
-                                  </p>
-                                  <div className="rounded-md border bg-background">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Layer ID</TableHead>
-                                          <TableHead>Vendor</TableHead>
-                                          <TableHead>Qty Consumed</TableHead>
-                                          <TableHead>Rate</TableHead>
-                                          <TableHead>Total Value</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {log.consumptions.map((c) => {
-                                          const qty = Number(
-                                            c.quantity_consumed
-                                          );
-                                          const rate = Number(c.rate);
-                                          return (
-                                            <TableRow key={c.id}>
-                                              <TableCell>
-                                                {c.layer_id}
-                                              </TableCell>
-                                              <TableCell>
-                                                {c.vendor_name || "—"}
-                                              </TableCell>
-                                              <TableCell>
-                                                {qty.toLocaleString(
-                                                  "en-IN"
-                                                )}{" "}
-                                                L
-                                              </TableCell>
-                                              <TableCell>
-                                                &#8377;{" "}
-                                                {rate.toLocaleString(
-                                                  "en-IN"
-                                                )}
-                                              </TableCell>
-                                              <TableCell>
-                                                &#8377;{" "}
-                                                {(
-                                                  qty * rate
-                                                ).toLocaleString("en-IN")}
-                                              </TableCell>
-                                            </TableRow>
-                                          );
-                                        })}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </>
+                              {logIcon(log.log_type)}
+                              {logLabel(log.log_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {log.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
+                          </TableCell>
+                          <TableCell className="tabular-nums font-medium">
+                            {log.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              {logIcon(log.log_type)}
+                              <span className="font-medium">
+                                {qty.toLocaleString("en-IN")} L
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{formatDate(log.created_at)}</p>
+                              {rel && (
+                                <p className="text-xs text-muted-foreground">
+                                  {rel}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{log.created_by}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setViewTarget(log)}
+                              title="View details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       );
                     })
                   )}
@@ -776,125 +543,73 @@ export default function TankLogsPage() {
             <DialogDescription>Log #{viewTarget?.id}</DialogDescription>
           </DialogHeader>
 
-          {viewTarget && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {viewTarget.log_type === "TRANSFER" &&
-                viewTarget.source_tank_code &&
-                viewTarget.destination_tank_code ? (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground mb-1">Transfer Route</p>
-                    <div className="flex items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-2">
-                      <span className="font-semibold">{viewTarget.source_tank_code}</span>
-                      <span className="text-blue-500 font-bold">→</span>
-                      <span className="font-semibold">{viewTarget.destination_tank_code}</span>
-                    </div>
-                  </div>
-                ) : (
+          {viewTarget && (() => {
+            const rate = Number(viewTarget.rate ?? 0);
+            const qty = Number(viewTarget.quantity);
+            const value = rate * qty;
+
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Tank Code</p>
-                    <p className="font-medium">{viewTarget.tank_code}</p>
+                    <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                    <p className="font-medium">{viewTarget.vehicle_number || "—"}</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Log Type</p>
-                  <Badge
-                    variant="outline"
-                    className={`gap-1 ${logBadgeClass(viewTarget.log_type)}`}
-                  >
-                    {logIcon(viewTarget.log_type)}
-                    {logLabel(viewTarget.log_type)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Quantity</p>
-                  <p className="font-medium">
-                    {Number(viewTarget.quantity).toLocaleString("en-IN")} L
-                  </p>
-                </div>
-                {viewTarget.log_type === "INWARD" && (
                   <div>
-                    <p className="text-xs text-muted-foreground">
-                      Tank Layer ID
-                    </p>
+                    <p className="text-xs text-muted-foreground">Party</p>
+                    <p className="font-medium">{viewTarget.party || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Log Type</p>
+                    <Badge
+                      variant="outline"
+                      className={`gap-1 ${logBadgeClass(viewTarget.log_type)}`}
+                    >
+                      {logIcon(viewTarget.log_type)}
+                      {logLabel(viewTarget.log_type)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rate</p>
                     <p className="font-medium">
-                      {viewTarget.tank_layer_id ?? "—"}
+                      {viewTarget.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
                     </p>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Created At</p>
-                  <p className="font-medium">
-                    {formatDate(viewTarget.created_at)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Created By</p>
-                  <p className="font-medium">{viewTarget.created_by}</p>
-                </div>
-                {viewTarget.remarks && (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Remarks</p>
-                    <p className="font-medium">{viewTarget.remarks}</p>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Consumptions (only for OUTWARD) */}
-              {viewTarget.log_type === "OUTWARD" && (
-                <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Consumptions ({viewTarget.consumptions.length})
-                  </h3>
-                  {viewTarget.consumptions.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      No consumptions
+                  <div>
+                    <p className="text-xs text-muted-foreground">Value</p>
+                    <p className="font-medium">
+                      {viewTarget.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
                     </p>
-                  ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Layer ID</TableHead>
-                            <TableHead>Vendor</TableHead>
-                            <TableHead>Qty Consumed</TableHead>
-                            <TableHead>Rate</TableHead>
-                            <TableHead>Total Value</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {viewTarget.consumptions.map((c) => {
-                            const qty = Number(c.quantity_consumed);
-                            const rate = Number(c.rate);
-                            return (
-                              <TableRow key={c.id}>
-                                <TableCell>{c.layer_id}</TableCell>
-                                <TableCell>
-                                  {c.vendor_name || "—"}
-                                </TableCell>
-                                <TableCell>
-                                  {qty.toLocaleString("en-IN")} L
-                                </TableCell>
-                                <TableCell>
-                                  &#8377; {rate.toLocaleString("en-IN")}
-                                </TableCell>
-                                <TableCell>
-                                  &#8377;{" "}
-                                  {(qty * rate).toLocaleString("en-IN")}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantity</p>
+                    <p className="font-medium">
+                      {qty.toLocaleString("en-IN")} L
+                    </p>
+                  </div>
+
+                  <Separator className="col-span-2" />
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">Created At</p>
+                    <p className="font-medium">
+                      {formatDate(viewTarget.created_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Created By</p>
+                    <p className="font-medium">{viewTarget.created_by}</p>
+                  </div>
+                  {viewTarget.stock_status != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Stock Status ID</p>
+                      <p className="font-medium">{viewTarget.stock_status}</p>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewTarget(null)}>

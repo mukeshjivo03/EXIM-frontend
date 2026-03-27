@@ -10,9 +10,7 @@ import {
   Search,
   LayoutGrid,
   List,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  ArrowRightLeft,
+  Pencil,
   DatabaseZap,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -27,21 +25,12 @@ import {
   createTank,
   deleteTank,
   getTankSummary,
-  tankInward,
-  tankOutward,
-  tankTransfer,
-  getSameTanks,
   updateTank,
   getTankItems,
   type Tank,
   type TankSummary,
   type TankItem,
 } from "@/api/tank";
-import {
-  getUniqueRMCodes,
-  getStockEntriesByRM,
-  type StockEntryByRM,
-} from "@/api/stockStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,13 +58,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 /* ── helpers ─────────────────────────────────────────── */
 
@@ -155,7 +137,7 @@ function CircularGauge({ value, size = 56 }: { value: number; size?: number }) {
 
 export default function TankDataPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { email, role } = useAuth();
+  const { role } = useAuth();
   const canCreateDelete = role === "ADM" || role === "MNG";
   const autoEditHandled = useRef(false);
 
@@ -180,17 +162,11 @@ export default function TankDataPage() {
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<Tank | null>(null);
-  const [editOperation, setEditOperation] = useState<"IN" | "OUT" | "TRANSFER" | "">("");
   const [editItemCode, setEditItemCode] = useState("");
-  const [editSelectedEntry, setEditSelectedEntry] = useState("");
-  const [editQuantity, setEditQuantity] = useState("");
+  const [editCurrentCapacity, setEditCurrentCapacity] = useState("");
   const [editing, setEditing] = useState(false);
-  const [uniqueRMCodes, setUniqueRMCodes] = useState<string[]>([]);
-  const [stockEntries, setStockEntries] = useState<StockEntryByRM[]>([]);
-
-  // Transfer state
-  const [transferTanks, setTransferTanks] = useState<import("@/api/tank").SameTank[]>([]);
-  const [transferDestination, setTransferDestination] = useState("");
+  const [itemSearch, setItemSearch] = useState("");
+  const [itemListOpen, setItemListOpen] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -344,187 +320,59 @@ export default function TankDataPage() {
 
   /* ── Edit ─────────────────────────────────────────── */
 
-  async function openEdit(tank: Tank, operation?: "IN" | "OUT" | "TRANSFER") {
+  function openEdit(tank: Tank) {
     setEditTarget(tank);
-    setEditOperation(operation ?? "");
-    setEditItemCode("");
-    setEditSelectedEntry("");
-    setEditQuantity("");
-    setStockEntries([]);
-    setTransferTanks([]);
-    setTransferDestination("");
-    try {
-      const rmCodes = await getUniqueRMCodes();
-      setUniqueRMCodes(rmCodes);
-    } catch {
-      // keep whatever was loaded before
-    }
-    if (operation === "TRANSFER" && tank.item_code) {
-      loadTransferTanks(tank.item_code);
-    }
+    setEditItemCode(tank.item_code ?? "");
+    setEditCurrentCapacity(tank.current_capacity ?? "");
+    setItemSearch("");
+    setItemListOpen(!tank.item_code);
   }
 
-  function switchOperation(op: "IN" | "OUT" | "TRANSFER") {
-    setEditOperation(op);
-    setEditItemCode("");
-    setEditSelectedEntry("");
-    setEditQuantity("");
-    setStockEntries([]);
-    setTransferTanks([]);
-    setTransferDestination("");
-    if (op === "TRANSFER" && editTarget?.item_code) {
-      loadTransferTanks(editTarget.item_code);
-    }
-  }
+  // Item codes already assigned to other tanks (exclude current edit target)
+  const usedItemCodes = new Set(
+    tanks
+      .filter((t) => t.item_code && t.tank_code !== editTarget?.tank_code)
+      .map((t) => t.item_code!.toLowerCase())
+  );
 
-  async function handleItemCodeChange(itemCode: string) {
-    setEditItemCode(itemCode);
-    setEditSelectedEntry("");
-    setEditQuantity("");
-    if (!itemCode) {
-      setStockEntries([]);
-      return;
-    }
-    try {
-      const entries = await getStockEntriesByRM(itemCode);
-      setStockEntries(entries);
-    } catch {
-      setStockEntries([]);
-    }
-  }
-
-  const editSelectedStock = editSelectedEntry
-    ? stockEntries.find((s) => String(s.id) === editSelectedEntry)
-    : null;
-
-  async function loadTransferTanks(itemCode: string) {
-    try {
-      const tanks = await getSameTanks(itemCode);
-      setTransferTanks(tanks);
-    } catch {
-      setTransferTanks([]);
-    }
-  }
+  // Filtered tank items for omni search — exclude items already in another tank
+  const filteredItemCodes = tankItems.filter((ti) => {
+    if (usedItemCodes.has(ti.tank_item_code.toLowerCase())) return false;
+    if (!itemSearch.trim()) return true;
+    const q = itemSearch.toLowerCase();
+    return (
+      ti.tank_item_code.toLowerCase().includes(q) ||
+      ti.tank_item_name.toLowerCase().includes(q)
+    );
+  });
 
   async function handleEdit() {
     if (!editTarget) return;
 
-    if (editOperation === "TRANSFER") {
-      if (!transferDestination) {
-        toast.error("Please select a destination tank.");
-        return;
-      }
-      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
-        toast.error("Please enter a valid quantity.");
-        return;
-      }
-      const currentCap = Number(editTarget.current_capacity ?? 0);
-      if (Number(editQuantity) > currentCap) {
-        toast.error(
-          `Quantity cannot exceed current stock (${currentCap} L).`
-        );
-        return;
-      }
-      const destTank = transferTanks.find(
-        (t) => t.tank_code === transferDestination
+    if (!editItemCode.trim()) {
+      toast.error("Please select an item code.");
+      return;
+    }
+    if (!editCurrentCapacity.trim() || isNaN(Number(editCurrentCapacity)) || Number(editCurrentCapacity) < 0) {
+      toast.error("Please enter a valid current quantity.");
+      return;
+    }
+    const tankCap = Number(editTarget.tank_capacity);
+    if (Number(editCurrentCapacity) > tankCap) {
+      toast.error(
+        `Current quantity cannot exceed tank capacity (${tankCap} L).`
       );
-      if (destTank) {
-        const destCurrent = Number(destTank.current_capacity ?? 0);
-        const destCapacity = Number(destTank.tank_capacity);
-        const available = destCapacity - destCurrent;
-        if (Number(editQuantity) > available) {
-          toast.error(
-            `Destination tank only has ${available.toFixed(2)} L available space.`
-          );
-          return;
-        }
-      }
-    }
-
-    if (editOperation === "IN") {
-      if (!editItemCode) {
-        toast.error("Please select an item code.");
-        return;
-      }
-      if (!editSelectedEntry) {
-        toast.error("Please select a vendor / vehicle.");
-        return;
-      }
-      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
-        toast.error("Please enter a valid quantity.");
-        return;
-      }
-      const maxQtyL = Number(editSelectedStock?.quantity_in_litre ?? 0);
-      if (Number(editQuantity) > maxQtyL) {
-        toast.error(
-          `Quantity cannot exceed available stock (${maxQtyL} L).`
-        );
-        return;
-      }
-      const currentCap = Number(editTarget.current_capacity ?? 0);
-      const tankCap = Number(editTarget.tank_capacity);
-      if (currentCap + Number(editQuantity) > tankCap) {
-        toast.error(
-          `Adding ${editQuantity} would exceed tank capacity (${tankCap} L). Available space: ${(tankCap - currentCap).toFixed(2)} L.`
-        );
-        return;
-      }
-    }
-
-    if (editOperation === "OUT") {
-      if (!editQuantity.trim() || Number(editQuantity) <= 0) {
-        toast.error("Please enter a valid quantity.");
-        return;
-      }
-      const currentCap = Number(editTarget.current_capacity ?? 0);
-      if (Number(editQuantity) > currentCap) {
-        toast.error(
-          `Quantity cannot exceed current stock (${currentCap} KG).`
-        );
-        return;
-      }
+      return;
     }
 
     setEditing(true);
     try {
-      if (editOperation === "IN") {
-        await tankInward({
-          tank_code: editTarget.tank_code,
-          stock_status_id: String(editSelectedStock!.id),
-          quantity: editQuantity.trim(),
-          user: email ?? "",
-        });
-      } else if (editOperation === "OUT") {
-        await tankOutward({
-          tank_code: editTarget.tank_code,
-          quantity: editQuantity.trim(),
-          remarks: "Used for Production",
-          user: email ?? "",
-        });
-        const remaining =
-          Number(editTarget.current_capacity ?? 0) - Number(editQuantity);
-        if (remaining <= 0) {
-          await updateTank(editTarget.tank_code, {
-            current_capacity: null,
-            item_code: null,
-          });
-        }
-      } else if (editOperation === "TRANSFER") {
-        await tankTransfer({
-          source_tank_code: editTarget.tank_code,
-          destination_tank_code: transferDestination,
-          quantity: Number(editQuantity.trim()),
-          remarks: `Transfer to free up space in ${editTarget.tank_code}`,
-        });
-      }
-      const opLabel =
-        editOperation === "IN"
-          ? "added"
-          : editOperation === "OUT"
-            ? "removed"
-            : `transferred to ${transferDestination}`;
+      await updateTank(editTarget.tank_code, {
+        current_capacity: editCurrentCapacity.trim(),
+        item_code: editItemCode.trim(),
+      });
       toast.success(
-        `Tank "${editTarget.tank_code}" updated: ${opLabel} ${editQuantity} L.`
+        `Tank "${editTarget.tank_code}" updated successfully.`
       );
       setEditTarget(null);
       fetchData();
@@ -535,12 +383,6 @@ export default function TankDataPage() {
       setEditing(false);
     }
   }
-
-  /* ── can transfer check ──────────────────────────── */
-  const canTransfer =
-    !!editTarget?.item_code &&
-    !!editTarget?.current_capacity &&
-    Number(editTarget.current_capacity) > 0;
 
   /* ── render ──────────────────────────────────────── */
 
@@ -843,38 +685,14 @@ export default function TankDataPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              {/* Quick IN */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                onClick={() => openEdit(tank, "IN")}
-                                title="Inward"
-                              >
-                                <ArrowDownToLine className="h-4 w-4" />
-                              </Button>
-                              {/* Quick OUT */}
-                              {tank.current_capacity &&
-                                Number(tank.current_capacity) > 0 && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
-                                    onClick={() => openEdit(tank, "OUT")}
-                                    title="Outward"
-                                  >
-                                    <ArrowUpFromLine className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              {/* Edit */}
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                onClick={() => openEdit(tank, "TRANSFER")}
-                                title="Transfer"
+                                onClick={() => openEdit(tank)}
+                                title="Edit"
                               >
-                                <ArrowRightLeft className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               {canCreateDelete && (
                                 <Button
@@ -943,32 +761,11 @@ export default function TankDataPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-green-600"
-                            onClick={() => openEdit(tank, "IN")}
-                            title="Inward"
-                          >
-                            <ArrowDownToLine className="h-3.5 w-3.5" />
-                          </Button>
-                          {tank.current_capacity &&
-                            Number(tank.current_capacity) > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-orange-600"
-                                onClick={() => openEdit(tank, "OUT")}
-                                title="Outward"
-                              >
-                                <ArrowUpFromLine className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
                             className="h-7 w-7 text-blue-600"
-                            onClick={() => openEdit(tank, "TRANSFER")}
-                            title="Transfer"
+                            onClick={() => openEdit(tank)}
+                            title="Edit"
                           >
-                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                            <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           {canCreateDelete && (
                             <Button
@@ -1130,331 +927,112 @@ export default function TankDataPage() {
       <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Tank</DialogTitle>
+            <DialogTitle>Update Tank Capacity</DialogTitle>
             <DialogDescription>
-              Update <strong>{editTarget?.tank_code}</strong>
+              Update <strong>{editTarget?.tank_code}</strong> — Tank Capacity:{" "}
+              {editTarget
+                ? `${Number(editTarget.tank_capacity).toLocaleString("en-IN")} L`
+                : ""}
             </DialogDescription>
           </DialogHeader>
 
-          {/* Tank info + visual gauge */}
-          {editTarget && (
-            <div className="flex gap-4 items-start">
-              {/* Mini tank gauge */}
-              <div className="relative h-20 w-10 rounded-lg border-2 border-border bg-muted/30 overflow-hidden shrink-0">
-                <div
-                  className={`absolute bottom-0 left-0 right-0 transition-all ${fillColor(fillPercent(editTarget))}`}
-                  style={{
-                    height: `${fillPercent(editTarget)}%`,
-                    opacity: 0.7,
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] font-bold">
-                    {fillPercent(editTarget).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 flex-1 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tank Code</p>
-                  <p className="font-medium">
-                    {editTarget.tank_code}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Tank Capacity
-                  </p>
-                  <p className="font-medium">
-                    {editTarget.tank_capacity
-                      ? `${Number(editTarget.tank_capacity).toLocaleString("en-IN")} L`
-                      : "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Current Stock
-                  </p>
-                  <p className="font-medium">
-                    {editTarget.current_capacity
-                      ? `${Number(editTarget.current_capacity).toLocaleString("en-IN")} L`
-                      : "0 L"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Current Item
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    {getItemColor(editTarget.item_code) && (
+          <div className="space-y-5">
+            {/* Item Code — searchable dropdown */}
+            <div className="space-y-2">
+              <Label>Item Code *</Label>
+              <div className="relative">
+                {editItemCode && !itemListOpen ? (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    {getItemColor(editItemCode) && (
                       <span
-                        className="h-2.5 w-2.5 rounded-full border border-border shrink-0 inline-block"
-                        style={{
-                          backgroundColor:
-                            getItemColor(editTarget.item_code) ?? undefined,
-                        }}
+                        className="h-3 w-3 rounded-full border border-border shrink-0"
+                        style={{ backgroundColor: getItemColor(editItemCode) ?? undefined }}
                       />
                     )}
-                    <p className="font-medium">
-                      {editTarget.item_code ?? "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-5">
-            {/* Operation as segmented tabs */}
-            <div className="space-y-2">
-              <Label>Operation *</Label>
-              <div className="flex rounded-lg border p-1 gap-1">
-                <button
-                  type="button"
-                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    editOperation === "IN"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                      : "hover:bg-muted text-muted-foreground"
-                  }`}
-                  onClick={() => switchOperation("IN")}
-                >
-                  <ArrowDownToLine className="h-4 w-4" />
-                  In
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    editOperation === "OUT"
-                      ? "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
-                      : "hover:bg-muted text-muted-foreground"
-                  }`}
-                  onClick={() => switchOperation("OUT")}
-                >
-                  <ArrowUpFromLine className="h-4 w-4" />
-                  Out
-                </button>
-                {canTransfer && (
-                  <button
-                    type="button"
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                      editOperation === "TRANSFER"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
-                        : "hover:bg-muted text-muted-foreground"
-                    }`}
-                    onClick={() => switchOperation("TRANSFER")}
-                  >
-                    <ArrowRightLeft className="h-4 w-4" />
-                    Transfer
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {editOperation === "IN" && (
-              <>
-                <div className="space-y-2">
-                  <Label>Item Code *</Label>
-                  <Select
-                    value={editItemCode || "__none__"}
-                    onValueChange={(v) =>
-                      handleItemCodeChange(v === "__none__" ? "" : v)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        value="__none__"
-                        className="text-muted-foreground"
-                      >
-                        Select item
-                      </SelectItem>
-                      {uniqueRMCodes.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {editItemCode && stockEntries.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Vendor / Vehicle *</Label>
-                    <Select
-                      value={editSelectedEntry || "__none__"}
-                      onValueChange={(v) => {
-                        setEditSelectedEntry(v === "__none__" ? "" : v);
-                        setEditQuantity("");
-                      }}
-                    >
-                      <SelectTrigger className="w-full h-auto min-h-9 whitespace-normal text-left">
-                        <SelectValue placeholder="Select vendor / vehicle" />
-                      </SelectTrigger>
-                      <SelectContent className="max-w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem
-                          value="__none__"
-                          className="text-muted-foreground"
-                        >
-                          Select
-                        </SelectItem>
-                        {stockEntries.map((entry) => (
-                          <SelectItem
-                            key={entry.id}
-                            value={String(entry.id)}
-                            className="whitespace-normal"
-                          >
-                            {entry.vehicle_number ?? "—"} —{" "}
-                            {entry.vendor_code__card_name || entry.vendor_code}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {editSelectedStock && (
-                  <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vendor:</span>
-                      <span className="font-medium">
-                        {editSelectedStock.vendor_code__card_name ||
-                          editSelectedStock.vendor_code}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vehicle:</span>
-                      <span className="font-medium">
-                        {editSelectedStock.vehicle_number ?? "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Available Qty:
-                      </span>
-                      <span className="font-medium">
-                        {Number(
-                          editSelectedStock.quantity
-                        ).toLocaleString("en-IN")}{" "}
-                        KG /{" "}
-                        {Number(
-                          editSelectedStock.quantity_in_litre
-                        ).toLocaleString("en-IN")}{" "}
-                        L
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {editOperation === "TRANSFER" && (
-              <div className="space-y-2">
-                <Label>Destination Tank *</Label>
-                <Select
-                  value={transferDestination || "__none__"}
-                  onValueChange={(v) =>
-                    setTransferDestination(v === "__none__" ? "" : v)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select destination tank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      value="__none__"
-                      className="text-muted-foreground"
-                    >
-                      Select
-                    </SelectItem>
-                    {transferTanks
-                      .filter((t) => t.tank_code !== editTarget?.tank_code)
-                      .map((t) => (
-                        <SelectItem key={t.tank_code} value={t.tank_code}>
-                          {t.tank_code} — {t.item_code ?? "Empty"} (
-                          {Number(
-                            t.current_capacity ?? 0
-                          ).toLocaleString("en-IN")}{" "}
-                          /{" "}
-                          {Number(t.tank_capacity).toLocaleString("en-IN")}{" "}
-                          L)
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {(editOperation === "OUT" ||
-              editOperation === "TRANSFER" ||
-              (editOperation === "IN" && editSelectedEntry)) && (
-              <div className="space-y-2">
-                <Label htmlFor="edit-qty">
-                  Quantity (L) *
-                  {editOperation === "IN" && editSelectedStock && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (max: {Number(editSelectedStock.quantity_in_litre)} L)
-                    </span>
-                  )}
-                  {(editOperation === "OUT" ||
-                    editOperation === "TRANSFER") &&
-                    editTarget && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        (max: {editTarget.current_capacity ?? 0} L)
-                      </span>
-                    )}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-qty"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="Enter quantity"
-                    value={editQuantity}
-                    onChange={(e) => setEditQuantity(e.target.value)}
-                    className="flex-1"
-                  />
-                  {editOperation === "IN" && editSelectedStock && (
+                    <span className="font-medium flex-1">{editItemCode}</span>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="shrink-0 h-9"
-                      onClick={() =>
-                        setEditQuantity(
-                          String(
-                            Number(editSelectedStock.quantity_in_litre)
-                          )
-                        )
-                      }
+                      className="h-6 px-2 text-xs"
+                      onClick={() => {
+                        setEditItemCode("");
+                        setItemListOpen(true);
+                      }}
                     >
-                      Unload All
+                      Change
                     </Button>
-                  )}
-                  {(editOperation === "OUT" ||
-                    editOperation === "TRANSFER") &&
-                    editTarget?.current_capacity && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 h-9"
-                        onClick={() =>
-                          setEditQuantity(
-                            String(editTarget.current_capacity)
-                          )
-                        }
-                      >
-                        {editOperation === "TRANSFER"
-                          ? "Transfer All"
-                          : "Drain All"}
-                      </Button>
-                    )}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search item code..."
+                        value={itemSearch}
+                        onChange={(e) => setItemSearch(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    <div className="mt-1 max-h-40 overflow-y-auto rounded-md border">
+                      {filteredItemCodes.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">
+                          No items found
+                        </p>
+                      ) : (
+                        filteredItemCodes.map((ti) => {
+                          const itemColor = findPaletteColor(ti.color) || ti.color || null;
+                          return (
+                            <button
+                              key={ti.tank_item_code}
+                              type="button"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-muted"
+                              onClick={() => {
+                                setEditItemCode(ti.tank_item_code);
+                                setItemSearch("");
+                                setItemListOpen(false);
+                              }}
+                            >
+                              {itemColor && (
+                                <span
+                                  className="h-3 w-3 rounded-full border border-border shrink-0"
+                                  style={{ backgroundColor: itemColor }}
+                                />
+                              )}
+                              <span>{ti.tank_item_code}</span>
+                              <span className="text-muted-foreground">
+                                — {ti.tank_item_name}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Current Quantity */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-capacity">
+                Current Quantity (L) *
+                {editTarget && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (max: {Number(editTarget.tank_capacity).toLocaleString("en-IN")} L)
+                  </span>
+                )}
+              </Label>
+              <Input
+                id="edit-capacity"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Enter current quantity"
+                value={editCurrentCapacity}
+                onChange={(e) => setEditCurrentCapacity(e.target.value)}
+              />
+            </div>
           </div>
 
           <DialogFooter>
@@ -1463,9 +1041,9 @@ export default function TankDataPage() {
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={editing || !editQuantity.trim() || !editOperation}
+              disabled={editing || !editItemCode.trim() || !editCurrentCapacity.trim()}
             >
-              {editing ? "Saving..." : "Save Changes"}
+              {editing ? "Saving..." : "Update"}
             </Button>
           </DialogFooter>
         </DialogContent>

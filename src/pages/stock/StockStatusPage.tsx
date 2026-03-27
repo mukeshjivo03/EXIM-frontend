@@ -20,6 +20,7 @@ import {
   Anchor,
   Factory,
   Trash2,
+  Container,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ import {
   getStockSummary,
   getStockInsights,
   arriveBatch,
+  moveStock,
   softDeleteStockStatus,
   type StockStatus,
   type StockStatusFilters,
@@ -130,7 +132,7 @@ export default function StockStatusPage() {
       ]);
       setRows(
         data
-          .filter((r) => !r.deleted && r.status !== "COMPLETED")
+          .filter((r) => !r.deleted)
           .sort((a, b) => {
             const oa = STATUS_ORDER[a.status] ?? 99;
             const ob = STATUS_ORDER[b.status] ?? 99;
@@ -158,7 +160,7 @@ export default function StockStatusPage() {
   async function fetchAllRows() {
     try {
       const data = await getStockStatuses();
-      setAllRows(data.filter((r) => !r.deleted && r.status !== "COMPLETED"));
+      setAllRows(data.filter((r) => !r.deleted));
     } catch {
       // non-critical
     }
@@ -226,6 +228,39 @@ export default function StockStatusPage() {
       await fetchList(currentFilters());
     } catch (err) {
       toastApiError(err, "Failed to complete bulk arrival.");
+    } finally {
+      setBulkProcessing(false);
+    }
+  }
+
+  // Check if all selected rows are COMPLETED (for In Tank action)
+  const allSelectedCompleted = selectedIds.size > 0 && Array.from(selectedIds).every((id) => {
+    const row = rows.find((r) => r.id === id);
+    return row?.status === "COMPLETED";
+  });
+
+  async function handleBulkInTank() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    setBulkProcessing(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const row = rows.find((r) => r.id === id);
+          if (!row) return Promise.resolve();
+          return moveStock({
+            stock_id: id,
+            new_quantity: Number(row.quantity),
+            new_status: "IN_TANK",
+            action: "TOLERATE",
+            created_by: email ?? "SYSTEM",
+          });
+        })
+      );
+      toast.success(`${count} record(s) marked as In Tank.`);
+      await fetchList(currentFilters());
+    } catch (err) {
+      toastApiError(err, "Failed to mark as In Tank.");
     } finally {
       setBulkProcessing(false);
     }
@@ -322,6 +357,18 @@ export default function StockStatusPage() {
                 <Factory className="h-3.5 w-3.5" />
                 Arrive Refinery
               </Button>
+              {allSelectedCompleted && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full gap-1.5"
+                  disabled={bulkProcessing}
+                  onClick={handleBulkInTank}
+                >
+                  <Container className="h-3.5 w-3.5" />
+                  Mark In Tank
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 size="sm"

@@ -117,29 +117,21 @@ export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary> {
   return res.data ?? { total_quantity: 0, items: [] };
 }
 
-// ── Tank Rate Breakdown ─────────────────────────────────────
+// ── Item-wise Average ──────────────────────────────────────────
 
-export interface RateBreakdownEntry {
-  rate: number;
-  qty: number;
-  percentage: number;
-  vendor: string;
-}
-
-export interface TankRateBreakdown {
-  tank_code: string;
+export interface ItemWiseAverage {
   item_code: string;
-  item_name: string;
-  color: string;
-  tank_capacity: number;
-  current_capacity: number;
-  rate_breakdown: RateBreakdownEntry[];
-  weighted_avg_rate: number;
+  tank_total_capacity: number;
+  quantity_matched: number;
+  quantity_unmatched: number;
+  "average_rate(IN_TANK)": number;
+  "adjusted_average(STO)": number;
+  warning?: string;
 }
 
-export async function getTankRates(): Promise<TankRateBreakdown[]> {
-  const res = await api.get<TankRateBreakdown[]>("/tank/tank-rates/");
-  return res.data ?? [];
+export async function getItemWiseAverage(itemCode: string): Promise<ItemWiseAverage> {
+  const res = await api.get<ItemWiseAverage>(`/tank/item-wise-average/`, { params: { item_code: itemCode } });
+  return res.data;
 }
 
 // ── Tank Layers ────────────────────────────────────────────────
@@ -171,80 +163,18 @@ export async function getTankLayers(tankCode: string): Promise<TankLayersRespons
   return res.data;
 }
 
-// ── Tank Inward / Outward ──────────────────────────────────────
-
-export interface TankInwardPayload {
-  tank_code: string;
-  stock_status_id: string;
-  quantity: string;
-  user: string;
-}
-
-export async function tankInward(data: TankInwardPayload): Promise<void> {
-  await api.post("/tank/inward/", data);
-}
-
-export interface TankOutwardPayload {
-  tank_code: string;
-  quantity: string;
-  remarks: string;
-  user: string;
-}
-
-export async function tankOutward(data: TankOutwardPayload): Promise<void> {
-  await api.post("/tank/outward/", data);
-}
-
-// ── Tank Transfer ─────────────────────────────────────────────
-
-export interface SameTank {
-  tank_code: string;
-  item_code: string | null;
-  current_capacity: string | null;
-  tank_capacity: string;
-}
-
-export async function getSameTanks(itemCode: string): Promise<SameTank[]> {
-  const res = await api.get<SameTank[]>("/tank/get-same-tanks/", { params: { item_code: itemCode } });
-  return res.data;
-}
-
-export interface TankTransferPayload {
-  source_tank_code: string;
-  destination_tank_code: string;
-  quantity: number;
-  remarks: string;
-}
-
-export async function tankTransfer(data: TankTransferPayload): Promise<void> {
-  await api.post("/tank/transfer/", data);
-}
-
 // ── Tank Logs ─────────────────────────────────────────────────
-
-export interface TankLogConsumption {
-  id: number;
-  layer_id: number;
-  stock_status_id: number;
-  vendor_name: string;
-  quantity_consumed: string;
-  rate: string;
-  created_at: string;
-}
 
 export interface TankLog {
   id: number;
-  tank_code: string;
   log_type: "INWARD" | "OUTWARD" | "TRANSFER";
   quantity: string;
-  stock_status_id?: number;
-  tank_layer_id?: number;
-  source_tank_code?: string;
-  destination_tank_code?: string;
-  remarks: string;
+  vehicle_number?: string | null;
+  rate?: string | null;
+  party?: string | null;
   created_at: string;
   created_by: string;
-  consumptions: TankLogConsumption[];
+  stock_status?: number | null;
 }
 
 export async function getTankLogs(): Promise<TankLog[]> {

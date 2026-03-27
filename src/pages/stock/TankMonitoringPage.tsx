@@ -7,13 +7,11 @@ import {
   BarChart3,
   Container,
   Package,
-  Layers,
   RefreshCw,
   Maximize2,
   Minimize2,
   AlertTriangle,
   Filter,
-  IndianRupee,
 } from "lucide-react";
 
 import {
@@ -21,12 +19,12 @@ import {
   getTankItems,
   getItemWiseTankSummary,
   getTankSummary,
-  getTankLayers,
+  getItemWiseAverage,
   type Tank,
   type TankItem,
   type ItemWiseTankSummaryItem,
   type TankSummary,
-  type TankLayersResponse,
+  type ItemWiseAverage,
 } from "@/api/tank";
 
 import { getErrorMessage } from "@/lib/errors";
@@ -38,10 +36,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -115,6 +109,7 @@ export default function TankMonitoringPage() {
   const [error, setError] = useState("");
   const [itemSummary, setItemSummary] = useState<ItemWiseTankSummaryItem[]>([]);
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
+  const [itemAverages, setItemAverages] = useState<Map<string, ItemWiseAverage>>(new Map());
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
 
   // Persist unit
@@ -124,9 +119,6 @@ export default function TankMonitoringPage() {
   });
   useEffect(() => { localStorage.setItem("tank_monitoring_unit", unit); }, [unit]);
 
-  // Rate breakdown dialog
-  const [layersData, setLayersData] = useState<TankLayersResponse | null>(null);
-  const [layersLoading, setLayersLoading] = useState(false);
 
   // Kiosk mode
   const [kiosk, setKiosk] = useState(false);
@@ -165,7 +157,19 @@ export default function TankMonitoringPage() {
     setItemSummaryLoading(true);
     try {
       const data = await getItemWiseTankSummary();
-      setItemSummary(data.items);
+      const items = data.items ?? [];
+      setItemSummary(items);
+      // Fetch averages for each item in parallel
+      if (items.length > 0) {
+        const avgResults = await Promise.allSettled(
+          items.map((item) => getItemWiseAverage(item.tank_item_code))
+        );
+        const avgMap = new Map<string, ItemWiseAverage>();
+        avgResults.forEach((r) => {
+          if (r.status === "fulfilled" && r.value) avgMap.set(r.value.item_code, r.value);
+        });
+        setItemAverages(avgMap);
+      }
     } catch { /* non-critical */ }
     finally { setItemSummaryLoading(false); }
   }
@@ -182,30 +186,6 @@ export default function TankMonitoringPage() {
     fetchTankSummary();
   }, []);
 
-  // Track which tank we're viewing (keeps dialog open even on API error)
-  const [layersTankCode, setLayersTankCode] = useState<string | null>(null);
-  const [layersError, setLayersError] = useState("");
-
-  async function openRateBreakdown(tankCode: string) {
-    setLayersTankCode(tankCode);
-    setLayersLoading(true);
-    setLayersData(null);
-    setLayersError("");
-    try {
-      const data = await getTankLayers(tankCode);
-      setLayersData(data);
-    } catch (err) {
-      setLayersError(getErrorMessage(err, "Failed to load rate breakdown."));
-    } finally {
-      setLayersLoading(false);
-    }
-  }
-
-  function closeRateBreakdown() {
-    setLayersTankCode(null);
-    setLayersData(null);
-    setLayersError("");
-  }
 
   /* ── derived data ──────────────────────────────────────── */
 
@@ -417,14 +397,12 @@ export default function TankMonitoringPage() {
                     <div
                       key={tank.tank_code}
                       className={cn(
-                        "tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3 cursor-pointer group relative",
+                        "tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3 group relative",
                         isCriticalHigh && "tank-critical-high",
                         isCriticalLow && "tank-critical-low",
                         (isEmpty || isUnassigned) && "tank-empty",
                         splashing && "tank-splash",
                       )}
-                      onClick={() => openRateBreakdown(tank.tank_code)}
-                      title="Click for rate breakdown"
                     >
                       {/* Critical badges */}
                       {isCriticalHigh && (
@@ -578,11 +556,6 @@ export default function TankMonitoringPage() {
                         </div>
                       </div>
 
-                      {/* Rate breakdown hint */}
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
-                        <IndianRupee className="h-3 w-3" />
-                        <span>Click for rate breakdown</span>
-                      </div>
                     </div>
                   );
                 })}
@@ -609,6 +582,8 @@ export default function TankMonitoringPage() {
                       <TableHead>Item Code</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
+                      <TableHead>Avg Price</TableHead>
+                      <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                     </TableRow>
@@ -620,6 +595,8 @@ export default function TankMonitoringPage() {
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       </TableRow>
@@ -641,6 +618,8 @@ export default function TankMonitoringPage() {
                       <TableHead>Item Code</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
+                      <TableHead>Avg Price</TableHead>
+                      <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                     </TableRow>
@@ -648,6 +627,7 @@ export default function TankMonitoringPage() {
                   <TableBody>
                     {itemSummary.map((item) => {
                       const fillPct = maxItemQty > 0 ? (item.quantity_in_liters / maxItemQty) * 100 : 0;
+                      const avg = itemAverages.get(item.tank_item_code);
                       return (
                         <TableRow key={item.tank_item_code}>
                           <TableCell>
@@ -670,6 +650,16 @@ export default function TankMonitoringPage() {
                             </div>
                           </TableCell>
                           <TableCell>{conv(item.total_capacity, unit)}</TableCell>
+                          <TableCell>
+                            {avg?.["average_rate(IN_TANK)"] != null
+                              ? `₹ ${Number(avg["average_rate(IN_TANK)"]).toLocaleString("en-IN")}`
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {avg?.["adjusted_average(STO)"] != null
+                              ? `₹ ${Number(avg["adjusted_average(STO)"]).toLocaleString("en-IN")}`
+                              : "—"}
+                          </TableCell>
                           <TableCell>{item.tank_count}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
@@ -691,108 +681,6 @@ export default function TankMonitoringPage() {
         </Card>
       )}
 
-      {/* Rate Breakdown Dialog */}
-      <Dialog open={!!layersTankCode} onOpenChange={() => closeRateBreakdown()}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Layers className="h-5 w-5" />
-              Rate Breakdown
-            </DialogTitle>
-            <DialogDescription>
-              {layersData ? `Tank ${layersData.tank_code}` : `Tank ${layersTankCode}`}
-            </DialogDescription>
-          </DialogHeader>
-
-          {layersLoading ? (
-            <div className="space-y-3 py-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : layersError ? (
-            <div className="py-8 text-center text-sm text-destructive">{layersError}</div>
-          ) : layersData ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tank Code</p>
-                  <p className="text-sm font-medium">{layersData.tank_code}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Item Code</p>
-                  <p className="text-sm font-medium">
-                    {tanks.find((t) => t.tank_code === layersData.tank_code)?.item_code ?? "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tank Capacity</p>
-                  <p className="text-sm font-medium">{conv(layersData.tank_capacity ?? 0, unit)} {unit}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Current Capacity</p>
-                  <p className="text-sm font-medium">{conv(layersData.current_capacity ?? 0, unit)} {unit}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                  Layers ({(layersData.layers ?? []).length})
-                </h3>
-                {(layersData.layers ?? []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No layers found</p>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-10">#</TableHead>
-                          <TableHead>Rate</TableHead>
-                          <TableHead>Quantity</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(layersData.layers ?? []).map((layer, idx) => (
-                          <TableRow key={layer.layer_id}>
-                            <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                            <TableCell>&#8377; {layer.rate.toLocaleString("en-IN")}</TableCell>
-                            <TableCell>{conv(layer.quantity_remaining, unit)} {unit}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Quantity</p>
-                  <p className="text-sm font-semibold">{conv(layersData.total_quantity ?? 0, unit)} {unit}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Cost</p>
-                  <p className="text-sm font-semibold">&#8377; {(layersData.total_cost ?? 0).toLocaleString("en-IN")}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Weighted Avg Rate</p>
-                  <p className="text-sm font-semibold">&#8377; {(layersData.weighted_avg_rate ?? 0).toLocaleString("en-IN")}</p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeRateBreakdown}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

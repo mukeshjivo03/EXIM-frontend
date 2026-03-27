@@ -9,7 +9,7 @@ interface DailyPriceContextValue {
   setCount: (count: number) => void;
   setFetched: (fetched: boolean) => void;
   clear: () => void;
-}
+ }
 
 const DailyPriceContext = createContext<DailyPriceContextValue | undefined>(undefined);
 

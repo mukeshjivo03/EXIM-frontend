@@ -2,6 +2,7 @@ import api from "./client";
 
 export const STATUS_CHOICES = [
   "COMPLETED",
+  "IN_TANK",
   "OUT_SIDE_FACTORY",
   "ON_THE_WAY",
   "UNDER_LOADING",

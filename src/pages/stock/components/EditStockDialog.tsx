@@ -118,7 +118,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
         toast.error("Please select a Transfer Type.");
         return;
       }
-      if (eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && !eAction) {
+      if (eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && !eAction) {
         toast.error("Please select an Action.");
         return;
       }
@@ -241,7 +241,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               const s = v as StockStatusChoice;
               setEStatus(s);
               if (s !== data?.status) {
-                 if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT" || s === "COMPLETED") {
+                 if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT" || s === "COMPLETED" || s === "IN_TANK") {
                    setETransferType("bulk");
                  } else if (s === "UNDER_LOADING" || s === "OTW_TO_REFINERY") {
                    setETransferType("batch");
@@ -249,7 +249,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                    setETransferType("");
                  }
 
-                 if (s === "MUNDRA_PORT" || s === "OUT_SIDE_FACTORY" || s === "COMPLETED") {
+                 if (s === "MUNDRA_PORT" || s === "OUT_SIDE_FACTORY" || s === "COMPLETED" || s === "IN_TANK") {
                    setEAction("TOLERATE");
                  } else {
                    setEAction("");
@@ -277,7 +277,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                eStatus !== "MUNDRA_PORT" &&
                eStatus !== "UNDER_LOADING" &&
                eStatus !== "OTW_TO_REFINERY" &&
-               eStatus !== "COMPLETED" && (
+               eStatus !== "COMPLETED" &&
+               eStatus !== "IN_TANK" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Transfer Type *</Label>
                   <Select value={eTransferType} onValueChange={(v) => setETransferType(v as "bulk" | "batch")}>
@@ -292,7 +293,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                 </div>
               )}
 
-              {eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
+              {eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Action *</Label>
                   <Select value={eAction} onValueChange={(v) => setEAction(v as any)}>

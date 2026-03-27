@@ -19,6 +19,7 @@ export function statusBadgeVariant(s: string): "default" | "secondary" | "destru
   switch (s) {
     case "DELIVERED":
     case "COMPLETED":
+    case "IN_TANK":
       return "default";
     case "PENDING":
     case "PROCESSING":
