@@ -411,7 +411,7 @@ export default function DFIALicensePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
+                    <TableHead>S.No</TableHead>
                     <TableHead>
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("file_no")}>
                         File No<SortIcon column="file_no" />

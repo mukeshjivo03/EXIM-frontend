@@ -540,7 +540,7 @@ export default function StockUpdationLogsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10" />
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Stock ID</TableHead>
                     <TableHead>Updated By</TableHead>
                     <TableHead>Updated At</TableHead>
@@ -579,7 +579,7 @@ export default function StockUpdationLogsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10" />
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Stock ID</TableHead>
                     <TableHead>Updated By</TableHead>
                     <TableHead>Updated At</TableHead>

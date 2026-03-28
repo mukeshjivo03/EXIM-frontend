@@ -23,7 +23,6 @@ import {
   Scale,
   FileText,
   FileCheck,
-  FileClock,
   ShieldCheck,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -64,8 +63,7 @@ const accountsLinks = [
 ];
 
 const contractsLinks = [
-  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileCheck },
-  { to: "/old-domestic-contracts", label: "Old Domestic Contracts", icon: FileClock },
+  { to: "/domestic-contracts", label: "Domestic Contract", icon: FileCheck },
 ];
 
 const licenseLinks = [

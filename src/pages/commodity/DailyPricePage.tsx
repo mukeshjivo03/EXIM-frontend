@@ -6,7 +6,6 @@ import {
   Save,
   ExternalLink,
   PackageOpen,
-  Calendar,
   TrendingUp,
   TrendingDown,
   ArrowUpRight,
@@ -15,7 +14,6 @@ import {
   AlertCircle,
   BarChart3,
   Hash,
-  Minus,
 } from "lucide-react";
 import {
   LineChart,
@@ -31,6 +29,7 @@ import {
   fetchDailyPrices,
   saveDailyPrices,
   getDailyPricesByDate,
+  getDailyPricesByRange,
   getPriceTrends,
   type DbDailyPrice,
   type PriceTrendsResponse,
@@ -42,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -58,20 +58,6 @@ const LINE_COLORS = [
   "#059669", "#e11d48", "#7c3aed", "#ea580c",
 ];
 
-function getPast7Days(): { value: string; label: string }[] {
-  const days: { value: string; label: string }[] = [];
-  const today = new Date();
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString("en-IN", {
-      weekday: "short", day: "2-digit", month: "short", year: "numeric",
-    });
-    days.push({ value: iso, label: i === 0 ? `${label} (Today)` : label });
-  }
-  return days;
-}
 
 function fmtPrice(v: number | string, decimals = 2): string {
   return Number(v).toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -120,14 +106,12 @@ export default function DailyPricePage() {
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
 
-  // DB saved prices
-  const past7Days = getPast7Days();
-  const [selectedDate, setSelectedDate] = useState("");
-  const [compareDate, setCompareDate] = useState("");
-  const [dbPrices, setDbPrices] = useState<DbDailyPrice[]>([]);
-  const [comparePrices, setComparePrices] = useState<DbDailyPrice[]>([]);
-  const [dbLoading, setDbLoading] = useState(false);
-  const [compareLoading, setCompareLoading] = useState(false);
+  // Saved prices by range
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [rangeData, setRangeData] = useState<DbDailyPrice[]>([]);
+  const [rangeLoading, setRangeLoading] = useState(false);
+  const [rangeCommodity, setRangeCommodity] = useState("");
 
   // Search filter
   const [search, setSearch] = useState("");
@@ -189,29 +173,16 @@ export default function DailyPricePage() {
     }
   }
 
-  async function handleDateFilter(date: string) {
-    setSelectedDate(date);
-    if (!date) { setDbPrices([]); return; }
-    setDbLoading(true);
+  async function handleRangeLoad() {
+    if (!fromDate || !toDate) { toast.error("Please select both from and to dates."); return; }
+    setRangeLoading(true);
     try {
-      const data = await getDailyPricesByDate(date);
-      setDbPrices(data);
-      if (data.length === 0) toast.info(`No saved prices found for ${date}`);
+      const data = await getDailyPricesByRange(fromDate, toDate);
+      setRangeData(data);
+      if (data.length === 0) toast.info("No saved prices found for the selected range.");
     } catch (err) {
       toastApiError(err, "Failed to load saved prices");
-    } finally { setDbLoading(false); }
-  }
-
-  async function handleCompareDate(date: string) {
-    setCompareDate(date);
-    if (!date) { setComparePrices([]); return; }
-    setCompareLoading(true);
-    try {
-      const data = await getDailyPricesByDate(date);
-      setComparePrices(data);
-    } catch (err) {
-      toastApiError(err, "Failed to load compare prices");
-    } finally { setCompareLoading(false); }
+    } finally { setRangeLoading(false); }
   }
 
   async function handleSave() {
@@ -232,11 +203,11 @@ export default function DailyPricePage() {
     return map;
   }, [prevDayPrices]);
 
-  const comparePriceMap = useMemo(() => {
-    const map = new Map<string, DbDailyPrice>();
-    for (const p of comparePrices) map.set(p.commodity_name, p);
-    return map;
-  }, [comparePrices]);
+  const rangeRange = useMemo(() => {
+    if (rangeData.length === 0) return { min: 0, max: 0 };
+    const vals = rangeData.map((p) => Number(p.factory_price));
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [rangeData]);
 
   // Price range for heatmap (factory_kg across current prices)
   const priceRange = useMemo(() => {
@@ -244,12 +215,6 @@ export default function DailyPricePage() {
     const vals = prices.map((p) => Number(p.factory_kg));
     return { min: Math.min(...vals), max: Math.max(...vals) };
   }, [prices]);
-
-  const dbPriceRange = useMemo(() => {
-    if (dbPrices.length === 0) return { min: 0, max: 0 };
-    const vals = dbPrices.map((p) => Number(p.factory_price));
-    return { min: Math.min(...vals), max: Math.max(...vals) };
-  }, [dbPrices]);
 
   // KPI calculations
   const kpis = useMemo(() => {
@@ -268,11 +233,19 @@ export default function DailyPricePage() {
     return prices.filter((p) => p.commodity_name.toLowerCase().includes(q));
   }, [prices, search]);
 
-  const filteredDbPrices = useMemo(() => {
-    if (!search) return dbPrices;
-    const q = search.toLowerCase();
-    return dbPrices.filter((p) => p.commodity_name.toLowerCase().includes(q));
-  }, [dbPrices, search]);
+  const rangeCommodities = useMemo(() => {
+    return Array.from(new Set(rangeData.map((p) => p.commodity_name))).sort();
+  }, [rangeData]);
+
+  const filteredRangeData = useMemo(() => {
+    let data = rangeData;
+    if (rangeCommodity) data = data.filter((p) => p.commodity_name === rangeCommodity);
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((p) => p.commodity_name.toLowerCase().includes(q));
+    }
+    return data;
+  }, [rangeData, rangeCommodity, search]);
 
   // Chart data
   const chartData = useMemo(() => {
@@ -379,7 +352,7 @@ export default function DailyPricePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-12">S.No</TableHead>
                   <TableHead>Commodity</TableHead>
                   <TableHead className="text-right">Factory (₹/Kg)</TableHead>
                   <TableHead className="text-right">With Packing (₹/Kg)</TableHead>
@@ -437,51 +410,41 @@ export default function DailyPricePage() {
             <div>
               <CardTitle>Saved Prices</CardTitle>
               <CardDescription>
-                {selectedDate
-                  ? `${dbPrices.length} commodities for ${selectedDate}${compareDate ? ` vs ${compareDate}` : ""}`
-                  : "Select a date to view saved prices from the database"}
+                {rangeData.length > 0
+                  ? `${rangeData.length} records from ${fromDate} to ${toDate}`
+                  : "Select a date range to view saved prices"}
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Select value={selectedDate || "__none__"} onValueChange={(v) => handleDateFilter(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select date" />
+              <DateInput value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-[150px]" />
+              <span className="text-muted-foreground text-sm">to</span>
+              <DateInput value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-[150px]" />
+              <Button size="sm" onClick={handleRangeLoad} disabled={rangeLoading}>
+                {rangeLoading ? "Loading..." : "Load"}
+              </Button>
+              {rangeCommodities.length > 0 && (
+                <Select value={rangeCommodity || "__all__"} onValueChange={(v) => setRangeCommodity(v === "__all__" ? "" : v)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Commodities" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Select date</SelectItem>
-                    {past7Days.map((d) => (
-                      <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                    <SelectItem value="__all__">All Commodities</SelectItem>
+                    {rangeCommodities.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              {selectedDate && (
-                <div className="flex items-center gap-2">
-                  <Minus className="h-4 w-4 text-muted-foreground" />
-                  <Select value={compareDate || "__none__"} onValueChange={(v) => handleCompareDate(v === "__none__" ? "" : v)}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Compare with..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">No comparison</SelectItem>
-                      {past7Days.filter((d) => d.value !== selectedDate).map((d) => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-12">S.No</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead>Commodity</TableHead>
                   <TableHead className="text-right">Factory (₹/Kg)</TableHead>
                   <TableHead className="text-right">With Packing (₹/Kg)</TableHead>
@@ -490,44 +453,37 @@ export default function DailyPricePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dbLoading || compareLoading ? (
+                {rangeLoading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><div className="h-4 w-6 bg-muted animate-pulse rounded" /></TableCell>
-                      <TableCell><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
-                      <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
-                      <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
-                      <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
-                      <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
+                      {Array.from({ length: 7 }).map((__, j) => (
+                        <TableCell key={j}><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                      ))}
                     </TableRow>
                   ))
-                ) : filteredDbPrices.length === 0 ? (
+                ) : filteredRangeData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-16">
+                    <TableCell colSpan={7} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <PackageOpen className="h-10 w-10 stroke-1" />
                         <p className="text-sm font-medium">No saved prices</p>
-                        <p className="text-xs">
-                          {selectedDate ? `No prices found for ${selectedDate}.` : "Select a date from the dropdown to view saved prices."}
-                        </p>
+                        <p className="text-xs">Enter a date range and click Load to view saved prices.</p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredDbPrices.map((item, idx) => {
+                  filteredRangeData.map((item, idx) => {
                     const factoryVal = Number(item.factory_price);
-                    const comp = comparePriceMap.get(item.commodity_name);
-                    const compFactory = comp ? Number(comp.factory_price) : null;
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{idx + 1}</TableCell>
+                        <TableCell className="tabular-nums text-muted-foreground">{item.date}</TableCell>
                         <TableCell className="font-medium">{item.commodity_name}</TableCell>
                         <TableCell
                           className="text-right"
-                          style={{ backgroundColor: heatmapBg(factoryVal, dbPriceRange.min, dbPriceRange.max) }}
+                          style={{ backgroundColor: heatmapBg(factoryVal, rangeRange.min, rangeRange.max) }}
                         >
                           <span className="font-semibold">{fmtPrice(item.factory_price)}</span>
-                          {compFactory !== null && <DeltaBadge current={factoryVal} previous={compFactory} />}
                         </TableCell>
                         <TableCell className="text-right">{fmtPrice(item.packing_cost_kg)}</TableCell>
                         <TableCell className="text-right">{fmtPrice(item.with_gst_kg)}</TableCell>

@@ -47,6 +47,13 @@ export async function getDailyPricesByDate(date: string): Promise<DbDailyPrice[]
   return data;
 }
 
+export async function getDailyPricesByRange(fromDate: string, toDate: string): Promise<DbDailyPrice[]> {
+  const { data } = await api.get<DbDailyPrice[]>("/daily-price/range/", {
+    params: { from_date: fromDate, to_date: toDate },
+  });
+  return data;
+}
+
 export interface TrendDataset {
   label: string;
   data: number[];

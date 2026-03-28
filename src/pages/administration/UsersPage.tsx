@@ -417,7 +417,7 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
@@ -447,7 +447,7 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("name")}>
                         Name<SortIcon column="name" />

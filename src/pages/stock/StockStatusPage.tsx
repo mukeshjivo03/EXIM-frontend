@@ -393,19 +393,15 @@ export default function StockStatusPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Stock Status</h1>
-          <p className="text-sm text-muted-foreground">
-            Track and manage stock statuses
-          </p>
+          <p className="text-sm text-muted-foreground">Track and manage stock statuses</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => { loadDropdowns(); setCreateOpen(true); }} className="btn-press gap-2 shadow-sm">
-            <Plus className="h-4 w-4" />
-            Add Stock Status
-          </Button>
-        </div>
+        <Button onClick={() => { loadDropdowns(); setCreateOpen(true); }} className="btn-press gap-2 shadow-sm shrink-0">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Add Stock Status</span>
+        </Button>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -585,19 +581,19 @@ export default function StockStatusPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Rate (&#8377;)</TableHead>
-                    <TableHead>Qty (KG)</TableHead>
-                    <TableHead>Total (&#8377;)</TableHead>
-                    <TableHead>ETA</TableHead>
+                    <TableHead className="hidden sm:table-cell">Vendor</TableHead>
+                    <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
+                    <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
+                    <TableHead className="hidden lg:table-cell">Total (&#8377;)</TableHead>
+                    <TableHead className="hidden lg:table-cell">ETA</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -615,7 +611,7 @@ export default function StockStatusPage() {
               </Table>
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -625,21 +621,21 @@ export default function StockStatusPage() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Rate (&#8377;)</TableHead>
-                    <TableHead>Qty (KG)</TableHead>
-                    <TableHead>Total (&#8377;)</TableHead>
-                    <TableHead>ETA</TableHead>
+                    <TableHead className="hidden sm:table-cell">Vendor</TableHead>
+                    <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
+                    <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
+                    <TableHead className="hidden lg:table-cell">Total (&#8377;)</TableHead>
+                    <TableHead className="hidden lg:table-cell">ETA</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16">
+                      <TableCell colSpan={10} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <ClipboardList className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No stock statuses found</p>
@@ -663,41 +659,27 @@ export default function StockStatusPage() {
                           <TableCell className="text-muted-foreground">
                             {(page - 1) * perPage + idx + 1}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-bold">{row.item_code}</span>
-                              <span className="text-[10px] text-muted-foreground uppercase tracking-tight">
-                                {tankItems.find((i) => i.tank_item_code === row.item_code)?.tank_item_name ?? ""}
-                              </span>
-                            </div>
-                          </TableCell>
+                          <TableCell className="font-bold">{row.item_code}</TableCell>
                           <TableCell>
                             <Badge variant={statusBadgeVariant(row.status)} className="capitalize font-medium shadow-none">
                               {formatStatus(row.status).toLowerCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col max-w-[150px]">
-                              <span className="truncate">{row.vendor_code}</span>
-                              <span className="text-[10px] text-muted-foreground truncate uppercase">
-                                {vendors.find((v) => v.card_code === row.vendor_code)?.card_name ?? ""}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="tabular-nums">
+                          <TableCell className="hidden sm:table-cell">{row.vendor_code}</TableCell>
+                          <TableCell className="hidden md:table-cell tabular-nums">
                             ₹{Number(row.rate).toLocaleString("en-IN")}
                           </TableCell>
-                          <TableCell className="relative">
+                          <TableCell className="hidden md:table-cell relative">
                             <div
                               className="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-1000"
                               style={{ width: `${weightPercent}%` }}
                             />
                             <span className="relative z-10 font-bold">{Number(row.quantity).toLocaleString("en-IN")}</span>
                           </TableCell>
-                          <TableCell className="font-semibold text-primary">
+                          <TableCell className="hidden lg:table-cell font-semibold text-primary">
                             ₹{Number(row.total).toLocaleString("en-IN")}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             {countdown ? (
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-xs font-medium">{fmtDateTime(row.eta ?? "").split(",")[0]}</span>

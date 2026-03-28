@@ -610,7 +610,7 @@ export default function SyncRawMaterialDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Brand</TableHead>
@@ -669,7 +669,7 @@ export default function SyncRawMaterialDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>
                       <button
                         type="button"

@@ -114,7 +114,7 @@ export default function EximAccountPage() {
       e["Last Transanction Amount"],
     ]);
     const header = [
-      "#",
+      "S.No",
       "Card Code",
       "Card Name",
       "Balance (₹)",
@@ -440,7 +440,7 @@ export default function EximAccountPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-12">S.No</TableHead>
                   <TableHead>
                     <button
                       type="button"

@@ -512,7 +512,7 @@ export default function SyncVendorDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Vendor Code</TableHead>
                     <TableHead>Vendor Name</TableHead>
                     <TableHead>State</TableHead>
@@ -555,7 +555,7 @@ export default function SyncVendorDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>
                       <button
                         type="button"

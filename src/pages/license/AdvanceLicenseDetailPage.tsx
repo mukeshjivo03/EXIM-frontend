@@ -189,7 +189,7 @@ export default function AdvanceLicenseDetailPage() {
 
   const lines: LicenseLine[] = header?.lincense_lines ?? [];
 
-  const lineColumns = ["#", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance", "Actions"];
+  const lineColumns = ["S.No", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance", "Actions"];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">

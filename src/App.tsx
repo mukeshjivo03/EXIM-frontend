@@ -26,7 +26,6 @@ import DailyPricePage from "@/pages/commodity/DailyPricePage";
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
 
 // Contracts
-import DomesticContractsPage from "@/pages/contracts/DomesticContractsPage";
 import OldDomesticContractsPage from "@/pages/contracts/OldDomesticContractsPage";
 
 // License
@@ -96,14 +95,6 @@ function App() {
             />
             <Route
               path="/domestic-contracts"
-              element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
-                  <DomesticContractsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/old-domestic-contracts"
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
                   <OldDomesticContractsPage />

@@ -458,7 +458,7 @@ export default function SyncLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Sync Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Triggered By</TableHead>
@@ -493,7 +493,7 @@ export default function SyncLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("sync_type")}>
                         Sync Type<SortIcon column="sync_type" />

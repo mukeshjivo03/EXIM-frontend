@@ -186,7 +186,7 @@ export default function DFIALicenseDetailPage() {
 
   const lines: DFIALicenseLine[] = header?.dfia_license_lines ?? [];
 
-  const lineColumns = ["#", "BOE No", "Shipping Bill No", "Date", "To Be Imported (MTS)", "Exported (MTS)", "Balance", "SB Value (INR)", "Actions"];
+  const lineColumns = ["S.No", "BOE No", "Shipping Bill No", "Date", "To Be Imported (MTS)", "Exported (MTS)", "Balance", "SB Value (INR)", "Actions"];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">

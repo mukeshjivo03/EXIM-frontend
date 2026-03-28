@@ -341,7 +341,7 @@ export default function AdvanceLicensePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
+                    <TableHead>S.No</TableHead>
                     <TableHead>
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("license_no")}>
                         License No<SortIcon column="license_no" />

@@ -537,7 +537,7 @@ export default function TankItemsPage() {
                   <TableHeader>
                     <TableRow>
                       {canEdit && <TableHead className="w-10" />}
-                      <TableHead className="w-12">#</TableHead>
+                      <TableHead className="w-12">S.No</TableHead>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Item Name</TableHead>
@@ -616,7 +616,7 @@ export default function TankItemsPage() {
                         />
                       </TableHead>
                     )}
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Color</TableHead>
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
