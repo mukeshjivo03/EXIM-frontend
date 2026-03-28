@@ -15,6 +15,7 @@ import type { TankItem } from "@/api/tank";
 import type { Vendor } from "@/api/sapSync";
 import { fmtNum } from "@/lib/formatters";
 import { toastApiError } from "@/lib/errors";
+import { stockEditSchema, getZodError } from "@/lib/schemas";
 import { formatStatus } from "../stock-helpers";
 
 import { Button } from "@/components/ui/button";
@@ -102,31 +103,19 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
 
   async function handleEdit() {
     if (!data) return;
-    if (!eRate.trim() || !eQuantity.trim()) {
-      toast.error("Rate and quantity are required.");
-      return;
-    }
+    const result = stockEditSchema.safeParse({
+      rate: eRate,
+      quantity: eQuantity,
+      newStatus: eStatus,
+      oldStatus: data.status,
+      transferType: eTransferType,
+      action: eAction,
+      jobWorkVendor: eJobWorkVendor,
+    });
+    const err = getZodError(result);
+    if (err) { toast.error(err); return; }
 
     const newQty = Number(eQuantity.trim());
-    if (newQty <= 0) {
-      toast.error("Quantity must be greater than 0.");
-      return;
-    }
-
-    if (eStatus !== data.status) {
-      if (eStatus !== "AT_REFINERY" && !eTransferType) {
-        toast.error("Please select a Transfer Type.");
-        return;
-      }
-      if (eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && !eAction) {
-        toast.error("Please select an Action.");
-        return;
-      }
-      if (eStatus === "AT_REFINERY" && !eJobWorkVendor.trim()) {
-        toast.error("Please enter or select a Job Work vendor.");
-        return;
-      }
-    }
 
     setEditing(true);
     try {

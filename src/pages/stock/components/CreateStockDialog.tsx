@@ -6,6 +6,7 @@ import { createStockStatus, STATUS_CHOICES, type StockStatusChoice } from "@/api
 import type { TankItem } from "@/api/tank";
 import type { Vendor } from "@/api/sapSync";
 import { toastApiError } from "@/lib/errors";
+import { stockCreateSchema, getZodError } from "@/lib/schemas";
 import { formatStatus } from "../stock-helpers";
 
 import { Button } from "@/components/ui/button";
@@ -104,15 +105,9 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!cItemCode || !cVendorCode || !cRate.trim() || !cQuantity.trim()) {
-      toast.error("All fields are required.");
-      return;
-    }
-    const total = Number(cRate.trim()) * Number(cQuantity.trim());
-    if (total >= 1e10) {
-      toast.error("Total value (rate × quantity) is too large. Maximum allowed is 9,999,999,999.99.");
-      return;
-    }
+    const result = stockCreateSchema.safeParse({ item_code: cItemCode, vendor_code: cVendorCode, rate: cRate, quantity: cQuantity });
+    const err = getZodError(result);
+    if (err) { toast.error(err); return; }
     setSubmitting(true);
     try {
       await createStockStatus({

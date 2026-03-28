@@ -20,6 +20,7 @@ import {
   type User,
   type CreateUserRequest,
 } from "@/api/users";
+import { userCreateSchema, userEditSchema, getZodError } from "@/lib/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -257,6 +258,11 @@ export default function UsersPage() {
   }
 
   async function handleSave() {
+    const schema = editingUser ? userEditSchema : userCreateSchema;
+    const result = schema.safeParse(form);
+    const zodErr = getZodError(result);
+    if (zodErr) { setFormError(zodErr); return; }
+
     setSaving(true);
     setFormError("");
     try {

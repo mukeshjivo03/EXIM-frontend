@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { tankCreateSchema, tankEditSchema, getZodError } from "@/lib/schemas";
 import { SummaryCard } from "@/components/SummaryCard";
 import { fmtNum } from "@/lib/formatters";
 import { Pagination } from "@/components/Pagination";
@@ -266,14 +267,9 @@ export default function TankDataPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (
-      !tankCapacity.trim() ||
-      isNaN(Number(tankCapacity)) ||
-      Number(tankCapacity) <= 0
-    ) {
-      toast.error("Valid tank capacity is required.");
-      return;
-    }
+    const createResult = tankCreateSchema.safeParse({ tank_capacity: tankCapacity });
+    const createErr = getZodError(createResult);
+    if (createErr) { toast.error(createErr); return; }
     setSubmitting(true);
     try {
       const created = await createTank({
@@ -349,21 +345,13 @@ export default function TankDataPage() {
   async function handleEdit() {
     if (!editTarget) return;
 
-    if (!editItemCode.trim()) {
-      toast.error("Please select an item code.");
-      return;
-    }
-    if (!editCurrentCapacity.trim() || isNaN(Number(editCurrentCapacity)) || Number(editCurrentCapacity) < 0) {
-      toast.error("Please enter a valid current quantity.");
-      return;
-    }
-    const tankCap = Number(editTarget.tank_capacity);
-    if (Number(editCurrentCapacity) > tankCap) {
-      toast.error(
-        `Current quantity cannot exceed tank capacity (${tankCap} L).`
-      );
-      return;
-    }
+    const editResult = tankEditSchema.safeParse({
+      item_code: editItemCode,
+      current_capacity: editCurrentCapacity,
+      tank_capacity: Number(editTarget.tank_capacity),
+    });
+    const editErr = getZodError(editResult);
+    if (editErr) { toast.error(editErr); return; }
 
     setEditing(true);
     try {

@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import { Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { login } from "@/api/auth";
+import { loginSchema, getZodError } from "@/lib/schemas";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,10 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    const result = loginSchema.safeParse({ email, password });
+    const zodErr = getZodError(result);
+    if (zodErr) { setError(zodErr); return; }
+
     setError("");
     setLoading(true);
 
