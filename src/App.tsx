@@ -3,6 +3,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { DailyPriceProvider } from "@/context/DailyPriceContext";
 import { JivoRateProvider } from "@/context/JivoRateContext";
+import { OpenGrpoProvider } from "@/context/OpenGrpoContext";
+import OpenGrpoPage from "@/pages/contracts/OpenGrpoPage";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
@@ -52,6 +54,7 @@ function App() {
       <AuthProvider>
         <DailyPriceProvider>
         <JivoRateProvider>
+        <OpenGrpoProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -93,6 +96,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
                   <StockStatusPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contracts/open-grpos"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <OpenGrpoPage />
                 </ProtectedRoute>
               }
             />
@@ -212,6 +223,7 @@ function App() {
             />
           </Route>
         </Routes>
+        </OpenGrpoProvider>
         </JivoRateProvider>
         </DailyPriceProvider>
       </AuthProvider>

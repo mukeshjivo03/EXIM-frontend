@@ -150,7 +150,18 @@ export default function JivoRatesPage() {
   const matrix = useMemo(() => {
     const data = filteredPreview;
     const commodities = Array.from(new Set(data.map((p) => p.commodity))).sort();
-    const packTypes = Array.from(new Set(data.map((p) => p.pack_type))).sort();
+    const packTypes = Array.from(new Set(data.map((p) => p.pack_type))).sort((a, b) => {
+      const toGrams = (s: string) => {
+        const m = s.match(/([\d.]+)\s*(g|kg|ml|l|ltr|litre|ton|mt)/i);
+        if (!m) return Infinity;
+        const n = parseFloat(m[1]);
+        const u = m[2].toLowerCase();
+        if (u === "kg" || u === "l" || u === "ltr" || u === "litre") return n * 1000;
+        if (u === "ton" || u === "mt") return n * 1_000_000;
+        return n; // g or ml
+      };
+      return toGrams(a) - toGrams(b);
+    });
     const rateMap = new Map<string, number>();
     for (const p of data) rateMap.set(`${p.commodity}||${p.pack_type}`, p.rate);
     return { commodities, packTypes, rateMap };

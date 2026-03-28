@@ -25,6 +25,7 @@ import {
   FileText,
   FileCheck,
   ShieldCheck,
+  Receipt,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ const accountsLinks = [
 
 const contractsLinks = [
   { to: "/domestic-contracts", label: "Domestic Contract", icon: FileCheck },
+  { to: "/contracts/open-grpos", label: "Open GRPOs", icon: Receipt },
 ];
 
 const licenseLinks = [
