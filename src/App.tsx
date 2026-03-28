@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { DailyPriceProvider } from "@/context/DailyPriceContext";
+import { JivoRateProvider } from "@/context/JivoRateContext";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
@@ -21,6 +22,7 @@ import TankLogsPage from "@/pages/stock/TankLogsPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
+import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
@@ -49,6 +51,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <DailyPriceProvider>
+        <JivoRateProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -150,6 +153,14 @@ function App() {
               }
             />
             <Route
+              path="/commodity/jivo-rates"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <JivoRatesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/stock-updation-logs"
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
@@ -201,6 +212,7 @@ function App() {
             />
           </Route>
         </Routes>
+        </JivoRateProvider>
         </DailyPriceProvider>
       </AuthProvider>
     </BrowserRouter>

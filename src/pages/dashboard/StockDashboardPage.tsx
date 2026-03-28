@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -162,6 +162,8 @@ export default function StockDashboardPage() {
     }
     return set;
   }, [statusGroups]);
+
+
 
   // Max value for heatmapping
   const maxCellValue = useMemo(() => {
@@ -352,99 +354,127 @@ export default function StockDashboardPage() {
               <table className="w-full table-fixed text-sm" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
                   <col style={{ width: 150 }} />
+                  {/* IN FACTORY + spacer */}
                   <col style={{ width: 90 }} />
+                  <col style={{ width: 2 }} />
+                  {/* OUTSIDE + spacer */}
                   <col style={{ width: 90 }} />
-                  {colKeys.map((k) => <col key={k} style={{ width: 100 }} />)}
+                  <col style={{ width: 2 }} />
+                  {/* status group cols + inter-group spacers */}
+                  {statusGroups.map((group, gi) => (
+                    <Fragment key={group.status}>
+                      {group.vendors.map(({ key }) => <col key={key} style={{ width: 110 }} />)}
+                      {gi < statusGroups.length - 1 && <col style={{ width: 2 }} />}
+                    </Fragment>
+                  ))}
                   <col style={{ width: 140 }} />
                 </colgroup>
+
+                {/* ── SPACER HELPER ─────────────────────────── */}
+                {/* reusable spacer cell styles applied inline below */}
+
                 <thead>
+                  {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/50 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-sm">
+                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-sm" rowSpan={2}>
                       RM CODE
                     </th>
-                    <th 
+                    <th
                       onClick={() => navigate("/stock-dashboard/IN_FACTORY")}
                       onMouseEnter={() => setHoveredCol("IN_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-colors group",
                         hoveredCol === "IN_FACTORY" ? "bg-green-100 dark:bg-green-900/40" : "bg-green-50/30 dark:bg-green-900/10"
                       )}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-green-600">IN FACTORY</span>
+                        <span className="text-green-600 text-xs uppercase tracking-wider">In Factory</span>
                         <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
                       </div>
                     </th>
-                    <th 
+                    {/* spacer */}
+                    <th className="p-0 bg-background border-x border-border/60" rowSpan={2} />
+                    <th
                       onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")}
                       onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-colors group",
                         hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-amber-50/30 dark:bg-amber-900/10"
                       )}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-amber-600">OUTSIDE</span>
+                        <span className="text-amber-600 text-xs uppercase tracking-wider">Outside</span>
                         <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
                       </div>
                     </th>
-                    {statusGroups.map((group) => {
+                    {/* spacer */}
+                    <th className="p-0 bg-background border-x border-border/60" rowSpan={2} />
+                    {/* status groups */}
+                    {statusGroups.map((group, gi) => {
                       const meta = STATUS_META[group.status];
                       return (
-                        <th
-                          key={group.status}
-                          colSpan={group.vendors.length}
-                          onClick={() => navigate(`/stock-dashboard/${group.status}`)}
-                          onMouseEnter={() => setHoveredCol(group.status)}
-                          onMouseLeave={() => setHoveredCol(null)}
-                          className={cn(
-                            "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-all hover:brightness-95 group",
-                            meta?.headerBg,
-                            hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
+                        <Fragment key={group.status}>
+                          <th
+                            colSpan={group.vendors.length}
+                            onClick={() => navigate(`/stock-dashboard/${group.status}`)}
+                            onMouseEnter={() => setHoveredCol(group.status)}
+                            onMouseLeave={() => setHoveredCol(null)}
+                            className={cn(
+                              "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-all hover:brightness-95 group text-xs uppercase tracking-wider",
+                              meta?.headerBg,
+                              hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
+                            )}
+                          >
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="truncate">{group.status.replace(/_/g, " ")}</span>
+                              <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
+                            </div>
+                          </th>
+                          {gi < statusGroups.length - 1 && (
+                            <th className="p-0 bg-background border-x border-border/60" rowSpan={2} />
                           )}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="truncate">{group.status.replace(/_/g, " ")}</span>
-                            <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
-                          </div>
-                        </th>
+                        </Fragment>
                       );
                     })}
-                    <th className="px-4 py-4 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider text-xs" rowSpan={2}>
                       TOTAL
                     </th>
                   </tr>
-                  <tr className="bg-muted/20 border-b shadow-sm">
-                    <th className="sticky left-0 z-30 bg-muted px-4 py-2 border-r-2 border-border/50" />
-                    <th className="border-r-2 border-border/50 bg-green-50/10" />
-                    <th className="border-r-2 border-border/50 bg-amber-50/10" />
-                    {statusGroups.map((group) =>
-                      group.vendors.map(({ key, vendor }) => (
-                        <th 
-                          key={key} 
+                  {/* Row 2 — Vendor sub-headers */}
+                  <tr className="border-b shadow-sm">
+                    <th className="border-r-2 border-border bg-green-50/10 py-1 text-[10px] text-center text-muted-foreground uppercase" />
+                    <th className="border-r-2 border-border bg-amber-50/10 py-1 text-[10px] text-center text-muted-foreground uppercase" />
+                    {statusGroups.map((group) => {
+                      const meta = STATUS_META[group.status];
+                      return group.vendors.map(({ key, vendor }) => (
+                        <th
+                          key={key}
                           title={vendor}
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center text-xs text-muted-foreground truncate transition-colors",
-                            lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20",
-                            hoveredCol === key ? "bg-primary/5 text-primary" : ""
+                            "px-2 py-1.5 text-center text-[10px] font-semibold truncate transition-colors uppercase tracking-wider",
+                            meta?.headerBg,
+                            lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/30",
+                            hoveredCol === key ? "brightness-90" : ""
                           )}
                         >
                           {vendor}
                         </th>
-                      ))
-                    )}
-                    <th className="bg-blue-50/20" />
+                      ));
+                    })}
                   </tr>
                 </thead>
+
                 <tbody>
                   {displayItems.map((item, idx) => {
                     const tankVal = tankQtyMap.get(item.item_code) ?? 0;
-                    const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
-
+                    const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(
+                      item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0),
+                      unit
+                    );
                     return (
                       <tr
                         key={item.item_code}
@@ -462,84 +492,100 @@ export default function StockDashboardPage() {
                         )}>
                           {item.item_code}
                         </td>
-                        
-                        {/* IN FACTORY CELL */}
+                        {/* IN FACTORY */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border/50",
+                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border",
                           hoveredCol === "IN_FACTORY" ? "bg-green-500/10" : ""
                         )}>
-                          {tankVal > 0 ? (
-                            <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
-                          ) : <span className="opacity-20">·</span>}
+                          {tankVal > 0
+                            ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
+                            : <span className="opacity-20">·</span>}
                         </td>
-
-                        {/* OUTSIDE CELL */}
+                        {/* spacer */}
+                        <td className="p-0 bg-background border-x border-border/60" />
+                        {/* OUTSIDE */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border/50",
+                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border",
                           hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-500/10" : ""
                         )}>
-                          {item.outside_factory > 0 ? (
-                            <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
-                          ) : <span className="opacity-20">·</span>}
+                          {item.outside_factory > 0
+                            ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
+                            : <span className="opacity-20">·</span>}
                         </td>
-
-                        {/* STATUS MATRIX CELLS */}
-                        {colKeys.map((key) => {
-                          const val = item.status_data[key] ?? 0;
-                          const intensity = maxCellValue > 0 ? (val / maxCellValue) : 0;
-                          const status = key.split("__")[0];
-                          
-                          return (
-                            <td 
-                              key={key} 
-                              className={cn(
-                                "px-2 py-3 text-center tabular-nums transition-all relative group/cell",
-                                lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20",
-                                hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
-                              )}
-                            >
-                              {val > 0 ? (
-                                <>
-                                  <div 
-                                    className="absolute inset-0 bg-primary pointer-events-none transition-opacity duration-500" 
-                                    style={{ opacity: intensity * 0.4 }} 
-                                  />
-                                  <span className="relative z-10 group-hover/cell:scale-110 transition-transform inline-block">
-                                    {fmtNum(val, unit)}
-                                  </span>
-                                </>
-                              ) : <span className="opacity-20">·</span>}
-                            </td>
-                          );
-                        })}
-
-                        {/* TOTAL CELL */}
-                        <td className="px-4 py-3 text-center tabular-nums bg-muted/20 border-l border-border/50">
+                        {/* spacer */}
+                        <td className="p-0 bg-background border-x border-border/60" />
+                        {/* status groups */}
+                        {statusGroups.map((group, gi) => (
+                          <Fragment key={group.status}>
+                            {group.vendors.map(({ key }) => {
+                              const val = item.status_data[key] ?? 0;
+                              const intensity = maxCellValue > 0 ? val / maxCellValue : 0;
+                              const status = key.split("__")[0];
+                              return (
+                                <td
+                                  key={key}
+                                  className={cn(
+                                    "px-2 py-3 text-center tabular-nums transition-all relative group/cell",
+                                    lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/20",
+                                    hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
+                                  )}
+                                >
+                                  {val > 0 ? (
+                                    <>
+                                      <div className="absolute inset-0 bg-primary pointer-events-none transition-opacity duration-500" style={{ opacity: intensity * 0.4 }} />
+                                      <span className="relative z-10 group-hover/cell:scale-110 transition-transform inline-block">{fmtNum(val, unit)}</span>
+                                    </>
+                                  ) : <span className="opacity-20">·</span>}
+                                </td>
+                              );
+                            })}
+                            {gi < statusGroups.length - 1 && (
+                              <td className="p-0 bg-background border-x border-border/60" />
+                            )}
+                          </Fragment>
+                        ))}
+                        <td className="px-4 py-3 text-center tabular-nums font-semibold bg-muted/20 border-l-2 border-border">
                           {Math.round(grandTotal).toLocaleString("en-IN")}
                         </td>
                       </tr>
                     );
                   })}
 
-                  {/* Totals Row */}
-                  <tr className="bg-muted/80 backdrop-blur-md text-sm border-t-2 border-primary/20">
+                  {/* Grand Total Row */}
+                  <tr className="bg-muted/80 backdrop-blur-md text-sm border-t-2 border-primary/20 font-semibold">
                     <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-wider">Grand Total</td>
-                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border/50 text-blue-600 dark:text-blue-400">
+                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border text-blue-600 dark:text-blue-400">
                       {fmtLiters(tankInFactoryTotal, unit)}
                     </td>
-                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border/50 text-amber-600 dark:text-amber-400">
+                    <td className="p-0 bg-background border-x border-border/60" />
+                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border text-amber-600 dark:text-amber-400">
                       {fmtNum(data?.totals.outside_factory ?? 0, unit)}
                     </td>
-                    {colKeys.map((key) => (
-                      <td key={key} className={cn(
-                        "px-2 py-4 text-center tabular-nums",
-                        lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20"
-                      )}>
-                        {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
-                      </td>
+                    <td className="p-0 bg-background border-x border-border/60" />
+                    {statusGroups.map((group, gi) => (
+                      <Fragment key={group.status}>
+                        {group.vendors.map(({ key }) => (
+                          <td key={key} className={cn(
+                            "px-2 py-4 text-center tabular-nums",
+                            lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/20"
+                          )}>
+                            {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
+                          </td>
+                        ))}
+                        {gi < statusGroups.length - 1 && (
+                          <td className="p-0 bg-background border-x border-border/60" />
+                        )}
+                      </Fragment>
                     ))}
                     <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground shadow-2xl rounded-bl-xl">
-                      {fmtNum(data?.totals.grand_total ?? 0, unit)}
+                      {Math.round(
+                        convertFromLiters(tankInFactoryTotal, unit) +
+                        convertUnit(
+                          (data?.totals.outside_factory ?? 0) +
+                          colKeys.reduce((sum, k) => sum + (data?.totals.status_vendor_totals[k] ?? 0), 0),
+                          unit
+                        )
+                      ).toLocaleString("en-IN")}
                     </td>
                   </tr>
                 </tbody>

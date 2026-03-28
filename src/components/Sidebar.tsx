@@ -18,6 +18,7 @@ import {
   Gauge,
   ClipboardList,
   IndianRupee,
+  TrendingUp,
   LayoutDashboard,
   BarChart3,
   Scale,
@@ -56,6 +57,7 @@ const stockLinks = [
 
 const commodityLinks = [
   { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee },
+  { to: "/commodity/jivo-rates", label: "Jivo Rates", icon: TrendingUp },
 ];
 
 const accountsLinks = [
