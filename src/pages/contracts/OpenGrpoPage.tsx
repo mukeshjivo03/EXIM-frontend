@@ -29,13 +29,13 @@ type SortDir = "asc" | "desc";
 /* ── helpers ────────────────────────────────────────────────── */
 
 function pendingMeta(days: number) {
-  if (days >= 20) return {
+  if (days > 6) return {
     badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
     row:   "bg-red-50/40 dark:bg-red-950/10",
   };
-  if (days >= 10) return {
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800",
-    row:   "bg-amber-50/40 dark:bg-amber-950/10",
+  if (days > 3) return {
+    badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+    row:   "bg-yellow-50/40 dark:bg-yellow-950/10",
   };
   return {
     badge: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800",
@@ -89,7 +89,7 @@ export default function OpenGrpoPage() {
     const maxDays = Math.max(...grpos.map((g) => g["Pending Days"]));
     const avgDays = grpos.reduce((s, g) => s + g["Pending Days"], 0) / total;
     const vendors = new Set(grpos.map((g) => g["Vendor Name"])).size;
-    const critical = grpos.filter((g) => g["Pending Days"] >= 20).length;
+    const critical = grpos.filter((g) => g["Pending Days"] > 6).length;
     return { total, maxDays, avgDays, vendors, critical };
   }, [grpos]);
 
@@ -128,6 +128,8 @@ export default function OpenGrpoPage() {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+      {/* Tailwind v4 safelist — keeps dynamic yellow classes in the bundle */}
+      <span aria-hidden className="hidden bg-yellow-100 text-yellow-700 border-yellow-200 bg-yellow-50/40 bg-yellow-400 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800 dark:bg-yellow-950/10" />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -146,7 +148,7 @@ export default function OpenGrpoPage() {
         <div className="flex items-center gap-3 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3">
           <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
           <p className="text-xs font-medium text-red-700 dark:text-red-300">
-            <strong>{kpis.critical} GRPO{kpis.critical > 1 ? "s" : ""}</strong> have been pending for 20+ days and require immediate attention.
+            <strong>{kpis.critical} GRPO{kpis.critical > 1 ? "s" : ""}</strong> have been pending for 6+ days and require immediate attention.
           </p>
         </div>
       )}
@@ -205,8 +207,8 @@ export default function OpenGrpoPage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> ≥ 20d</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 inline-block" /> ≥ 10d</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> &gt; 6d</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400 inline-block" /> &gt; 3d</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> &lt; 10d</span>
             </div>
           </div>

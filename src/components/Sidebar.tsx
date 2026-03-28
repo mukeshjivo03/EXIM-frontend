@@ -63,11 +63,11 @@ const commodityLinks = [
 
 const accountsLinks = [
   { to: "/exim-account", label: "Dr/Cr Outstanding", icon: Scale },
+  { to: "/contracts/open-grpos", label: "Open GRPOs", icon: Receipt },
 ];
 
 const contractsLinks = [
   { to: "/domestic-contracts", label: "Domestic Contract", icon: FileCheck },
-  { to: "/contracts/open-grpos", label: "Open GRPOs", icon: Receipt },
 ];
 
 const licenseLinks = [
