@@ -362,13 +362,13 @@ export default function DashboardPage() {
 
                 <div className="space-y-3 pt-4 border-t border-border/50">
                   {[
-                    { label: "Total", val: capacity.total_capacity, color: "text-foreground", icon: Droplets },
-                    { label: "Filled", val: capacity.filled_capacity, color: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500" },
-                    { label: "Empty", val: capacity.empty_capacity, color: "text-slate-500 dark:text-slate-400", dot: "bg-slate-300 dark:bg-slate-600" }
+                    { label: "Total", val: capacity.total_capacity, color: "text-foreground", dot: undefined as string | undefined },
+                    { label: "Filled", val: capacity.filled_capacity, color: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500" as string | undefined },
+                    { label: "Empty", val: capacity.empty_capacity, color: "text-slate-500 dark:text-slate-400", dot: "bg-slate-300 dark:bg-slate-600" as string | undefined },
                   ].map((s) => (
                     <div key={s.label} className="flex items-center justify-between">
                       <span className={cn("text-xs font-bold uppercase tracking-wider flex items-center gap-2", s.color)}>
-                        {s.dot ? <div className={cn("h-2 w-2 rounded-full", s.dot)} /> : <s.icon className="h-3.5 w-3.5" />}
+                        {s.dot ? <div className={cn("h-2 w-2 rounded-full", s.dot)} /> : <Droplets className="h-3.5 w-3.5" />}
                         {s.label}
                       </span>
                       <span className={cn("text-sm font-black", s.color)}>{fmtNum(s.val)} L</span>
@@ -576,10 +576,9 @@ export default function DashboardPage() {
                 margin={{ top: 5, right: 80, left: 20, bottom: 20 }}
                 barCategoryGap="25%"
                 onClick={(data) => {
-                  if (data && data.activePayload) {
-                    const cardCode = data.activePayload[0].payload.code;
-                    navigate(`/exim-account?cardCode=${cardCode}`);
-                  }
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const payload = (data as any)?.activePayload?.[0]?.payload;
+                  if (payload?.code) navigate(`/exim-account?cardCode=${payload.code}`);
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" opacity={0.3} />

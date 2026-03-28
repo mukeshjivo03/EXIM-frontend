@@ -77,12 +77,9 @@ export default function StockDashboardDetailPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      console.log("Fetching stock dashboard for status:", status);
       const res = await getStockDashboard();
-      console.log("Stock dashboard response received:", !!res);
       setData(res);
     } catch (err) {
-      console.error("Stock Detail Fetch Error:", err);
       toast.error(getErrorMessage(err, "Failed to load stock data"));
     } finally {
       setLoading(false);

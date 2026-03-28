@@ -134,35 +134,6 @@ export async function getItemWiseAverage(itemCode: string): Promise<ItemWiseAver
   return res.data;
 }
 
-// ── Tank Layers ────────────────────────────────────────────────
-
-export interface TankLayer {
-  layer_id: number;
-  stock_status_id: number;
-  vendor: string;
-  item: string;
-  rate: number;
-  quantity_remaining: number;
-  quantity_added: number;
-  line_cost: number;
-  created_at: string;
-}
-
-export interface TankLayersResponse {
-  tank_code: string;
-  tank_capacity: number;
-  current_capacity: number;
-  layers: TankLayer[];
-  total_quantity: number;
-  total_cost: number;
-  weighted_avg_rate: number;
-}
-
-export async function getTankLayers(tankCode: string): Promise<TankLayersResponse> {
-  const res = await api.get<TankLayersResponse>(`/tank/layers/${tankCode}/`);
-  return res.data;
-}
-
 // ── Tank Logs ─────────────────────────────────────────────────
 
 export interface TankLog {

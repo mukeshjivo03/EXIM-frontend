@@ -197,12 +197,12 @@ export default function HomePage() {
       // Load Stock Stats
       getStockSummary()
         .then((res) => setStockStats({ count: res.summary.total_count, val: res.summary.total_value }))
-        .catch((err) => console.error("Home stock stats error:", err));
+        .catch(() => {});
 
       // Load Tank Stats
       getTankSummary()
         .then((res) => setTankStats({ count: res.tank_count, util: res.utilisation_rate }))
-        .catch((err) => console.error("Home tank stats error:", err));
+        .catch(() => {});
 
       // Load Role-based Activity
       if (role === "ADM") {
@@ -218,7 +218,7 @@ export default function HomePage() {
             }));
             setRecentActivity(activities);
           })
-          .catch((err) => console.error("Home sync logs error:", err));
+          .catch(() => {});
       } else {
         // Managers & Others see Stock Movement
         getStockLogs()
@@ -235,7 +235,7 @@ export default function HomePage() {
             }));
             setRecentActivity(activities);
           })
-          .catch((err) => console.error("Home stock logs error:", err));
+          .catch(() => {});
       }
     }
     loadStats();

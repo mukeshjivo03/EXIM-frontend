@@ -240,15 +240,15 @@ export default function StockDashboardPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Stock Dashboard</h1>
-          <p className="text-sm text-muted-foreground font-medium mt-1">Multi-dimensional inventory analytics</p>
+          <h1 className="text-2xl sm:text-3xl tracking-tight">Stock Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Multi-dimensional inventory analytics</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl border border-border/50">
             <Button 
               variant={hideZeroRows ? "secondary" : "ghost"} 
               size="sm" 
-              className="h-8 rounded-lg gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+              className="h-8 rounded-lg gap-1.5 text-xs uppercase tracking-wider"
               onClick={() => setHideZeroRows(!hideZeroRows)}
             >
               {hideZeroRows ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -261,7 +261,7 @@ export default function StockDashboardPage() {
                   key={u}
                   onClick={() => setUnit(u)}
                   className={cn(
-                    "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                    "px-3 py-1 text-xs uppercase tracking-wider transition-all rounded-lg",
                     unit === u ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -286,34 +286,34 @@ export default function StockDashboardPage() {
         <Card className="card-hover border-none bg-blue-50/50 dark:bg-blue-950/20 shadow-sm">
           <CardContent className="p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">In Factory</p>
+              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">In Factory</p>
               <Factory className="h-4 w-4 text-blue-500" />
             </div>
-            <h3 className="text-xl font-black">{data ? fmtLiters(tankInFactoryTotal, unit) : "—"}</h3>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">{UNIT_LABELS[unit]} Volume</p>
+            <h3 className="text-2xl font-bold">{data ? fmtLiters(tankInFactoryTotal, unit) : "—"}</h3>
+            <p className="text-xs text-muted-foreground uppercase">{UNIT_LABELS[unit]} Volume</p>
           </CardContent>
         </Card>
 
         <Card className="card-hover border-none bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
           <CardContent className="p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Outside Factory</p>
+              <p className="text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">Outside Factory</p>
               <PackageOpen className="h-4 w-4 text-amber-500" />
             </div>
-            <h3 className="text-xl font-black">{data ? fmtNum(data.summary.outside_factory_total, unit) : "—"}</h3>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">Logistical Stock</p>
+            <h3 className="text-2xl font-bold">{data ? fmtNum(data.summary.outside_factory_total, unit) : "—"}</h3>
+            <p className="text-xs text-muted-foreground uppercase">Logistical Stock</p>
           </CardContent>
         </Card>
 
         {/* Insight Badges */}
         <Card className="card-hover border-none bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm overflow-hidden relative group">
           <CardContent className="p-5 flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Top Item</p>
+            <p className="text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Top Item</p>
             {loading ? <Skeleton className="h-6 w-20" /> : (
-              <h3 className="text-lg font-black truncate">{insights?.topItem?.item_code ?? "—"}</h3>
+              <h3 className="text-xl font-bold truncate">{insights?.topItem?.item_code ?? "—"}</h3>
             )}
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[9px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5 font-bold">BY VOLUME</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5">BY VOLUME</Badge>
             </div>
             <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-indigo-500/10 group-hover:scale-110 transition-transform" />
           </CardContent>
@@ -328,7 +328,7 @@ export default function StockDashboardPage() {
               <CardTitle className="text-lg">Inventory Matrix</CardTitle>
               <CardDescription className="text-xs">RM × Status × Vendor Pivot</CardDescription>
             </div>
-            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
                 <span>Hover Row/Col to highlight</span>
@@ -349,7 +349,7 @@ export default function StockDashboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <table className="w-full table-fixed text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+              <table className="w-full table-fixed text-sm" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
                   <col style={{ width: 150 }} />
                   <col style={{ width: 90 }} />
@@ -359,7 +359,7 @@ export default function StockDashboardPage() {
                 </colgroup>
                 <thead>
                   <tr className="bg-muted/50 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left font-black uppercase tracking-widest border-r-2 border-border/50 text-sm">
+                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-sm">
                       RM CODE
                     </th>
                     <th 
@@ -367,7 +367,7 @@ export default function StockDashboardPage() {
                       onMouseEnter={() => setHoveredCol("IN_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-colors group",
                         hoveredCol === "IN_FACTORY" ? "bg-green-100 dark:bg-green-900/40" : "bg-green-50/30 dark:bg-green-900/10"
                       )}
                     >
@@ -381,7 +381,7 @@ export default function StockDashboardPage() {
                       onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-colors group",
+                        "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-colors group",
                         hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-amber-50/30 dark:bg-amber-900/10"
                       )}
                     >
@@ -400,7 +400,7 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(group.status)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-4 text-center font-black border-r-2 border-border/50 cursor-pointer transition-all hover:brightness-95 group",
+                            "px-2 py-4 text-center border-r-2 border-border/50 cursor-pointer transition-all hover:brightness-95 group",
                             meta?.headerBg,
                             hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
                           )}
@@ -412,7 +412,7 @@ export default function StockDashboardPage() {
                         </th>
                       );
                     })}
-                    <th className="px-4 py-4 text-center font-black bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-widest">
+                    <th className="px-4 py-4 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider">
                       TOTAL
                     </th>
                   </tr>
@@ -428,7 +428,7 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center font-bold text-[9px] text-muted-foreground truncate transition-colors",
+                            "px-2 py-2 text-center text-xs text-muted-foreground truncate transition-colors",
                             lastKeyPerGroup.has(key) ? "border-r-2 border-border/50" : "border-r border-border/20",
                             hoveredCol === key ? "bg-primary/5 text-primary" : ""
                           )}
@@ -457,7 +457,7 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 font-mono font-black border-r-2 border-border/50 transition-colors",
+                          "sticky left-0 z-20 px-4 py-3 font-mono border-r-2 border-border/50 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_code}
@@ -465,7 +465,7 @@ export default function StockDashboardPage() {
                         
                         {/* IN FACTORY CELL */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums font-bold transition-all border-r-2 border-border/50",
+                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border/50",
                           hoveredCol === "IN_FACTORY" ? "bg-green-500/10" : ""
                         )}>
                           {tankVal > 0 ? (
@@ -475,7 +475,7 @@ export default function StockDashboardPage() {
 
                         {/* OUTSIDE CELL */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums font-bold transition-all border-r-2 border-border/50",
+                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border/50",
                           hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-500/10" : ""
                         )}>
                           {item.outside_factory > 0 ? (
@@ -504,7 +504,7 @@ export default function StockDashboardPage() {
                                     className="absolute inset-0 bg-primary pointer-events-none transition-opacity duration-500" 
                                     style={{ opacity: intensity * 0.4 }} 
                                   />
-                                  <span className="relative z-10 font-bold group-hover/cell:scale-110 transition-transform inline-block">
+                                  <span className="relative z-10 group-hover/cell:scale-110 transition-transform inline-block">
                                     {fmtNum(val, unit)}
                                   </span>
                                 </>
@@ -514,7 +514,7 @@ export default function StockDashboardPage() {
                         })}
 
                         {/* TOTAL CELL */}
-                        <td className="px-4 py-3 text-center tabular-nums font-black bg-muted/20 border-l border-border/50">
+                        <td className="px-4 py-3 text-center tabular-nums bg-muted/20 border-l border-border/50">
                           {Math.round(grandTotal).toLocaleString("en-IN")}
                         </td>
                       </tr>
@@ -522,8 +522,8 @@ export default function StockDashboardPage() {
                   })}
 
                   {/* Totals Row */}
-                  <tr className="bg-muted/80 backdrop-blur-md font-black text-xs border-t-2 border-primary/20">
-                    <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-widest">Grand Total</td>
+                  <tr className="bg-muted/80 backdrop-blur-md text-sm border-t-2 border-primary/20">
+                    <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-wider">Grand Total</td>
                     <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border/50 text-blue-600 dark:text-blue-400">
                       {fmtLiters(tankInFactoryTotal, unit)}
                     </td>
