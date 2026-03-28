@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowDown,
@@ -77,6 +77,8 @@ export default function EximAccountPage() {
   // Sort
   const [sortKey, setSortKey] = useState<SortKey>("Balance");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  useEffect(() => { if (!hasSynced) handleSync(); }, []);
 
   /* ── Sync ────────────────────────────────────────────────── */
 
