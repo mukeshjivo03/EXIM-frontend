@@ -351,23 +351,23 @@ export default function StockDashboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <table className="w-full table-fixed text-sm" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+              <table className="w-full table-fixed text-base" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
-                  <col style={{ width: 150 }} />
+                  <col style={{ width: 190 }} />
                   {/* IN FACTORY + spacer */}
-                  <col style={{ width: 90 }} />
+                  <col style={{ width: 120 }} />
                   <col style={{ width: 2 }} />
                   {/* OUTSIDE + spacer */}
-                  <col style={{ width: 90 }} />
+                  <col style={{ width: 120 }} />
                   <col style={{ width: 2 }} />
                   {/* status group cols + inter-group spacers */}
                   {statusGroups.map((group, gi) => (
                     <Fragment key={group.status}>
-                      {group.vendors.map(({ key }) => <col key={key} style={{ width: 110 }} />)}
+                      {group.vendors.map(({ key }) => <col key={key} style={{ width: 145 }} />)}
                       {gi < statusGroups.length - 1 && <col style={{ width: 2 }} />}
                     </Fragment>
                   ))}
-                  <col style={{ width: 140 }} />
+                  <col style={{ width: 170 }} />
                 </colgroup>
 
                 {/* ── SPACER HELPER ─────────────────────────── */}
@@ -376,7 +376,7 @@ export default function StockDashboardPage() {
                 <thead>
                   {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/50 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-sm" rowSpan={2}>
+                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-base" rowSpan={2}>
                       RM CODE
                     </th>
                     <th
@@ -389,7 +389,7 @@ export default function StockDashboardPage() {
                       )}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-green-600 text-xs uppercase tracking-wider">In Factory</span>
+                        <span className="text-green-600 text-base uppercase tracking-wider font-semibold">In Factory</span>
                         <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
                       </div>
                     </th>
@@ -405,7 +405,7 @@ export default function StockDashboardPage() {
                       )}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-amber-600 text-xs uppercase tracking-wider">Outside</span>
+                        <span className="text-amber-600 text-base uppercase tracking-wider font-semibold">Outside</span>
                         <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
                       </div>
                     </th>
@@ -422,7 +422,7 @@ export default function StockDashboardPage() {
                             onMouseEnter={() => setHoveredCol(group.status)}
                             onMouseLeave={() => setHoveredCol(null)}
                             className={cn(
-                              "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-all hover:brightness-95 group text-xs uppercase tracking-wider",
+                              "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider",
                               meta?.headerBg,
                               hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
                             )}
@@ -438,14 +438,14 @@ export default function StockDashboardPage() {
                         </Fragment>
                       );
                     })}
-                    <th className="px-4 py-3 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider text-xs" rowSpan={2}>
+                    <th className="px-4 py-3 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider text-base font-semibold" rowSpan={2}>
                       TOTAL
                     </th>
                   </tr>
                   {/* Row 2 — Vendor sub-headers */}
                   <tr className="border-b shadow-sm">
-                    <th className="border-r-2 border-border bg-green-50/10 py-1 text-[10px] text-center text-muted-foreground uppercase" />
-                    <th className="border-r-2 border-border bg-amber-50/10 py-1 text-[10px] text-center text-muted-foreground uppercase" />
+                    <th className="border-r-2 border-border bg-green-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
+                    <th className="border-r-2 border-border bg-amber-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
                     {statusGroups.map((group) => {
                       const meta = STATUS_META[group.status];
                       return group.vendors.map(({ key, vendor }) => (
@@ -455,7 +455,7 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-1.5 text-center text-[10px] font-semibold truncate transition-colors uppercase tracking-wider",
+                            "px-2 py-2 text-center text-sm font-semibold truncate transition-colors uppercase tracking-wider",
                             meta?.headerBg,
                             lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/30",
                             hoveredCol === key ? "brightness-90" : ""
@@ -552,7 +552,7 @@ export default function StockDashboardPage() {
                   })}
 
                   {/* Grand Total Row */}
-                  <tr className="bg-muted/80 backdrop-blur-md text-sm border-t-2 border-primary/20 font-semibold">
+                  <tr className="bg-muted/80 backdrop-blur-md text-base border-t-2 border-primary/20 font-semibold">
                     <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-wider">Grand Total</td>
                     <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border text-blue-600 dark:text-blue-400">
                       {fmtLiters(tankInFactoryTotal, unit)}
