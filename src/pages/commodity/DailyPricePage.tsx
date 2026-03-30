@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { toastApiError } from "@/lib/errors";
 import {
@@ -41,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DateInput } from "@/components/ui/date-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -416,9 +417,9 @@ export default function DailyPricePage() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <DateInput value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-[150px]" />
+              <DatePicker value={fromDate} onChange={setFromDate} placeholder="From date" />
               <span className="text-muted-foreground text-sm">to</span>
-              <DateInput value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-[150px]" />
+              <DatePicker value={toDate} onChange={setToDate} placeholder="To date" />
               <Button size="sm" onClick={handleRangeLoad} disabled={rangeLoading}>
                 {rangeLoading ? "Loading..." : "Load"}
               </Button>
@@ -477,7 +478,7 @@ export default function DailyPricePage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{idx + 1}</TableCell>
-                        <TableCell className="tabular-nums text-muted-foreground">{item.date}</TableCell>
+                        <TableCell className="tabular-nums text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
                         <TableCell className="font-medium">{item.commodity_name}</TableCell>
                         <TableCell
                           className="text-right"
