@@ -66,14 +66,12 @@ Each section is defined as an array of link objects with optional role restricti
 |---------|-------|-------|
 | Home | `/` | All |
 | Dashboard | `/dashboard`, `/stock-dashboard` | ADM, MNG |
-| Stock | Tank Monitoring, Tank Items, Tank Data | All |
-| Stock | Stock Status | ADM, MNG |
-| Commodity | Daily Price | ADM, MNG |
-| Accounts | EXIM Account | ADM, MNG |
-| Contracts | Domestic Contracts | ADM, MNG |
+| Stock | Tank Monitoring, Tank Items, Tank Data, Tank Logs, Stock Status, Stock Updation Logs | All / ADM+MNG |
+| Commodity | Daily Price, Jivo Rates | ADM, MNG |
+| Accounts | Dr/Cr Outstanding (EXIM Account), Open GRPOs | ADM, MNG |
+| Contracts | Domestic Contract | ADM, MNG |
 | License | Advance License, DFIA License | ADM, MNG |
-| Admin/Manager | Stock Updation Logs | ADM, MNG |
-| Admin Only | Users, Sync RM, Sync FG, Sync Vendors, Sync Logs | ADM |
+| Admin Only | Users, Sync Raw Material, Sync Finished Goods, Sync Vendor Data, Sync Logs | ADM |
 
 ### Features:
 - Active link styling with left accent bar (`sidebar-link-active`)
@@ -222,6 +220,15 @@ These are generated components from the shadcn/ui library built on Radix UI prim
 | Skeleton | `skeleton.tsx` | Loading placeholder with pulse animation |
 | Separator | `separator.tsx` | Horizontal/vertical divider |
 | Sonner | `sonner.tsx` | Toast notification wrapper for Sonner library |
+| Checkbox | `checkbox.tsx` | Accessible checkbox input |
+| Calendar | `calendar.tsx` | Day picker calendar (used inside DatePicker) |
+| Popover | `popover.tsx` | Floating popover container |
+
+### Custom Components (`ui/`)
+
+| Component | File | Notes |
+|-----------|------|-------|
+| DatePicker | `date-picker.tsx` | Calendar-based date selector; value/onChange use `"YYYY-MM-DD"` strings; displays as `dd MMM yyyy` |
 
 ### Styling
 

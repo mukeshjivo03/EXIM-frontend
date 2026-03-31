@@ -15,6 +15,8 @@
 | Icons | Lucide React | 0.575 |
 | Toasts | Sonner | 2.0 |
 | Animations | tw-animate-css | 1.4 |
+| Validation | Zod | 3.x |
+| Date utilities | date-fns | 4.x |
 
 ---
 
@@ -34,6 +36,8 @@ src/
  |   |- stockStatus.ts        # Stock status + item CRUD
  |   |- tank.ts               # Tank items, tank data, tank monitoring
  |   |- dailyPrice.ts         # Commodity daily prices
+ |   |- jivoRate.ts           # Jivo commodity rates
+ |   |- openGrpo.ts           # Open GRPOs (pending invoice)
  |   |- license.ts            # Advance License + DFIA License CRUD
  |   |- sapSync.ts            # SAP sync operations + logs
  |
@@ -41,6 +45,8 @@ src/
  |   |- AuthContext.tsx        # Authentication state (role, name, tokens)
  |   |- ThemeContext.tsx       # Light/dark theme toggle
  |   |- DailyPriceContext.tsx  # Cached commodity price data
+ |   |- JivoRateContext.tsx    # Cached Jivo rates preview data
+ |   |- OpenGrpoContext.tsx    # Cached open GRPO data
  |
  |- components/               # Shared components
  |   |- Layout.tsx             # Page shell (navbar + sidebar + outlet + footer)
@@ -58,9 +64,9 @@ src/
  |   |- HomePage.tsx           # Quick-access grid of all pages
  |   |- dashboard/             # Dashboard & stock dashboard
  |   |- stock/                 # Stock status, tank items, tank data, tank monitoring
- |   |- commodity/             # Daily price page
+ |   |- commodity/             # Daily price + Jivo rates pages
  |   |- accounts/              # EXIM account page
- |   |- contracts/             # Domestic contracts page
+ |   |- contracts/             # Domestic contracts + Open GRPOs pages
  |   |- license/               # Advance license + DFIA license (list + detail)
  |   |- administration/        # Users, SAP sync pages, sync logs, stock logs
  |
@@ -68,6 +74,7 @@ src/
      |- utils.ts               # cn() - Tailwind class merger
      |- formatters.ts          # Number, date, currency formatting (Indian locale)
      |- errors.ts              # Error message extraction + toast helpers
+     |- schemas.ts             # Zod validation schemas (stock, tank, user, login)
 ```
 
 ---

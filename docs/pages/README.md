@@ -19,8 +19,10 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 | `/stock/tank-data` | `TankDataPage` | All | Tank CRUD |
 | `/stock/tank-logs` | `TankLogsPage` | All | Tank operation logs |
 | `/commodity/daily-price` | `DailyPricePage` | ADM, MNG | Daily commodity prices + trends |
+| `/commodity/jivo-rates` | `JivoRatesPage` | ADM, MNG | Jivo commodity rates (fetch, save, history) |
 | `/exim-account` | `EximAccountPage` | ADM, MNG | Balance sheet from SAP |
-| `/domestic-contracts` | `DomesticContractsPage` | ADM, MNG | Purchase orders |
+| `/contracts/open-grpos` | `OpenGrpoPage` | ADM, MNG | Open GRPOs pending invoice |
+| `/domestic-contracts` | `OldDomesticContractsPage` | ADM, MNG | Purchase orders (legacy view) |
 | `/license/advance-license` | `AdvanceLicensePage` | ADM, MNG | Advance license headers |
 | `/license/advance-license/:licenseNo` | `AdvanceLicenseDetailPage` | ADM, MNG | License lines for a header |
 | `/license/dfia-license` | `DFIALicensePage` | ADM, MNG | DFIA license headers |
@@ -42,7 +44,7 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 
 **Features:**
 - Email + password form
-- Animated maritime hero banner with ship, waves, and ocean
+- Animated maritime hero banner with ship, waves, ocean, clouds, and shooting stars
 - Stores tokens + user data in localStorage on success
 - Redirects to `/` on successful login
 - Error display for invalid credentials
@@ -214,13 +216,57 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 **Purpose:** View and manage daily commodity prices with trend charts.
 
 **Features:**
-- Fetch today's prices from external source (preview)
+- Fetch today's prices from Google Sheet (preview with "LIVE PREVIEW" badge)
 - Save fetched prices to database
-- View saved prices by date (date picker)
-- Price trend line chart (Recharts) showing historical data
-- Cached in DailyPriceContext to avoid redundant fetches
+- KPI cards: commodity count, avg/highest/lowest factory price
+- Delta badges on factory price column showing % change vs previous day
+- Heatmap color coding on price cells (green = high, red = low)
+- View saved prices by date range (calendar `DatePicker` components)
+- Commodity filter dropdown for saved prices
+- Price trend line chart (Recharts) with commodity toggle pills
+- "Open Sheet" button linking to source Google Sheet
+- Cached in `DailyPriceContext` to avoid redundant fetches on navigation
 
-**API:** `fetchDailyPrices()`, `saveDailyPrices()`, `getDailyPricesByDate()`, `getPriceTrends()`
+**API:** `fetchDailyPrices()`, `saveDailyPrices()`, `getDailyPricesByDate()`, `getDailyPricesByRange()`, `getPriceTrends()`
+
+---
+
+### JivoRatesPage (`src/pages/commodity/JivoRatesPage.tsx`)
+
+**Purpose:** Fetch, preview, save, and browse historical Jivo commodity rates.
+
+**Features:**
+- Fetch latest Jivo rates from external source (preview with "LIVE PREVIEW" badge)
+- Save fetched rates to database
+- KPI cards: total entries, avg rate, highest rate, commodity count
+- **Matrix view** (default): rows = commodity, columns = pack type, cells = rate with heatmap coloring
+- **List view**: flat table of commodity / pack type / rate / date
+- Toggle between matrix and list views
+- Pack types sorted by weight/volume (g → kg → ton)
+- Heatmap color coding on rate cells
+- View saved rates by date range (calendar `DatePicker` components) with commodity filter
+- Cached in `JivoRateContext` to avoid redundant fetches
+- Search filter across commodity and pack type
+
+**API:** `fetchJivoRates()`, `saveJivoRates()`, `getJivoRatesByRange()`
+
+---
+
+### OpenGrpoPage (`src/pages/contracts/OpenGrpoPage.tsx`)
+
+**Purpose:** Monitor Goods Receipt Purchase Orders that are pending invoice.
+
+**Features:**
+- Auto-fetches on page load (cached in `OpenGrpoContext`)
+- KPI cards: total open GRPOs, unique vendors, avg pending days, max pending days
+- Critical warning banner when any GRPO has been pending 6+ days
+- Row and badge color-coding by pending days: red (> 6d), yellow (> 3d), green (≤ 3d)
+- Sortable columns: GRPO Number, Pending Days, Warehouse, Vendor Name
+- Search across GRPO number, vendor ref, user, vendor name, warehouse
+- Warehouse filter dropdown (dynamically populated)
+- Columns: S.No, GRPO Number, Vendor Ref No, User, Vendor Name, Warehouse, Pending Days
+
+**API:** `getOpenGrpos()`
 
 ---
 

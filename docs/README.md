@@ -24,7 +24,9 @@ EXIM is an **Export-Import management system** used internally to track:
 
 - **Stock inventory** across tanks, raw materials, and finished goods
 - **Tank monitoring** with real-time visual representations
-- **Commodity daily prices** with historical charts
+- **Commodity daily prices** with historical charts and delta tracking
+- **Jivo commodity rates** with matrix view and historical browsing
+- **Open GRPOs** monitoring with pending day alerts
 - **Domestic contracts** (purchase orders)
 - **EXIM account** balances and transactions
 - **Advance Licenses** and **DFIA Licenses** with line-level tracking
@@ -106,5 +108,6 @@ The backend is a **separate repository** built with:
 | Global styles & theme | `src/index.css` |
 | Utility formatters | `src/lib/formatters.ts` |
 | Error handling | `src/lib/errors.ts` |
+| Zod validation schemas | `src/lib/schemas.ts` |
 | CI/CD workflow | `.github/workflows/frontend-deploy.yml` |
 | Deploy script | `deploy_frontend.bat` |
