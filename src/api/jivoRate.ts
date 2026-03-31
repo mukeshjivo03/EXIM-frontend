@@ -15,12 +15,12 @@ export interface JivoRateFetchResponse {
 }
 
 export async function fetchJivoRates(): Promise<JivoRateFetchResponse> {
-  const { data } = await api.get<JivoRateFetchResponse>("/jivo-rate/fetch");
+  const { data } = await api.get<JivoRateFetchResponse>("/jivo-rate/fetch/");
   return data;
 }
 
 export async function saveJivoRates(createdBy: string): Promise<{ status: string }> {
-  const { data } = await api.post<{ status: string }>("/jivo-rate/fetch", { created_by: createdBy });
+  const { data } = await api.post<{ status: string }>("/jivo-rate/fetch/", { created_by: createdBy });
   return data;
 }
 

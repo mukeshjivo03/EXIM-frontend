@@ -67,7 +67,8 @@ const accountsLinks = [
 ];
 
 const contractsLinks = [
-  { to: "/domestic-contracts", label: "Domestic Contract", icon: FileCheck },
+  { to: "/domestic-contracts", label: "Domestic Contract (2025-2026)", icon: FileCheck },
+  { to: "/contracts/domestic-2627", label: "Domestic Contract (2026-2027)", icon: FileCheck },
 ];
 
 const licenseLinks = [

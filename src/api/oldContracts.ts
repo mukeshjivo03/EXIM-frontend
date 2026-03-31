@@ -35,6 +35,6 @@ export interface OldContract {
 }
 
 export async function getOldContracts(): Promise<OldContract[]> {
-  const res = await api.get<OldContract[]>("/old-contracts/all/");
+  const res = await api.get<OldContract[]>("/dc/?year=2025");
   return res.data ?? [];
 }
