@@ -464,6 +464,17 @@ export default function DomesticContracts2627Page() {
           <h1 className="text-xl sm:text-2xl font-bold">Domestic Contracts (2026-2027)</h1>
           <p className="text-sm text-muted-foreground">Manage contracts, loading, and freight details</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={handleContractOpen} size="sm" className="btn-press">
+            <Plus className="h-4 w-4 mr-2" /> New Contract
+          </Button>
+          <Button onClick={handleLoadingOpen} variant="outline" size="sm">
+            <Truck className="h-4 w-4 mr-2" /> Loading Form
+          </Button>
+          <Button onClick={handleFreightOpen} variant="outline" size="sm">
+            <FileText className="h-4 w-4 mr-2" /> Freight Detail
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -486,97 +497,6 @@ export default function DomesticContracts2627Page() {
           value={loadingList ? "" : `₹ ${summary.avgRate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/MTS`}
           loading={loadingList}
         />
-      </div>
-
-      {/* Action Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* New Contract */}
-        <Card
-          className="card-hover shimmer-hover cursor-pointer border-2 hover:border-primary/40 transition-colors"
-          onClick={handleContractOpen}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10">
-                <Plus className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-base">New Contract</CardTitle>
-                <CardDescription className="text-xs mt-0.5">Create a new domestic contract</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Enter contract information, vendor details, and contract quantities to register a new purchase contract.
-            </p>
-            <Button className="mt-4 w-full btn-press" size="sm" onClick={(e) => { e.stopPropagation(); handleContractOpen(); }}>
-              <Plus className="h-4 w-4 mr-2" /> New Contract
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Loading Form */}
-        <Card
-          className="card-hover shimmer-hover cursor-pointer border-2 hover:border-amber-500/40 transition-colors"
-          onClick={handleLoadingOpen}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10">
-                <Truck className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Loading Form</CardTitle>
-                <CardDescription className="text-xs mt-0.5">Update loading information</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Record loaded and unloaded quantities. Shortage, deductions, and basic amount are auto-calculated.
-            </p>
-            <Button
-              className="mt-4 w-full"
-              size="sm"
-              variant="outline"
-              onClick={(e) => { e.stopPropagation(); handleLoadingOpen(); }}
-            >
-              <Truck className="h-4 w-4 mr-2" /> Loading Form
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Freight Detail */}
-        <Card
-          className="card-hover shimmer-hover cursor-pointer border-2 hover:border-emerald-500/40 transition-colors"
-          onClick={handleFreightOpen}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10">
-                <FileText className="h-5 w-5 text-emerald-500" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Freight Detail</CardTitle>
-                <CardDescription className="text-xs mt-0.5">Add freight & invoice details</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Enter transporter, vehicle, GRPO, and invoice information. Freight and brokerage are auto-calculated.
-            </p>
-            <Button
-              className="mt-4 w-full"
-              size="sm"
-              variant="outline"
-              onClick={(e) => { e.stopPropagation(); handleFreightOpen(); }}
-            >
-              <FileText className="h-4 w-4 mr-2" /> Freight Detail
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Table */}
@@ -1471,7 +1391,7 @@ export default function DomesticContracts2627Page() {
 
       {/* ── View Dialog ──────────────────────────────────────── */}
       <Dialog open={!!viewData} onOpenChange={() => setViewData(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
@@ -1481,87 +1401,82 @@ export default function DomesticContracts2627Page() {
           </DialogHeader>
 
           {viewData && (
-            <div className="space-y-6 py-2">
-                {/* Contract Information */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1 w-1 rounded-full bg-primary" />
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Contract Information</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pl-3">
-                    <div><p className="text-xs text-muted-foreground mb-1">PO Number</p><p className="text-sm font-medium">{viewData.po_number}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">PO Date</p><p className="text-sm font-medium">{fmtDate(viewData.po_date)}</p></div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Status</p>
-                      <Badge variant="outline">{viewData.status}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Completion</p>
-                      <Badge variant={completedVariant(viewData.Completed)}>{completedLabel(viewData.Completed)}</Badge>
-                    </div>
-                    <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1">Product</p><p className="text-sm font-medium">{viewData.product_name || viewData.product_code}</p></div>
-                    <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1">Vendor</p><p className="text-sm font-medium">{viewData.vendor_code}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Contract Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.contract_qty || 0)} MTS</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Contract Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.contract_rate || 0)}/MTS</p></div>
-                    <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1 font-semibold">Total Contract Value</p><p className="text-base font-bold text-primary">₹ {fmtDecimal(viewData.contract_total || 0)}</p></div>
-                  </div>
+            <div className="space-y-5 py-2">
+              {/* Contract Information */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Contract Information</h3>
                 </div>
-
-                <Separator />
-
-                {/* Loading Details */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1 w-1 rounded-full bg-amber-500" />
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Loading Details</p>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
+                  <div><p className="text-xs text-muted-foreground">PO Number</p><p className="text-sm font-medium">{viewData.po_number}</p></div>
+                  <div><p className="text-xs text-muted-foreground">PO Date</p><p className="text-sm font-medium">{fmtDate(viewData.po_date)}</p></div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge variant={completedVariant(viewData.Completed)} className="mt-0.5">{completedLabel(viewData.Completed)}</Badge>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pl-3">
-                    <div><p className="text-xs text-muted-foreground mb-1">Load Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.load_qty || 0)} MTS</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Unload Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.unload_qty || 0)} MTS</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Shortage</p><p className="text-sm font-medium">{fmtDecimal(viewData.shortage || 0)} KG</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Allowance</p><p className="text-sm font-medium">{fmtDecimal(viewData.allow_shortage || 0)} KG</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Deduction Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.deduction_qty || 0)} KG</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1 font-semibold">Deduction Amount</p><p className="text-sm font-bold text-destructive">₹ {fmtDecimal(viewData.deduction_amount || 0)}</p></div>
-                    <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1 font-semibold">Basic Amount</p><p className="text-sm font-bold">₹ {fmtDecimal(viewData.basic_amount || 0)}</p></div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Transport & Freight */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1 w-1 rounded-full bg-emerald-500" />
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Transport & Freight</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pl-3">
-                    <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1">Transporter</p><p className="text-sm font-medium">{viewData.transporter_name || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Vehicle Number</p><p className="text-sm font-medium">{viewData.vehicle_number || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Invoice Number</p><p className="text-sm font-medium">{viewData.invoice_number || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Bilty Number</p><p className="text-sm font-medium">{viewData.bility_number || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Bilty Date</p><p className="text-sm font-medium">{fmtDate(viewData.bility_date || null)}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Freight Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.frieght_rate || 0)}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1 font-semibold">Freight Amount</p><p className="text-sm font-bold">₹ {fmtDecimal(viewData.freight_amount || 0)}</p></div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* GRPO & Brokerage */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1 w-1 rounded-full bg-blue-500" />
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GRPO & Brokerage</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pl-3">
-                    <div><p className="text-xs text-muted-foreground mb-1">GRPO Number</p><p className="text-sm font-medium">{viewData.grpo_number || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">GRPO Date</p><p className="text-sm font-medium">{fmtDate(viewData.grpo_date || null)}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1">Brokerage Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.brokerage_rate || 0)}</p></div>
-                    <div><p className="text-xs text-muted-foreground mb-1 font-semibold">Brokerage Amount</p><p className="text-sm font-bold text-primary">₹ {fmtDecimal(viewData.brokerage_amount || 0)}</p></div>
-                  </div>
+                  <div><p className="text-xs text-muted-foreground">Product</p><p className="text-sm font-medium">{viewData.product_name || viewData.product_code}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Vendor Code</p><p className="text-sm font-medium">{viewData.vendor_code}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Invoice Number</p><p className="text-sm font-medium">{viewData.invoice_number || "—"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Contract Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.contract_qty || 0)} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Contract Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.contract_rate || 0)}/MTS</p></div>
+                  <div className="col-span-2"><p className="text-xs text-muted-foreground">Basic Amount</p><p className="text-base font-semibold">₹ {fmtDecimal(viewData.basic_amount || viewData.contract_total || 0)}</p></div>
                 </div>
               </div>
-            )}
+
+              <Separator />
+
+              {/* Loading Details */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Package className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Loading Details</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
+                  <div><p className="text-xs text-muted-foreground">Load Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.load_qty || 0)} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Unload Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.unload_qty || 0)} MTS</p></div>
+                  <div><p className="text-xs text-muted-foreground">Shortage</p><p className="text-sm font-medium">{fmtDecimal(viewData.shortage || 0)} KG</p></div>
+                  <div><p className="text-xs text-muted-foreground">Allow Shortage</p><p className="text-sm font-medium">{fmtDecimal(viewData.allow_shortage || 0)} KG</p></div>
+                  <div><p className="text-xs text-muted-foreground">Deduction Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.deduction_qty || 0)} KG</p></div>
+                  <div><p className="text-xs text-muted-foreground">Deduct Amount</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.deduction_amount || 0)}</p></div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Transport & Freight */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Transport & Freight</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
+                  <div className="col-span-2"><p className="text-xs text-muted-foreground">Transporter</p><p className="text-sm font-medium">{viewData.transporter_name || "—"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Vehicle Number</p><p className="text-sm font-medium">{viewData.vehicle_number || "—"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Bilty Number</p><p className="text-sm font-medium">{viewData.bility_number || "—"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Bilty Date</p><p className="text-sm font-medium">{fmtDate(viewData.bility_date || null)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Freight Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.frieght_rate || 0)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Freight Amount</p><p className="text-sm font-medium text-emerald-600">₹ {fmtDecimal(viewData.freight_amount || 0)}</p></div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* GRPO & Brokerage */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <IndianRupee className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">GRPO & Brokerage</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
+                  <div><p className="text-xs text-muted-foreground">GRPO Number</p><p className="text-sm font-medium">{viewData.grpo_number || "—"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">GRPO Date</p><p className="text-sm font-medium">{fmtDate(viewData.grpo_date || null)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Brokerage Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.brokerage_rate || 0)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Brokerage Amount</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.brokerage_amount || 0)}</p></div>
+                </div>
+              </div>
+            </div>
+          )}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setViewData(null)}>Close</Button>
