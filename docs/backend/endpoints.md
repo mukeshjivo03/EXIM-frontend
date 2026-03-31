@@ -87,8 +87,8 @@ Auto-generated API docs are available at:
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
-| GET | `/sap-sync/po/` | ADM | Sync ALL purchase orders from SAP |
-| GET | `/sap-sync/po/{grpoNo}/` | ADM | Sync single PO by GRPO number |
+| GET | `/sap-sync/po/` | ADM, MNG | Sync ALL purchase orders from SAP |
+| GET | `/sap-sync/po/{grpoNo}/` | ADM, MNG | Sync single PO by GRPO number |
 | GET | `/pos/` | ADM, MNG | List all purchase orders |
 | GET/PATCH/DELETE | `/po/{id}/` | ADM, MNG | Get, update, or delete PO |
 
@@ -110,6 +110,19 @@ Auto-generated API docs are available at:
 
 ---
 
+## Domestic Contracts — Form-based (`contracts` app)
+
+Multi-step form workflow for manually created contracts. Three sequential PUT calls build up a single `DomesticReports` record.
+
+| Method | Endpoint | Permission | Description |
+|--------|----------|------------|-------------|
+| GET | `/old-contracts/all/` | ADM, MNG | List all manually-created domestic contracts |
+| POST | `/dc/contract/create/` | ADM, MNG | Step 1: Create contract (product, vendor, PO, qty, rate) |
+| PUT | `/dc/loading/create/{id}/` | ADM, MNG | Step 2: Add loading info (load_qty, unload_qty — auto-calculates shortage, deductions) |
+| PUT | `/dc/freight/create/{id}/` | ADM, MNG | Step 3: Add freight info (transporter, vehicle, GRPO, invoice — auto-calculates amounts) |
+
+---
+
 ## Stock Status (`/stock-status/`)
 
 | Method | Endpoint | Permission | Description |
@@ -121,9 +134,12 @@ Auto-generated API docs are available at:
 | GET | `/stock-status/stock-insights/` | ADM, MNG | Aggregate insights (filterable) |
 | GET | `/stock-status/stock-summary/` | ADM, MNG | Overall summary |
 | GET | `/stock-status/stock-dashboard/` | ADM, MNG | Full dashboard data |
-| GET | `/stock-status/get-unique-rm/` | ADM, MNG | List unique RM item codes with out-of-factory stock |
-| GET | `/stock-status/get-stock-entry-by-rm/` | ADM, MNG | Stock entries for an item code (`?item_code=X`), includes `quantity_in_litre` |
-| GET | `/stock-status/out/` | ADM, MNG | List out-of-factory stock statuses |
+| GET | `/stock-status/get-unique-rm/` | ADM, MNG | List unique RM item codes with COMPLETED status |
+| GET | `/stock-status/get-stock-entry-by-rm/` | ADM, MNG | COMPLETED stock entries for an item (`?item_code=X`), includes `quantity_in_litre` |
+| GET | `/stock-status/out/` | ADM, MNG | List OUT_SIDE_FACTORY stock entries |
+| POST | `/stock-status/arrive-batch/` | — | Record batch arrival; FIFO remainder handling (RETAIN/TOLERATE/DEBIT) |
+| POST | `/stock-status/dispatch/` | — | Dispatch quantity to new status with remainder action |
+| POST | `/stock-status/move/` | — | Move stock to new status and adjust quantity |
 
 ### Stock Insights Response
 
@@ -185,10 +201,15 @@ Auto-generated API docs are available at:
 | GET | `/tank/item-wise-summary/` | Authenticated | Per-item summary (returns `{ total_quantity, items[] }`) |
 | GET | `/tank/capacity-insights/` | ADM, MNG | Capacity utilization |
 | GET | `/tank/tank-rates/` | ADM, MNG | FIFO rate breakdown per tank |
-| GET | `/tank/layers/{tankCode}/` | Authenticated | Rate breakdown layers for a specific tank |
-| POST | `/tank/inward/` | Authenticated | Add stock to tank (changes stock status to IN_TANK) |
-| POST | `/tank/outward/` | Authenticated | Remove stock from tank (FIFO consumption) |
-| GET | `/tank/log/` | Authenticated | Tank operation logs with consumptions |
+| GET | `/tank/layers/{tankCode}/` | Authenticated | Active FIFO layers with cost breakdown for a specific tank |
+| GET | `/tank/logs/{tankCode}/` | Authenticated | All logs for a specific tank |
+| GET | `/tank/log/` | Authenticated | All tank logs across all tanks (with consumptions) |
+| GET | `/tank/consumption/` | Authenticated | All TankLogConsumption records |
+| GET | `/tank/item-wise-average/` | — | Weighted average cost per commodity item |
+| GET | `/tank/get-same-tanks/` | — | Tanks with same item or empty (for transfer target selection, `?item_code=X`) |
+| POST | `/tank/inward/` | ADM, FTR | Add stock to tank (requires COMPLETED stock; creates TankLayer; status → IN_TANK) |
+| POST | `/tank/outward/` | ADM, FTR | Remove stock from tank (FIFO consumption across layers) |
+| POST | `/tank/transfer/` | ADM, FTR | Transfer stock between tanks (FIFO on source; new layers on destination) |
 
 ### Tank Summary Response
 
@@ -315,6 +336,7 @@ Auto-generated API docs are available at:
 | GET | `/daily-price/fetch/` | ADM, MNG | Fetch today's prices from Google Sheets (preview) |
 | POST | `/daily-price/fetch/` | ADM, MNG | Save fetched prices to database |
 | GET | `/daily-price/db-list/` | ADM, MNG | List saved prices (filter: `?date=YYYY-MM-DD`) |
+| GET | `/daily-price/range/` | ADM, MNG | List saved prices by range (`?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`) |
 | GET | `/daily-price/trends/` | ADM, MNG | 7-day price trend data for charts |
 
 ### Trends Response
@@ -325,6 +347,62 @@ Auto-generated API docs are available at:
   "datasets": [
     { "label": "Sunflower Oil", "data": [85.0, 86.5, 84.0] },
     { "label": "Palm Oil", "data": [72.0, 71.5, 73.0] }
+  ]
+}
+```
+
+---
+
+## Jivo Rates (`/jivo-rate/`)
+
+| Method | Endpoint | Permission | Description |
+|--------|----------|------------|-------------|
+| GET | `/jivo-rate/fetch` | AllowAny | Fetch latest Jivo rates (preview, not saved) |
+| POST | `/jivo-rate/fetch` | AllowAny | Save fetched Jivo rates to DB (`{ created_by: string }`) |
+| GET | `/jivo-rate/range/` | AllowAny | List saved rates by range (`?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`) |
+| GET | `/jivo-rate/trends/` | AllowAny | Trend data for charts |
+
+### Fetch Response
+
+```json
+{
+  "status": "ok",
+  "count": 24,
+  "preview_data": [
+    { "pack_type": "1kg", "commodity": "Soya Refined", "rate": 142.50, "date": "2026-03-31", "created_by": "" }
+  ]
+}
+```
+
+### Range Response
+
+```json
+[
+  { "id": 1, "pack_type": "1kg", "commodity": "Soya Refined", "rate": 142.50, "date": "2026-03-31", "created_by": "admin@exim.com" }
+]
+```
+
+---
+
+## Open GRPOs (`/sap_sync/open-grpos/`)
+
+| Method | Endpoint | Permission | Description |
+|--------|----------|------------|-------------|
+| GET | `/sap_sync/open-grpos/` | ADM, MNG | Fetch open GRPOs pending invoice from SAP |
+
+### Response
+
+```json
+{
+  "open_grpos": [
+    {
+      "GRPO Number": 1234,
+      "Vendor Ref No": "REF001",
+      "User Name": "John Doe",
+      "Vendor Name": "Vendor Co. Ltd",
+      "Warehouse": "WH001",
+      "Pending Days": 8
+    }
   ]
 }
 ```
@@ -343,6 +421,7 @@ Auto-generated API docs are available at:
 | GET | `/license/advance-license-lines/` | ADM, MNG | List all lines |
 | POST | `/license/advance-license-lines/` | ADM, MNG | Create line |
 | GET/PUT/DELETE | `/license/advance-license-lines/{id}/` | ADM, MNG | CRUD single line |
+| GET | `/license/advance-license-lines/insight/{licenseNo}/` | — | Aggregated insight: sum of BOE value, SB value, import/export MTS, balance |
 
 ### DFIA License
 
@@ -354,6 +433,7 @@ Auto-generated API docs are available at:
 | GET | `/license/dfia-license-lines/list/` | ADM, MNG | List all lines |
 | POST | `/license/dfia-license-lines/create/` | ADM, MNG | Create line |
 | GET/PUT/DELETE | `/license/dfia-license-lines/{id}/` | ADM, MNG | CRUD single line |
+| GET | `/license/dfia-license-lines/insight/{fileNo}/` | — | Aggregated insight: sum of balance, import/export MTS, SB value INR |
 
 **Note:** DFIA endpoints use `/list/` and `/create/` suffixes, unlike Advance License endpoints. This is an inconsistency.
 

@@ -8,7 +8,7 @@ All models are defined in their respective app's `models.py`. Database tables us
 
 Custom user model extending `AbstractBaseUser`.
 
-**Table:** `accounts_user` (default)
+**Table:** `users`
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
@@ -152,18 +152,28 @@ Individual stock inventory entries tracking goods through the supply chain.
 | `created_by` | CharField | | Creator's name |
 | `deleted` | BooleanField | default=False | Soft-delete flag |
 
+### Additional Fields
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `parent` | ForeignKey | self, nullable | Parent stock entry (FIFO tree structure) |
+| `is_accumulator` | BooleanField | default=False | Marks a batch aggregator record |
+| `remainder_action` | CharField | nullable | `RETAIN` / `TOLERATE` / `DEBIT` — how to handle leftover qty |
+| `job_work` | CharField | nullable | Job work vendor (used when status=AT_REFINERY) |
+
 ### Status Choices
 
 ```
 OUT_SIDE_FACTORY    - Outside factory premises
 ON_THE_WAY          - In transit (generic)
 UNDER_LOADING       - Being loaded
-AT_REFINERY         - At refinery
+AT_REFINERY         - At refinery for job work
 OTW_TO_REFINERY     - On the way to refinery
 KANDLA_STORAGE      - At Kandla port storage
 MUNDRA_PORT         - At Mundra port
 ON_THE_SEA          - In sea transit (import)
 IN_CONTRACT         - Under contract
+COMPLETED           - Completed (ready for tank inward)
 DELIVERED           - Delivered
 IN_TANK             - In tank (set by inward operation)
 IN_TRANSIT          - In transit
@@ -173,9 +183,30 @@ PROCESSING          - Being processed
 
 ### Auto-Behaviors
 
-- `total` is recalculated on every `save()` as `rate * quantity`
+- `total` = `rate × quantity` (recalculated on every save)
+- `quantity_in_litre` = `quantity × 1.0989` (recalculated on every save)
 - Field changes (`status`, `rate`, `quantity`) are logged to `StockStatusUpdateLog`
 - On create, a log entry with `field_name="CREATED"` is recorded
+- If `status=AT_REFINERY` and `item_code=RM0CDRO`: quantity is auto-reduced by 3% and item code is converted to `RM00C01`
+
+---
+
+## stock.DebitEntry
+
+Records explicit loss or damage against a stock entry.
+
+**Table:** `stock_debit_entries`
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `stock` | ForeignKey | -> StockStatus, related='debits', nullable | The stock entry that incurred loss |
+| `quantity` | DecimalField | 10,2 | Lost/damaged quantity |
+| `rate` | DecimalField | 10,2 | Rate at time of loss |
+| `total` | DecimalField | 20,2, auto | `rate × quantity` (auto-calculated) |
+| `responsible_party` | ForeignKey | -> Party, nullable | Vendor responsible for the loss |
+| `reason` | CharField | nullable | Reason for debit |
+| `created_at` | DateTimeField | auto_now_add | Record creation time |
+| `created_by` | CharField | | User who created the debit |
 
 ---
 
@@ -238,45 +269,59 @@ Individual tank records.
 
 FIFO layers tracking stock entries added to tanks.
 
+**Table:** `tank_layer`
+
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `tank` | ForeignKey | -> TankData | Parent tank |
+| `tank_code` | ForeignKey | -> TankData | Parent tank |
 | `stock_status` | ForeignKey | -> StockStatus | Source stock entry |
+| `item_code` | ForeignKey | -> TankItem | Commodity in this layer |
+| `vendor` | ForeignKey | -> Party | Vendor of this stock |
 | `rate` | DecimalField | | Rate at time of inward |
-| `quantity_remaining` | DecimalField | | Remaining quantity in this layer |
-| `created_at` | DateTimeField | auto_now_add | Layer creation time |
+| `quantity_added` | DecimalField | nullable | Original quantity when layer was created |
+| `quantity_remaining` | DecimalField | nullable | Remaining quantity in this layer |
+| `is_exhausted` | BooleanField | default=False | True when layer is fully consumed |
+| `created_at` | DateTimeField | nullable | Layer creation time |
+| `created_by` | CharField | nullable | User who created the layer |
 
 ---
 
 ## tank.TankLog
 
-Audit trail for tank inward/outward operations.
+Audit trail for tank inward/outward/transfer operations.
+
+**Table:** `tank_logs`
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `tank_code` | CharField | | Tank identifier |
-| `log_type` | CharField | choices: INWARD/OUTWARD | Operation type |
+| `log_type` | CharField | choices: INWARD/OUTWARD/TRANSFER | Operation type |
 | `quantity` | DecimalField | | Quantity moved |
-| `stock_status` | ForeignKey | -> StockStatus, nullable | Source stock (inward only) |
-| `tank_layer` | ForeignKey | -> TankLayer, nullable | Layer reference |
-| `remarks` | TextField | blank | Operation notes |
+| `stock_status` | ForeignKey | -> StockStatus, nullable | Source stock entry (inward) |
+| `tank_layer` | ForeignKey | -> TankLayer, nullable | Source layer reference (transfer) |
+| `destination_tank` | ForeignKey | -> TankData, nullable | Destination tank (transfer only) |
+| `vehicle_number` | CharField | nullable | Vehicle number |
+| `rate` | DecimalField | nullable | Rate snapshot |
+| `party` | CharField | nullable | Party/vendor name snapshot |
+| `remarks` | TextField | nullable | Operation notes |
 | `created_at` | DateTimeField | auto_now_add | Operation timestamp |
 | `created_by` | CharField | | User who performed operation |
+
+**Note:** `tank_code` is not a FK — it's stored as a CharField snapshot on the log.
 
 ---
 
 ## tank.TankLogConsumption
 
-Layer consumption details for outward operations (FIFO).
+Per-layer FIFO cost trail for outward and transfer operations.
+
+**Table:** `tank_log_consumption`
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `tank_log` | ForeignKey | -> TankLog | Parent log entry |
-| `layer` | ForeignKey | -> TankLayer | Consumed layer |
-| `stock_status` | ForeignKey | -> StockStatus | Original stock entry |
-| `vendor_name` | CharField | | Vendor code |
+| `tank_log` | ForeignKey | -> TankLog, related='consumptions' | Parent log entry |
+| `tank_layer` | ForeignKey | -> TankLayer, related='consumptions' | Consumed layer |
 | `quantity_consumed` | DecimalField | | Quantity consumed from this layer |
-| `rate` | DecimalField | | Rate of the consumed layer |
+| `rate` | DecimalField | | Rate snapshot at consumption time |
 | `created_at` | DateTimeField | auto_now_add | Consumption timestamp |
 
 ---
@@ -289,15 +334,31 @@ Daily commodity prices fetched from Google Sheets.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `commodity_name` | CharField | | Commodity name |
-| `factory_price` | DecimalField | | Factory price per kg |
-| `packing_cost_kg` | DecimalField | | Packing cost per kg |
-| `with_gst_kg` | DecimalField | | Price with GST per kg |
-| `with_gst_ltr` | DecimalField | | Price with GST per liter |
+| `commodity_name` | CharField | max_length=125 | Commodity name |
+| `factory_price` | DecimalField | 6,2 | Factory price per kg |
+| `packing_cost_kg` | DecimalField | 6,2 | Packing cost per kg |
+| `with_gst_kg` | DecimalField | 6,2 | Price with GST per kg |
+| `with_gst_ltr` | DecimalField | 6,2 | Price with GST per liter |
 | `date` | DateField | | Price date |
-| `created_by` | CharField | | User who saved |
+| `created_by` | CharField | max_length=50 | User who saved |
 
 **Constraints:** `unique_together = (commodity_name, date)`
+
+---
+
+## daily_price.JivoRates
+
+Jivo brand commodity rates by pack type, fetched from Google Sheets.
+
+**Table:** `jivo_rates`
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `pack_type` | CharField | max_length=125, nullable | Pack size/type (e.g., "Pouch 1L", "750Gm") |
+| `commodity` | CharField | max_length=125, nullable | Commodity name |
+| `rate` | DecimalField | 10,3, nullable | Rate in INR |
+| `date` | DateField | | Rate date |
+| `created_by` | CharField | max_length=50 | User who saved |
 
 ---
 
@@ -399,40 +460,92 @@ Line items for DFIA Licenses.
 
 ---
 
+## contracts.DomesticReports
+
+Form-based domestic contract workflow (separate from SAP-synced `DomesticContracts`). Created manually in three steps: contract → loading → freight.
+
+**Table:** `contracts`
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `status` | CharField | choices | `CONTRACT` / `PO` / `MAIL_APPROVAL` / `PAYMENT` / `TPT/LOADING` / `IN_TRANSIT` / `FACTORY` / `RECIEVED` |
+| `product_code` | CharField | max_length=20 | Product code |
+| `vendor_code` | CharField | max_length=50 | Vendor code |
+| `po_number` | CharField | max_length=50 | Purchase order number |
+| `po_date` | DateField | | PO date |
+| **Form 1 — Contract** | | | |
+| `contract_qty` | DecimalField | | Contracted quantity |
+| `contract_rate` | DecimalField | | Contracted rate |
+| `contract_total` | DecimalField | auto | `contract_qty × contract_rate` |
+| **Form 2 — Loading** | | | |
+| `load_qty` | DecimalField | | Loaded quantity (KG) |
+| `unload_qty` | DecimalField | | Unloaded quantity (KG) |
+| `shortage` | DecimalField | auto | `load_qty - unload_qty` |
+| `allow_shortage` | DecimalField | auto | `0.25 × load_qty` |
+| `deduction_qty` | DecimalField | auto | `max(shortage - allow_shortage, 0)` |
+| `deduction_amount` | DecimalField | auto | `(deduction_qty ÷ 1000) × contract_rate` |
+| `basic_amount` | DecimalField | auto | `load_qty × contract_rate` |
+| **Form 3 — Freight** | | | |
+| `transporter_code` | CharField | | Transporter SAP code |
+| `transporter_name` | CharField | | Transporter name |
+| `bility_number` | CharField | | Bill of lading number |
+| `bility_date` | DateField | | Bill of lading date |
+| `frieght_rate` | DecimalField | | Freight rate (note: typo in field name) |
+| `freight_amount` | DecimalField | auto | `unload_qty × frieght_rate` |
+| `grpo_date` | DateField | | GRPO date |
+| `grpo_number` | CharField | | GRPO number |
+| `brokerage_rate` | DecimalField | | Brokerage rate |
+| `brokerage_amount` | DecimalField | auto | Auto-calculated from brokerage_rate |
+| `vehicle_number` | CharField | | Vehicle number |
+| `invoice_number` | CharField | | Invoice number |
+| **Meta** | | | |
+| `created_by` | CharField | max_length=50 | Creator |
+| `created_at` | DateTimeField | auto_now_add | Creation time |
+| `deleted` | IntegerField | default=0 | Soft-delete flag |
+| `Completed` | IntegerField | default=0 | Completion flag |
+
+---
+
 ## Entity Relationship Diagram
 
 ```
 User (accounts)
-  |
   +-- role: ADM/MNG/FTR
 
 RMProducts (sap_sync)         Party (sap_sync)
   |                              |
   +--< StockStatus (stock) >----+
+         |    |
+         |    +--< StockStatusUpdateLog (stock)
+         |    +--< DebitEntry (stock) >---- Party
          |
-         +--< StockStatusUpdateLog (stock)
-
-TankItem (tank)
-  |
-  +--< TankData (tank)
-         |
-         +--< TankLayer (tank) >----< StockStatus
+         +--< TankLayer (tank) <---+
+                                    |
+TankItem (tank)                    |
+  |                                |
+  +--< TankData (tank)             |
+         |                         |
+         +--< TankLayer (tank) >--+
+         |         (FIFO layers, oldest-first consumption)
          |
          +--< TankLog (tank)
+                |    +-- destination_tank -> TankData (transfer)
+                |    +-- stock_status -> StockStatus (inward)
                 |
                 +--< TankLogConsumption (tank)
+                         +-- tank_layer -> TankLayer
 
 AdvanceLicenseHeaders (license)
-  |
   +--< AdvanceLicenseLines (license)
 
 DFIALicenseHeader (license)
-  |
   +--< DFIALicenseLines (license)
 
-DomesticContracts (sap_sync)   -- standalone, synced from SAP
+DomesticContracts (sap_sync)   -- synced from SAP, read/update only
+DomesticReports (contracts)    -- manually created (3-step form)
 
-syncLogs (sap_sync)            -- standalone audit trail
+syncLogs (sap_sync)            -- SAP sync audit trail
 
-DailyPrice (daily_price)       -- standalone, fetched from Google Sheets
+DailyPrice (daily_price)       -- fetched from Google Sheets
+JivoRates (daily_price)        -- fetched from Google Sheets
 ```

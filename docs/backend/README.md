@@ -59,19 +59,23 @@ EXIM-backend/
   |   |- serializers.py        # Stock serializers
   |   |- filters.py            # StockStatusFilters
   |
-  |- daily_price/              # Commodity price management
-  |   |- models.py             # DailyPrice
-  |   |- views.py              # Fetch from Google Sheets, save, trends
-  |   |- serializers.py        # Price serializers
-  |   |- services.py           # Google Sheets CSV parser
+  |- daily_price/              # Commodity price management + Jivo rates
+  |   |- models.py             # DailyPrice, JivoRates
+  |   |- views.py              # Fetch from Google Sheets, save, trends, Jivo rate views
+  |   |- serializers.py        # Price + Jivo rate serializers
+  |   |- services.py           # Google Sheets CSV parser (daily prices + Jivo rates)
   |
   |- license/                  # License management
   |   |- models.py             # AdvanceLicenseHeaders/Lines, DFIALicenseHeader/Lines
-  |   |- views.py              # CRUD for headers and lines
+  |   |- views.py              # CRUD for headers and lines, insight aggregations
   |   |- serializers.py        # License serializers with nested lines
   |
+  |- contracts/                # Form-based domestic contract workflow
+  |   |- models.py             # DomesticReports (multi-step: contract, loading, freight)
+  |   |- views.py              # ContractPostView, LoadingPostView, FreightPostView
+  |   |- serializers.py        # ContractSerializer, LoadingSerializer, FreightSerializer
+  |
   |- planning/                 # (Empty - future use)
-  |- domestic_contract/        # (Unused)
   |- manage.py
 ```
 
@@ -120,10 +124,11 @@ All values from environment variables in `.env`:
 | `accounts` | Auth, users, roles | User |
 | `sap_sync` | SAP integration | RMProducts, FGProducts, Party, DomesticContracts, syncLogs |
 | `tank` | Tank management | TankItem, TankData, TankLayer, TankLog, TankLogConsumption |
-| `stock` | Inventory tracking | StockStatus, StockStatusUpdateLog |
-| `daily_price` | Commodity prices | DailyPrice |
+| `stock` | Inventory tracking | StockStatus, StockStatusUpdateLog, DebitEntry |
+| `daily_price` | Commodity prices + Jivo rates | DailyPrice, JivoRates |
 | `license` | License management | AdvanceLicenseHeaders, AdvanceLicenseLines, DFIALicenseHeader, DFIALicenseLines |
-| `planning` | (Empty) | - |
+| `contracts` | Form-based domestic contracts | DomesticReports |
+| `planning` | (Empty — future use) | - |
 
 ---
 
@@ -153,4 +158,5 @@ SAP data synced:
 - **Finished Goods Products** (OITM table)
 - **Parties/Vendors** (OCRD table)
 - **Purchase Orders** (OPDN, PDN1, POR1, OPOR, PCH1, OPCH, IPF1 tables)
-- **Balance Sheet** (Vendor balances via CTEs)
+- **Balance Sheet** (Vendor balances via CTEs — not persisted, returned directly)
+- **Open GRPOs** (Goods Receipt POs pending invoice)
