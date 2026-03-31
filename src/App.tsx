@@ -30,7 +30,7 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
 
 // Contracts
-import OldDomesticContractsPage from "@/pages/contracts/OldDomesticContractsPage";
+import DomesticContracts2526Page from "@/pages/contracts/DomesticContracts2526Page";
 import DomesticContracts2627Page from "@/pages/contracts/DomesticContracts2627Page";
 
 // License
@@ -112,7 +112,7 @@ function App() {
               path="/domestic-contracts"
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
-                  <OldDomesticContractsPage />
+                  <DomesticContracts2526Page />
                 </ProtectedRoute>
               }
             />

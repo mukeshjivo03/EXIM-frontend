@@ -64,7 +64,8 @@ const quickLinks: QuickLink[] = [
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations" },
   
   // Commercials
-  { to: "/domestic-contracts", label: "Domestic Contracts", icon: FileText, desc: "Purchase orders", category: "Commercials", roles: ["ADM", "MNG"] },
+  { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", roles: ["ADM", "MNG"] },
+  { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", roles: ["ADM", "MNG"] },

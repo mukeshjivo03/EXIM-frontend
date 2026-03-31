@@ -22,7 +22,7 @@ All routes are defined in `src/App.tsx`. Pages are organized into section-based 
 | `/commodity/jivo-rates` | `JivoRatesPage` | ADM, MNG | Jivo commodity rates (fetch, save, history) |
 | `/exim-account` | `EximAccountPage` | ADM, MNG | Balance sheet from SAP |
 | `/contracts/open-grpos` | `OpenGrpoPage` | ADM, MNG | Open GRPOs pending invoice |
-| `/domestic-contracts` | `OldDomesticContractsPage` | ADM, MNG | Purchase orders (legacy view) |
+| `/domestic-contracts` | `DomesticContracts2526Page` | ADM, MNG | Purchase orders (2025-2026 view) |
 | `/license/advance-license` | `AdvanceLicensePage` | ADM, MNG | Advance license headers |
 | `/license/advance-license/:licenseNo` | `AdvanceLicenseDetailPage` | ADM, MNG | License lines for a header |
 | `/license/dfia-license` | `DFIALicensePage` | ADM, MNG | DFIA license headers |

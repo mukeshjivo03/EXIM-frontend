@@ -60,7 +60,7 @@ function completedVariant(c: number): "default" | "secondary" {
 
 /* ── component ────────────────────────────────────────────── */
 
-export default function OldDomesticContractsPage() {
+export default function DomesticContracts2526Page() {
   const [rows, setRows] = useState<OldContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -167,7 +167,7 @@ export default function OldDomesticContractsPage() {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold">Old Domestic Contracts</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Domestic Contracts (2025-2026)</h1>
         <p className="text-sm text-muted-foreground">
           Historical contract records
         </p>
@@ -274,7 +274,7 @@ export default function OldDomesticContractsPage() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="1">Completed</SelectItem>
                 <SelectItem value="0">Pending</SelectItem>
               </SelectContent>
