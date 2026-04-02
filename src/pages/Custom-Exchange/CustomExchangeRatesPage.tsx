@@ -48,11 +48,11 @@ import { Badge } from "@/components/ui/badge";
 
 const ALLOWED_CURRENCIES = [
   "U.S.Dollar",
-  "Australian Dollar",
   "Euro",
   "UAE Dirham",
-  "Sterling Pound",
+  "Australian Dollar",
   "Canadian Dollar",
+  "Sterling Pound",
 ];
 
 const ITEMS_DATA = [
@@ -195,11 +195,9 @@ export default function CustomExchangeRatesPage() {
       );
     }
 
-    // Sort: U.S.Dollar always at the top
+    // Sort by index in ALLOWED_CURRENCIES
     return result.sort((a, b) => {
-      if (a.currency === "U.S.Dollar") return -1;
-      if (b.currency === "U.S.Dollar") return 1;
-      return a.currency.localeCompare(b.currency);
+      return ALLOWED_CURRENCIES.indexOf(a.currency) - ALLOWED_CURRENCIES.indexOf(b.currency);
     });
   }, [rates, search]);
 
@@ -238,7 +236,7 @@ export default function CustomExchangeRatesPage() {
     return { inrPerTon, inrPerKg, inrPerLtr };
   }, [rates, localPrice, localCurrency, localExpense]);
 
-  const keyCurrencies = ["U.S.Dollar", "Euro", "Sterling Pound", "Australian Dollar", "UAE Dirham"];
+  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar",];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
@@ -429,7 +427,7 @@ export default function CustomExchangeRatesPage() {
             <CardHeader className="pb-3 border-b">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <CardTitle className="text-xl">Detailed Rates</CardTitle>
+                  <CardTitle className="text-xl">Custom Exchange Rates</CardTitle>
                   <CardDescription className="text-sm">
                     {hasFetched
                       ? selectedDate && isValid(parseISO(selectedDate))
