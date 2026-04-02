@@ -21,6 +21,7 @@ import {
   History,
   AlertTriangle,
   ArrowRight,
+  Globe,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -66,6 +67,7 @@ const quickLinks: QuickLink[] = [
   // Commercials
   { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", roles: ["ADM", "MNG"] },
+  { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", roles: ["ADM", "MNG"] },

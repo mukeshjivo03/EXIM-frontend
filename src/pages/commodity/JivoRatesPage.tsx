@@ -150,21 +150,57 @@ export default function JivoRatesPage() {
 
   const matrix = useMemo(() => {
     const data = filteredPreview;
-    const commodities = Array.from(new Set(data.map((p) => p.commodity))).sort();
-    const packTypes = Array.from(new Set(data.map((p) => p.pack_type))).sort((a, b) => {
-      const toGrams = (s: string) => {
-        const m = s.match(/([\d.]+)\s*(g|kg|ml|l|ltr|litre|ton|mt)/i);
-        if (!m) return Infinity;
-        const n = parseFloat(m[1]);
-        const u = m[2].toLowerCase();
-        if (u === "kg" || u === "l" || u === "ltr" || u === "litre") return n * 1000;
-        if (u === "ton" || u === "mt") return n * 1_000_000;
-        return n; // g or ml
-      };
-      return toGrams(a) - toGrams(b);
-    });
+    
+    // Explicit ordering for commodities
+    const COMMODITY_ORDER = ["soya", "mustard", "sunflower", "cotton refined", "ricebran refined"];
+    
+    // Explicit ordering for pack types
+    const PACK_TYPE_ORDER = [
+      "pouch 1ltr",
+      "pouch 750g",
+      "pouch 700g",
+      "bottle 1ltr",
+      "15ltr tin",
+      "15kg tin",
+      "13kg tin"
+    ];
+
+    const commodities = Array.from(new Set(data.map((p) => p.commodity.toLowerCase())))
+      .sort((a, b) => {
+        const indexA = COMMODITY_ORDER.indexOf(a);
+        const indexB = COMMODITY_ORDER.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+
+    const packTypes = Array.from(new Set(data.map((p) => p.pack_type.toLowerCase())))
+      .sort((a, b) => {
+        const indexA = PACK_TYPE_ORDER.indexOf(a);
+        const indexB = PACK_TYPE_ORDER.indexOf(b);
+        if (indexA === -1 && indexB === -1) {
+          // Fallback to numeric sort if not in order
+          const toGrams = (s: string) => {
+            const m = s.match(/([\d.]+)\s*(g|kg|ml|l|ltr|litre|ton|mt)/i);
+            if (!m) return Infinity;
+            const n = parseFloat(m[1]);
+            const u = m[2].toLowerCase();
+            if (u === "kg" || u === "l" || u === "ltr" || u === "litre") return n * 1000;
+            if (u === "ton" || u === "mt") return n * 1_000_000;
+            return n;
+          };
+          return toGrams(a) - toGrams(b);
+        }
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+
     const rateMap = new Map<string, number>();
-    for (const p of data) rateMap.set(`${p.commodity}||${p.pack_type}`, p.rate);
+    for (const p of data) {
+      rateMap.set(`${p.commodity.toLowerCase()}||${p.pack_type.toLowerCase()}`, p.rate);
+    }
     return { commodities, packTypes, rateMap };
   }, [filteredPreview]);
 
@@ -282,16 +318,24 @@ export default function JivoRatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px] bg-muted/50 font-semibold">Commodity</TableHead>
-                    {matrix.packTypes.map((pt) => (
-                      <TableHead key={pt} className="text-right min-w-[110px]">{pt}</TableHead>
+                    <TableHead className="min-w-[160px] font-bold text-foreground border-r" style={{ backgroundColor: "#93c47d" }}>
+                      Jivo Rate
+                    </TableHead>
+                    {matrix.commodities.map((c) => (
+                      <TableHead 
+                        key={c} 
+                        className="text-center min-w-[110px] font-bold text-foreground border-r capitalize"
+                        style={{ backgroundColor: "#fff3cc" }}
+                      >
+                        {c}
+                      </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {matrix.commodities.length === 0 ? (
+                  {matrix.packTypes.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={matrix.packTypes.length + 1} className="py-16 text-center">
+                      <TableCell colSpan={matrix.commodities.length + 1} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <PackageOpen className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">
@@ -302,18 +346,25 @@ export default function JivoRatesPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    matrix.commodities.map((commodity) => (
-                      <TableRow key={commodity} className={cn(justFetched && "animate-in fade-in duration-500")}>
-                        <TableCell className="font-medium bg-muted/20">{commodity}</TableCell>
-                        {matrix.packTypes.map((pt) => {
+                    matrix.packTypes.map((pt) => (
+                      <TableRow key={pt} className={cn(justFetched && "animate-in fade-in duration-500", "hover:bg-muted/30 transition-colors")}>
+                        <TableCell className="font-bold border-r capitalize" style={{ backgroundColor: "#ffe699" }}>
+                          {pt}
+                        </TableCell>
+                        {matrix.commodities.map((commodity) => {
                           const rate = matrix.rateMap.get(`${commodity}||${pt}`);
                           return (
                             <TableCell
-                              key={pt}
-                              className="text-right"
-                              style={{ backgroundColor: rate != null ? heatmapBg(rate, priceRange.min, priceRange.max) : undefined }}
+                              key={commodity}
+                              className="text-right border-r"
                             >
-                              {rate != null ? <span className="font-semibold tabular-nums">{fmtRate(rate)}</span> : <span className="text-muted-foreground">—</span>}
+                              {rate != null ? (
+                                <span className="font-bold text-sm tabular-nums">
+                                  ₹ {fmtRate(rate)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/40">—</span>
+                              )}
                             </TableCell>
                           );
                         })}
@@ -356,10 +407,7 @@ export default function JivoRatesPage() {
                         <TableCell className="font-medium">{idx + 1}</TableCell>
                         <TableCell className="font-medium">{item.commodity}</TableCell>
                         <TableCell>{item.pack_type}</TableCell>
-                        <TableCell
-                          className="text-right"
-                          style={{ backgroundColor: heatmapBg(item.rate, priceRange.min, priceRange.max) }}
-                        >
+                        <TableCell className="text-right">
                           <span className="font-semibold">{fmtRate(item.rate)}</span>
                         </TableCell>
                         <TableCell className="tabular-nums text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>

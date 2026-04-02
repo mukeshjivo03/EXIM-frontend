@@ -26,6 +26,7 @@ import {
   FileCheck,
   ShieldCheck,
   Receipt,
+  Globe,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,10 @@ const commodityLinks = [
 const accountsLinks = [
   { to: "/exim-account", label: "Dr/Cr Outstanding", icon: Scale },
   { to: "/contracts/open-grpos", label: "Open GRPOs", icon: Receipt },
+];
+
+const forexLinks = [
+  { to: "/exim-rates", label: "Exchange Rates", icon: Globe },
 ];
 
 const contractsLinks = [
@@ -271,6 +276,33 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
               <SectionLabel label="Accounts" collapsed={collapsed} isActive={isSectionActive(accountsLinks)} />
 
               {accountsLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
+            </>
+          )}
+
+          {/* ── Foreign exchange rates (ADM | MNG) ── */}
+          {isAdminOrManager && (
+            <>
+              <Separator className="my-3" />
+
+              <SectionLabel label="Foreign exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
+
+              {forexLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
