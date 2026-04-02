@@ -13,9 +13,9 @@ import {
   Globe,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { format, isBefore, subDays, isValid, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
-import { fetchEximRates, type EximRate } from "@/api/customRates";
+import { fetchExternalExchangeRates, fetchEximRates, type EximRate } from "@/api/customRates";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 
 /* ── Types & Helpers ───────────────────────────────────────── */
@@ -67,48 +66,41 @@ const ITEMS_DATA = [
 
 const ORIGINS = ["Spain", "UAE", "Australia"];
 
-const CURRENCY_MAP: Record<string, { flag: string; icon: any; color: string; code: string }> = {
-  "U.S.Dollar": { flag: "https://flagcdn.com/w40/us.png", icon: DollarSign, color: "text-blue-600 dark:text-blue-400", code: "US" },
-  "Australian Dollar": { flag: "https://flagcdn.com/w40/au.png", icon: DollarSign, color: "text-amber-600 dark:text-amber-400", code: "AU" },
-  "Euro": { flag: "https://flagcdn.com/w40/eu.png", icon: Euro, color: "text-indigo-600 dark:text-indigo-400", code: "EU" },
-  "UAE Dirham": { flag: "https://flagcdn.com/w40/ae.png", icon: Globe, color: "text-emerald-600 dark:text-emerald-400", code: "AE" },
-  "Sterling Pound": { flag: "https://flagcdn.com/w40/gb.png", icon: PoundSterling, color: "text-purple-600 dark:text-purple-400", code: "GB" },
-  "Canadian Dollar": { flag: "https://flagcdn.com/w40/ca.png", icon: DollarSign, color: "text-red-600 dark:text-red-400", code: "CA" },
+const CURRENCY_MAP: Record<string, { flag: string; icon: any; color: string; code: string; short: string }> = {
+  "U.S.Dollar": { flag: "https://flagcdn.com/w40/us.png", icon: DollarSign, color: "text-blue-600 dark:text-blue-400", code: "USD", short: "USD" },
+  "Australian Dollar": { flag: "https://flagcdn.com/w40/au.png", icon: DollarSign, color: "text-amber-600 dark:text-amber-400", code: "AUD", short: "AUD" },
+  "Euro": { flag: "https://flagcdn.com/w40/eu.png", icon: Euro, color: "text-indigo-600 dark:text-indigo-400", code: "EUR", short: "EUR" },
+  "UAE Dirham": { flag: "https://flagcdn.com/w40/ae.png", icon: Globe, color: "text-emerald-600 dark:text-emerald-400", code: "AED", short: "AED" },
+  "Sterling Pound": { flag: "https://flagcdn.com/w40/gb.png", icon: PoundSterling, color: "text-purple-600 dark:text-purple-400", code: "GBP", short: "GBP" },
+  "Canadian Dollar": { flag: "https://flagcdn.com/w40/ca.png", icon: DollarSign, color: "text-red-600 dark:text-red-400", code: "CAD", short: "CAD" },
 };
 
-function fmtRate(v: number, decimals = 2): string {
+function fmtRate(v: number, decimals = 4): string {
   return Number(v).toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 /* ── Module-level cache ────────────────────────────────────── */
 
-let cachedRates: EximRate[] = [];
+let cachedCustomRates: EximRate[] = [];
+let cachedLiveRates: EximRate[] = [];
 let hasFetched = false;
 let lastFetchTime: Date | null = null;
-let lastFetchedDate: string = "";
 
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function CustomExchangeRatesPage() {
-  const [rates, setRates] = useState<EximRate[]>(cachedRates);
+  const [customRates, setCustomRates] = useState<EximRate[]>(cachedCustomRates);
+  const [liveRates, setLiveRates] = useState<EximRate[]>(cachedLiveRates);
   const [fetching, setFetching] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(lastFetchTime);
-  const [selectedDate, setSelectedDate] = useState<string>(lastFetchedDate);
   const [search, setSearch] = useState("");
 
-  // Converter state (Import)
+  // Converter state
   const [convItem, setConvItem] = useState<string>("cdro");
   const [convOrigin, setConvOrigin] = useState<string>("Spain");
   const [convCurrency, setConvCurrency] = useState<string>("U.S.Dollar");
   const [convPrice, setConvPrice] = useState<string>("1000");
   const [convExpense, setConvExpense] = useState<string>("22.5");
-
-  // Converter state (Local)
-  const [localItem, setLocalItem] = useState<string>("cdro");
-  const [localOrigin, setLocalOrigin] = useState<string>("Spain");
-  const [localCurrency, setLocalCurrency] = useState<string>("U.S.Dollar");
-  const [localPrice, setLocalPrice] = useState<string>("1000");
-  const [localExpense, setLocalExpense] = useState<string>("22.5");
 
   useEffect(() => {
     if (!hasFetched) {
@@ -116,7 +108,6 @@ export default function CustomExchangeRatesPage() {
     }
   }, []);
 
-  // Auto-update expense when item changes
   const handleItemChange = (val: string) => {
     setConvItem(val);
     const item = ITEMS_DATA.find(i => i.value === val);
@@ -125,40 +116,42 @@ export default function CustomExchangeRatesPage() {
     }
   };
 
-  const handleLocalItemChange = (val: string) => {
-    setLocalItem(val);
-    const item = ITEMS_DATA.find(i => i.value === val);
-    if (item) {
-      setLocalExpense(item.expense.toString());
-    }
-  };
-
   /* ── Fetch ────────────────────────────────────────────────── */
 
-  async function handleFetch(dateToFetch?: string) {
+  async function handleFetch() {
     setFetching(true);
-    const dateStr = dateToFetch !== undefined ? dateToFetch : selectedDate;
-    
     try {
-      const response = await fetchEximRates(dateStr || undefined);
-      const data = response.data || [];
+      // Fetch both simultaneously
+      const [customRes, liveRes] = await Promise.all([
+        fetchEximRates(),
+        fetchExternalExchangeRates()
+      ]);
+
+      const cData = customRes.data || [];
+      const lData = liveRes.data || [];
       
-      cachedRates = data;
+      cachedCustomRates = cData;
+      cachedLiveRates = lData;
       hasFetched = true;
       const now = new Date();
       lastFetchTime = now;
-      lastFetchedDate = dateStr;
       
-      setRates(data);
+      setCustomRates(cData);
+      setLiveRates(lData);
       setFetchedAt(now);
       
-      if (dateStr) {
-        toast.success(`Loaded exchange rates for ${dateStr}`);
+      // Check if live rates are from today's live fetch or cache
+      const STORAGE_KEY = "exim_live_rates_cache";
+      const cached = localStorage.getItem(STORAGE_KEY);
+      const cacheState = cached ? JSON.parse(cached) : null;
+      
+      if (cacheState && cacheState.count >= 10) {
+        toast.info("Daily live rate limit reached. Showing last fetched data.");
       } else {
-        toast.success(`Loaded current exchange rates`);
+        toast.success("Exchange rates updated successfully");
       }
     } catch (err) {
-      toast.error(getErrorMessage(err, "Failed to fetch exchange rates"));
+      toast.error(getErrorMessage(err, "Failed to refresh rates"));
     } finally {
       setFetching(false);
     }
@@ -167,26 +160,25 @@ export default function CustomExchangeRatesPage() {
   /* ── Excel Export ─────────────────────────────────────────── */
 
   function exportExcel() {
-    const rows = filteredRates.map((r, i) => ({
+    const rows = filteredCustomRates.map((r, i) => ({
       "S.No": i + 1,
       "CURRENCY": r.currency,
       "IMPORT RATE": r.import,
       "EXPORT RATE": r.export,
       "NOTIFICATION NO": r.notification_no || "---",
-      "AS OF DATE": format(new Date(r.date), "dd-MM-yyyy"),
+      "DATE": format(new Date(r.date), "dd-MM-yyyy"),
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Exchange Rates");
-    const fileNameDate = selectedDate || format(new Date(), "yyyy-MM-dd");
-    XLSX.writeFile(wb, `Exchange_Rates_${fileNameDate}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Custom Rates");
+    XLSX.writeFile(wb, `Custom_Exchange_Rates_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   }
 
   /* ── Filtering & Sorting ──────────────────────────────────── */
 
-  const filteredRates = useMemo(() => {
-    let result = rates.filter((r) => ALLOWED_CURRENCIES.includes(r.currency));
+  const filteredCustomRates = useMemo(() => {
+    let result = customRates.filter((r) => ALLOWED_CURRENCIES.includes(r.currency));
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -195,48 +187,30 @@ export default function CustomExchangeRatesPage() {
       );
     }
 
-    // Sort by index in ALLOWED_CURRENCIES
     return result.sort((a, b) => {
       return ALLOWED_CURRENCIES.indexOf(a.currency) - ALLOWED_CURRENCIES.indexOf(b.currency);
     });
-  }, [rates, search]);
+  }, [customRates, search]);
 
   /* ── Converter Logic ─────────────────────────────────────── */
 
   const conversionResults = useMemo(() => {
-    const target = rates.find(r => r.currency === convCurrency);
+    // Usually conversions use official/custom rates
+    const target = customRates.find(r => r.currency === convCurrency);
     if (!target || isNaN(Number(convPrice))) return null;
 
     const pricePerTon = Number(convPrice);
-    const importRate = Number(target.import);
+    const rateValue = Number(target.import);
     const expensePct = isNaN(Number(convExpense)) ? 0 : Number(convExpense);
     
-    // Total INR per Ton = (Price in Currency * Rate) + Expense%
-    const inrPerTon = (pricePerTon * importRate) * (1 + (expensePct / 100));
-    
+    const inrPerTon = (pricePerTon * rateValue) * (1 + (expensePct / 100));
     const inrPerKg = inrPerTon / 1000;
-    // 1kg = 1ltr * 1.0989 => Weight of 1Ltr is 1.0989kg
-    const inrPerLtr = inrPerKg / 1.0989;
+    const inrPerLtr = inrPerKg * 1.0989;
 
     return { inrPerTon, inrPerKg, inrPerLtr };
-  }, [rates, convPrice, convCurrency, convExpense]);
+  }, [customRates, convPrice, convCurrency, convExpense]);
 
-  const localResults = useMemo(() => {
-    const target = rates.find(r => r.currency === localCurrency);
-    if (!target || isNaN(Number(localPrice))) return null;
-
-    const pricePerTon = Number(localPrice);
-    const exportRate = Number(target.export);
-    const expensePct = isNaN(Number(localExpense)) ? 0 : Number(localExpense);
-    
-    const inrPerTon = (pricePerTon * exportRate) * (1 + (expensePct / 100));
-    const inrPerKg = inrPerTon / 1000;
-    const inrPerLtr = inrPerKg / 1.0989;
-
-    return { inrPerTon, inrPerKg, inrPerLtr };
-  }, [rates, localPrice, localCurrency, localExpense]);
-
-  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar",];
+  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar", "Sterling Pound"];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
@@ -244,22 +218,14 @@ export default function CustomExchangeRatesPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <ArrowRightLeft className="h-6 w-6 text-primary" />
-            Exchange Rates
+            <Globe className="h-6 w-6 text-primary" />
+            Detailed Live Rates
           </h1>
           <p className="text-sm text-muted-foreground">
-            Manage and convert foreign exchange rates for business transactions
+            View live market rates and manage custom exchange data
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DatePicker
-            value={selectedDate}
-            placeholder="Rates for date..."
-            onChange={(val) => {
-              setSelectedDate(val);
-              handleFetch(val);
-            }}
-          />
           <Button
             className="btn-press"
             onClick={() => handleFetch()}
@@ -268,47 +234,51 @@ export default function CustomExchangeRatesPage() {
             <RefreshCw
               className={`h-4 w-4 mr-2 ${fetching ? "animate-spin" : ""}`}
             />
-            {fetching ? "Fetching..." : "Fetch Rates"}
+            {fetching ? "Refreshing..." : "Refresh All Rates"}
           </Button>
-          {hasFetched && filteredRates.length > 0 && (
+          {hasFetched && filteredCustomRates.length > 0 && (
             <Button
               variant="outline"
               className="btn-press gap-2"
               onClick={exportExcel}
             >
               <Download className="h-4 w-4" />
-              Export
+              Export Custom
             </Button>
           )}
         </div>
       </div>
 
-      {/* Top Cards (Key Currencies) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      {/* Top Cards (Live Exchange Rates) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {keyCurrencies.map((ccy) => {
-          const rate = rates.find(r => r.currency === ccy);
+          const rate = liveRates.find(r => r.currency === ccy);
           const meta = CURRENCY_MAP[ccy];
           return (
             <Card key={ccy} className="card-hover border-l-4 border-l-primary/50 overflow-hidden relative">
-              <div className="absolute top-2 right-3 opacity-10 pointer-events-none">
-                <img src={meta?.flag} alt="" className="w-12 grayscale" />
+              <div className="absolute top-1 right-2 opacity-10 pointer-events-none">
+                <img src={meta?.flag} alt="" className="w-10 grayscale" />
               </div>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardHeader className="pb-1 pt-4 px-4">
+                <CardTitle className="text-[13px] font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
                   <img src={meta?.flag} alt={meta?.code} className="h-4 w-6 object-cover rounded-sm shadow-sm" />
-                  {ccy.replace("U.S.", "US ")}
+                  {meta?.short} to INR
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-4 pt-1 px-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">
-                    ₹ {rate?.import || "---"}
+                  <span className="text-2xl font-black tracking-tighter text-primary">
+                    ₹ {rate ? fmtRate(Number(rate.import), 2) : "---"}
                   </span>
-                  <span className="text-xs text-muted-foreground font-bold uppercase">Import</span>
                 </div>
-                <div className="mt-4 flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground font-bold uppercase">Export:</span>
-                  <span className="font-semibold text-primary">₹ {rate?.export || "---"}</span>
+                <div className="mt-3 flex justify-between items-center text-[10px] uppercase font-black text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE
+                  </span>
+                  <span>
+                    {fetchedAt ? format(fetchedAt, "HH:mm") : "--:--"}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -317,15 +287,15 @@ export default function CustomExchangeRatesPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* LEFT: Quick Converter Import */}
+        {/* LEFT: Quick Converter */}
         <div className="xl:col-span-3">
           <Card className="card-hover h-fit border-t-4 border-t-primary shadow-lg sticky top-20">
             <CardHeader className="pb-3 border-b">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-primary" />
-                Quick Converter Import
+                Quick Converter
               </CardTitle>
-              <CardDescription className="text-xs">Import Rates (Landing Cost)</CardDescription>
+              <CardDescription className="text-xs">Using Custom Exchange Rates</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -409,11 +379,11 @@ export default function CustomExchangeRatesPage() {
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-semibold text-muted-foreground">Price/KG</span>
-                    <span className="font-bold text-base">₹ {fmtRate(conversionResults?.inrPerKg || 0)}</span>
+                    <span className="font-bold text-base">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
                   </div>
                   <div className="flex justify-between items-center bg-primary/10 p-2.5 rounded border border-primary/20">
                     <span className="text-sm font-bold text-primary">Price/Liter</span>
-                    <span className="text-xl font-black text-primary">₹ {fmtRate(conversionResults?.inrPerLtr || 0)}</span>
+                    <span className="text-xl font-black text-primary">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
                   </div>
                 </div>
               </div>
@@ -421,7 +391,7 @@ export default function CustomExchangeRatesPage() {
           </Card>
         </div>
 
-        {/* CENTER: Detailed Rates Table */}
+        {/* CENTER: Custom Exchange Rates Table */}
         <div className="xl:col-span-6">
           <Card className="card-hover">
             <CardHeader className="pb-3 border-b">
@@ -430,17 +400,15 @@ export default function CustomExchangeRatesPage() {
                   <CardTitle className="text-xl">Custom Exchange Rates</CardTitle>
                   <CardDescription className="text-sm">
                     {hasFetched
-                      ? selectedDate && isValid(parseISO(selectedDate))
-                        ? `As of ${format(parseISO(selectedDate), "dd MMM yyyy")}`
-                        : "Current official exchange rates"
-                      : "Fetching latest data..."}
+                      ? `Updated as of ${fetchedAt ? format(fetchedAt, "dd MMM yyyy, HH:mm:ss") : "--"}`
+                      : "Loading data..."}
                   </CardDescription>
                 </div>
                 {hasFetched && (
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search currency..."
+                      placeholder="Search custom..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="pl-9 h-10 w-48 text-sm"
@@ -454,11 +422,11 @@ export default function CustomExchangeRatesPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30 text-xs font-bold uppercase tracking-wider">
+                    <TableRow className="bg-muted/30 hover:bg-muted/30 text-sm font-black uppercase tracking-widest h-14">
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>CURRENCY</TableHead>
-                      <TableHead className="text-right font-black">IMPORT</TableHead>
-                      <TableHead className="text-right font-black">EXPORT</TableHead>
+                      <TableHead className="text-right">IMPORT</TableHead>
+                      <TableHead className="text-right">EXPORT</TableHead>
                       <TableHead className="text-center">DATE</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -468,48 +436,49 @@ export default function CustomExchangeRatesPage() {
                         <TableCell colSpan={5} className="h-64 text-center">
                           <div className="flex flex-col items-center justify-center gap-3">
                             <RefreshCw className="h-10 w-10 animate-spin text-primary opacity-50" />
-                            <span className="text-muted-foreground font-semibold text-base">Updating rates...</span>
+                            <span className="text-muted-foreground font-semibold text-base">Refreshing rates...</span>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : filteredRates.length === 0 ? (
+                    ) : filteredCustomRates.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5}>
                           <div className="flex flex-col items-center gap-3 text-muted-foreground py-24">
                             <PackageOpen className="h-16 w-16 stroke-1 opacity-20" />
-                            <p className="font-bold text-base">No currency data available</p>
+                            <p className="font-bold text-base">No custom rates available</p>
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredRates.map((rate, idx) => {
+                      filteredCustomRates.map((rate, idx) => {
                         const meta = CURRENCY_MAP[rate.currency];
-                        const rateDate = new Date(rate.date);
+                        const rDate = new Date(rate.date);
                         
                         return (
-                          <TableRow key={rate.currency} className="hover:bg-accent/5 transition-colors group h-14">
-                            <TableCell className="text-xs text-muted-foreground font-mono">
+                          <TableRow key={rate.currency} className="hover:bg-accent/5 transition-colors group h-20">
+                            <TableCell className="text-sm text-muted-foreground font-mono font-black">
                               {(idx + 1).toString().padStart(2, '0')}
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-3">
-                                <img src={meta?.flag} alt={meta?.code} className="h-5 w-8 object-cover rounded shadow-sm" />
+                              <div className="flex items-center gap-4">
+                                <img src={meta?.flag} alt={meta?.code} className="h-7 w-11 object-cover rounded shadow-md border border-muted" />
                                 <div className="flex flex-col">
-                                  <span className="font-bold text-sm tracking-tight">
+                                  <span className="font-black text-lg tracking-tight leading-none">
                                     {rate.currency.replace("U.S.", "US ")}
                                   </span>
+                                  <span className="text-xs font-black text-muted-foreground uppercase mt-1 tracking-tighter">{meta?.short}</span>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-mono font-black text-sm text-primary">
+                            <TableCell className="text-right font-mono font-black text-lg text-primary">
                               {rate.import}
                             </TableCell>
-                            <TableCell className="text-right font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
+                            <TableCell className="text-right font-mono font-black text-lg text-emerald-600">
                               {rate.export}
                             </TableCell>
                             <TableCell className="text-center">
-                              <span className="text-xs font-bold text-muted-foreground">
-                                {isValid(rateDate) ? format(rateDate, "dd-MM-yyyy") : "---"}
+                              <span className="text-sm font-black text-muted-foreground">
+                                {isValid(rDate) ? format(rDate, "dd-MM-yyyy") : "---"}
                               </span>
                             </TableCell>
                           </TableRow>
@@ -531,7 +500,7 @@ export default function CustomExchangeRatesPage() {
                 <ArrowRightLeft className="h-5 w-5 text-emerald-500" />
                 Quick Converter Local
               </CardTitle>
-              <CardDescription className="text-xs">Export Rates (Local Cost)</CardDescription>
+              <CardDescription className="text-xs">Local Cost Tools</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 h-64 flex flex-col items-center justify-center text-center">
               <div className="bg-emerald-500/10 p-4 rounded-full mb-4">
