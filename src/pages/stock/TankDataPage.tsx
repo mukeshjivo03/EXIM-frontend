@@ -324,16 +324,8 @@ export default function TankDataPage() {
     setItemListOpen(!tank.item_code);
   }
 
-  // Item codes already assigned to other tanks (exclude current edit target)
-  const usedItemCodes = new Set(
-    tanks
-      .filter((t) => t.item_code && t.tank_code !== editTarget?.tank_code)
-      .map((t) => t.item_code!.toLowerCase())
-  );
-
-  // Filtered tank items for omni search — exclude items already in another tank
+  // Filtered tank items for omni search
   const filteredItemCodes = tankItems.filter((ti) => {
-    if (usedItemCodes.has(ti.tank_item_code.toLowerCase())) return false;
     if (!itemSearch.trim()) return true;
     const q = itemSearch.toLowerCase();
     return (
