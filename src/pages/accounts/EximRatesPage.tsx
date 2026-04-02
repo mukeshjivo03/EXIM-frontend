@@ -461,7 +461,7 @@ export default function EximRatesPage() {
                       <TableHead>CURRENCY</TableHead>
                       <TableHead className="text-right font-black">IMPORT</TableHead>
                       <TableHead className="text-right font-black">EXPORT</TableHead>
-                      <TableHead className="text-center">STATUS</TableHead>
+                      <TableHead className="text-center">DATE</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -487,7 +487,6 @@ export default function EximRatesPage() {
                       filteredRates.map((rate, idx) => {
                         const meta = CURRENCY_MAP[rate.currency];
                         const rateDate = new Date(rate.date);
-                        const isOld = isBefore(rateDate, subDays(new Date(), 3));
                         
                         return (
                           <TableRow key={rate.currency} className="hover:bg-accent/5 transition-colors group h-14">
@@ -511,12 +510,9 @@ export default function EximRatesPage() {
                               {rate.export}
                             </TableCell>
                             <TableCell className="text-center">
-                              <Badge 
-                                variant={isOld ? "destructive" : "secondary"}
-                                className="text-[10px] px-2 py-0.5 font-bold uppercase"
-                              >
-                                {isOld ? "Old" : "New"}
-                              </Badge>
+                              <span className="text-xs font-bold text-muted-foreground">
+                                {isValid(rateDate) ? format(rateDate, "dd-MM-yyyy") : "---"}
+                              </span>
                             </TableCell>
                           </TableRow>
                         );
@@ -539,96 +535,14 @@ export default function EximRatesPage() {
               </CardTitle>
               <CardDescription className="text-xs">Export Rates (Local Cost)</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Item</label>
-                  <Select value={localItem} onValueChange={handleLocalItemChange}>
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ITEMS_DATA.map(item => (
-                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Origin</label>
-                  <Select value={localOrigin} onValueChange={setLocalOrigin}>
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORIGINS.map(o => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent className="pt-6 h-64 flex flex-col items-center justify-center text-center">
+              <div className="bg-emerald-500/10 p-4 rounded-full mb-4">
+                <ArrowRightLeft className="h-8 w-8 text-emerald-500" />
               </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Currency</label>
-                <Select value={localCurrency} onValueChange={setLocalCurrency}>
-                  <SelectTrigger className="h-10 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ALLOWED_CURRENCIES.map(ccy => (
-                      <SelectItem key={ccy} value={ccy}>
-                        <div className="flex items-center gap-2">
-                          <img src={CURRENCY_MAP[ccy]?.flag} alt="" className="h-3 w-4 object-cover rounded-sm" />
-                          {ccy.replace("U.S.", "US ")}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Price (Ton)</label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={localPrice}
-                      onChange={(e) => setLocalPrice(e.target.value)}
-                      className="pl-10 h-10 text-sm font-bold"
-                    />
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50">
-                      <img src={CURRENCY_MAP[localCurrency]?.flag} alt="" className="h-3 w-4 object-cover" />
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Expense (%)</label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={localExpense}
-                      onChange={(e) => setLocalExpense(e.target.value)}
-                      className="pr-8 h-10 text-sm font-bold"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold opacity-50">%</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-semibold text-muted-foreground">Price/KG</span>
-                    <span className="font-bold text-base">₹ {fmtRate(localResults?.inrPerKg || 0)}</span>
-                  </div>
-                  <div className="flex justify-between items-center bg-emerald-500/10 p-2.5 rounded border border-emerald-500/20">
-                    <span className="text-sm font-bold text-emerald-600">Price/Liter</span>
-                    <span className="text-xl font-black text-emerald-600">₹ {fmtRate(localResults?.inrPerLtr || 0)}</span>
-                  </div>
-                </div>
-              </div>
+              <h3 className="text-lg font-bold text-foreground">Feature Coming Soon</h3>
+              <p className="text-sm text-muted-foreground mt-2 max-w-[200px]">
+                Local cost conversion tools are currently under development.
+              </p>
             </CardContent>
           </Card>
         </div>
