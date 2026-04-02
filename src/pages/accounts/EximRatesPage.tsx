@@ -218,7 +218,7 @@ export default function EximRatesPage() {
     
     const inrPerKg = inrPerTon / 1000;
     // 1kg = 1ltr * 1.0989 => Weight of 1Ltr is 1.0989kg
-    const inrPerLtr = inrPerKg * 1.0989;
+    const inrPerLtr = inrPerKg / 1.0989;
 
     return { inrPerTon, inrPerKg, inrPerLtr };
   }, [rates, convPrice, convCurrency, convExpense]);
