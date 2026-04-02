@@ -233,7 +233,7 @@ export default function EximRatesPage() {
     
     const inrPerTon = (pricePerTon * exportRate) * (1 + (expensePct / 100));
     const inrPerKg = inrPerTon / 1000;
-    const inrPerLtr = inrPerKg * 1.0989;
+    const inrPerLtr = inrPerKg / 1.0989;
 
     return { inrPerTon, inrPerKg, inrPerLtr };
   }, [rates, localPrice, localCurrency, localExpense]);
