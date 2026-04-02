@@ -15,7 +15,7 @@ import {
 import * as XLSX from "xlsx";
 import { format, isBefore, subDays, isValid, parseISO } from "date-fns";
 
-import { fetchEximRates, type EximRate } from "@/api/eximRates";
+import { fetchEximRates, type EximRate } from "@/api/customRates";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +89,7 @@ let lastFetchedDate: string = "";
 
 /* ── Component ─────────────────────────────────────────────── */
 
-export default function EximRatesPage() {
+export default function CustomExchangeRatesPage() {
   const [rates, setRates] = useState<EximRate[]>(cachedRates);
   const [fetching, setFetching] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(lastFetchTime);

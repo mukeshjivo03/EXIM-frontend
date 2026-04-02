@@ -72,8 +72,8 @@ const forexLinks = [
 ];
 
 const contractsLinks = [
-  { to: "/domestic-contracts", label: "Domestic Contract (2025-2026)", icon: FileCheck },
-  { to: "/contracts/domestic-2627", label: "Domestic Contract (2026-2027)", icon: FileCheck },
+  { to: "/domestic-contracts", label: "FY 2025-2026", icon: FileCheck },
+  { to: "/contracts/domestic-2627", label: "FY 2026-2027", icon: FileCheck },
 ];
 
 const licenseLinks = [
@@ -300,7 +300,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              <SectionLabel label="Foreign exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
+              <SectionLabel label="Custom exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
 
               {forexLinks.map((link) => (
                 <NavLink
@@ -327,7 +327,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <>
               <Separator className="my-3" />
 
-              <SectionLabel label="Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
+              <SectionLabel label="Domestic Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
 
               {contractsLinks.map((link) => (
                 <NavLink

@@ -28,7 +28,9 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
-import EximRatesPage from "@/pages/accounts/EximRatesPage";
+
+//custom Exchange
+import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
 
 // Contracts
 import DomesticContracts2526Page from "@/pages/contracts/DomesticContracts2526Page";
@@ -169,7 +171,7 @@ function App() {
               path="/exim-rates"
               element={
                 <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
-                  <EximRatesPage />
+                  <CustomExchangeRatesPage />
                 </ProtectedRoute>
               }
             />
