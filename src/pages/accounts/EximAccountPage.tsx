@@ -9,6 +9,7 @@ import {
   Download,
   PackageOpen,
   RefreshCw,
+  AlertTriangle,
   Scale,
   Search,
   TrendingDown,
@@ -201,6 +202,10 @@ export default function EximAccountPage() {
     .filter((e) => e.Balance < 0)
     .reduce((s, e) => s + e.Balance, 0);
   const netBalance = entries.reduce((s, e) => s + e.Balance, 0);
+  const staleCount = entries.filter((e) => {
+    const d = e["Last Transaction Date"] ? new Date(e["Last Transaction Date"]) : null;
+    return d ? (Date.now() - d.getTime()) > 25 * 24 * 60 * 60 * 1000 : false;
+  }).length;
 
   // Filtered totals for footer
   const filteredReceivable = filteredEntries
@@ -299,7 +304,7 @@ export default function EximAccountPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -364,6 +369,23 @@ export default function EximAccountPage() {
               }`}
             >
               ₹ {fmtDecimal(netBalance)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className={cn("card-hover", staleCount > 0 && "border-red-400 dark:border-red-700")}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Stale (&gt;25d)
+            </CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <p className={cn("text-base sm:text-lg md:text-2xl font-bold break-words", staleCount > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}>
+              {staleCount}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              records older than 25 days
             </p>
           </CardContent>
         </Card>

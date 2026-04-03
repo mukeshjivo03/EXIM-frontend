@@ -158,7 +158,7 @@ export default function OpenGrpoPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <SummaryCard icon={Hash}          label="Total Open GRPOs" value={kpis.total}                    loading={false} />
           <SummaryCard icon={Users}         label="Unique Vendors"    value={kpis.vendors}                  loading={false} />
-          <SummaryCard icon={Clock}         label="Avg Pending"       value={`${kpis.avgDays.toFixed(1)}d`} loading={false} />
+          <SummaryCard icon={Clock}         label="Avg Pending"       value={`${kpis.avgDays.toFixed(1)}d (${kpis.critical} critical)`} loading={false} />
           <SummaryCard icon={AlertTriangle} label="Max Pending"       value={`${kpis.maxDays}d`}            loading={false} />
         </div>
       )}
