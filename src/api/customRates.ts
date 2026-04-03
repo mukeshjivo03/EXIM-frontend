@@ -14,7 +14,7 @@ export interface EximRatesResponse {
   recordsFiltered?: number;
 }
 
-export async function fetchEximRates(date?: string): Promise<EximRatesResponse> {
+export async function fetchCustomRates(date?: string): Promise<EximRatesResponse> {
   const { data } = await api.get<EximRatesResponse>("/exim-rates/fetch/", {
     params: { date },
   });

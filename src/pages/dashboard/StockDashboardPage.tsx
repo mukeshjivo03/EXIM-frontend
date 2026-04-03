@@ -155,13 +155,7 @@ export default function StockDashboardPage() {
     return groups;
   }, [colKeys]);
 
-  const lastKeyPerGroup = useMemo(() => {
-    const set = new Set<string>();
-    for (const group of statusGroups) {
-      set.add(group.vendors[group.vendors.length - 1].key);
-    }
-    return set;
-  }, [statusGroups]);
+
 
 
 
@@ -376,7 +370,7 @@ export default function StockDashboardPage() {
                 <thead>
                   {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/50 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-left uppercase tracking-wider border-r-2 border-border/50 text-base" rowSpan={2}>
+                    <th className="sticky left-0 z-30 bg-muted/80 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-border text-base" rowSpan={2}>
                       RM CODE
                     </th>
                     <th
@@ -384,7 +378,7 @@ export default function StockDashboardPage() {
                       onMouseEnter={() => setHoveredCol("IN_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-colors group",
+                        "px-2 py-3 text-center border border-border cursor-pointer transition-colors group",
                         hoveredCol === "IN_FACTORY" ? "bg-green-100 dark:bg-green-900/40" : "bg-green-50/30 dark:bg-green-900/10"
                       )}
                     >
@@ -400,7 +394,7 @@ export default function StockDashboardPage() {
                       onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
                       onMouseLeave={() => setHoveredCol(null)}
                       className={cn(
-                        "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-colors group",
+                        "px-2 py-3 text-center border border-border cursor-pointer transition-colors group",
                         hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-amber-50/30 dark:bg-amber-900/10"
                       )}
                     >
@@ -422,7 +416,7 @@ export default function StockDashboardPage() {
                             onMouseEnter={() => setHoveredCol(group.status)}
                             onMouseLeave={() => setHoveredCol(null)}
                             className={cn(
-                              "px-2 py-3 text-center border-r-2 border-border cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider",
+                              "px-2 py-3 text-center border border-border cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider",
                               meta?.headerBg,
                               hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
                             )}
@@ -438,14 +432,14 @@ export default function StockDashboardPage() {
                         </Fragment>
                       );
                     })}
-                    <th className="px-4 py-3 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-l border-border/50 uppercase tracking-wider text-base font-semibold" rowSpan={2}>
+                    <th className="px-4 py-3 text-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-border uppercase tracking-wider text-base font-semibold" rowSpan={2}>
                       TOTAL
                     </th>
                   </tr>
                   {/* Row 2 — Vendor sub-headers */}
                   <tr className="border-b shadow-sm">
-                    <th className="border-r-2 border-border bg-green-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
-                    <th className="border-r-2 border-border bg-amber-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
+                    <th className="border border-border bg-green-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
+                    <th className="border border-border bg-amber-50/10 py-1 text-xs text-center text-muted-foreground uppercase" />
                     {statusGroups.map((group) => {
                       const meta = STATUS_META[group.status];
                       return group.vendors.map(({ key, vendor }) => (
@@ -455,9 +449,8 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center text-sm font-semibold truncate transition-colors uppercase tracking-wider",
+                            "px-2 py-2 text-center text-sm font-semibold truncate transition-colors uppercase tracking-wider border border-border",
                             meta?.headerBg,
-                            lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/30",
                             hoveredCol === key ? "brightness-90" : ""
                           )}
                         >
@@ -487,14 +480,14 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 font-mono border-r-2 border-border/50 transition-colors",
+                          "sticky left-0 z-20 px-4 py-3 font-mono text-center border border-border transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_code}
                         </td>
                         {/* IN FACTORY */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border",
+                          "px-2 py-3 text-center tabular-nums transition-all border border-border",
                           hoveredCol === "IN_FACTORY" ? "bg-green-500/10" : ""
                         )}>
                           {tankVal > 0
@@ -505,7 +498,7 @@ export default function StockDashboardPage() {
                         <td className="p-0 bg-background border-x border-border/60" />
                         {/* OUTSIDE */}
                         <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border-r-2 border-border",
+                          "px-2 py-3 text-center tabular-nums transition-all border border-border",
                           hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-500/10" : ""
                         )}>
                           {item.outside_factory > 0
@@ -525,8 +518,7 @@ export default function StockDashboardPage() {
                                 <td
                                   key={key}
                                   className={cn(
-                                    "px-2 py-3 text-center tabular-nums transition-all relative group/cell",
-                                    lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/20",
+                                    "px-2 py-3 text-center tabular-nums transition-all relative group/cell border border-border",
                                     hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
                                   )}
                                 >
@@ -544,7 +536,7 @@ export default function StockDashboardPage() {
                             )}
                           </Fragment>
                         ))}
-                        <td className="px-4 py-3 text-center tabular-nums font-semibold bg-muted/20 border-l-2 border-border">
+                        <td className="px-4 py-3 text-center tabular-nums font-semibold bg-muted/20 border border-border">
                           {Math.round(grandTotal).toLocaleString("en-IN")}
                         </td>
                       </tr>
@@ -553,22 +545,19 @@ export default function StockDashboardPage() {
 
                   {/* Grand Total Row */}
                   <tr className="bg-muted/80 backdrop-blur-md text-base border-t-2 border-primary/20 font-semibold">
-                    <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 border-r-2 border-border/50 uppercase tracking-wider">Grand Total</td>
-                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border text-blue-600 dark:text-blue-400">
+                    <td className="sticky left-0 z-30 bg-muted/90 px-4 py-4 text-center border border-border uppercase tracking-wider">Grand Total</td>
+                    <td className="px-2 py-4 text-center tabular-nums border border-border text-blue-600 dark:text-blue-400">
                       {fmtLiters(tankInFactoryTotal, unit)}
                     </td>
                     <td className="p-0 bg-background border-x border-border/60" />
-                    <td className="px-2 py-4 text-center tabular-nums border-r-2 border-border text-amber-600 dark:text-amber-400">
+                    <td className="px-2 py-4 text-center tabular-nums border border-border text-amber-600 dark:text-amber-400">
                       {fmtNum(data?.totals.outside_factory ?? 0, unit)}
                     </td>
                     <td className="p-0 bg-background border-x border-border/60" />
                     {statusGroups.map((group, gi) => (
                       <Fragment key={group.status}>
                         {group.vendors.map(({ key }) => (
-                          <td key={key} className={cn(
-                            "px-2 py-4 text-center tabular-nums",
-                            lastKeyPerGroup.has(key) ? "border-r-2 border-border" : "border-r border-border/20"
-                          )}>
+                          <td key={key} className="px-2 py-4 text-center tabular-nums border border-border">
                             {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
                           </td>
                         ))}
