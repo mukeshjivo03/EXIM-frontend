@@ -14,7 +14,7 @@ import {
 import * as XLSX from "xlsx";
 import { format, isValid } from "date-fns";
 
-import { fetchExternalExchangeRates, fetchCustomRates, type EximRate } from "@/api/customRates";
+import { fetchCustomRates, type EximRate } from "@/api/customRates";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,7 +79,6 @@ function fmtRate(v: number, decimals = 4): string {
 /* ── Module-level cache ────────────────────────────────────── */
 
 let cachedCustomRates: EximRate[] = [];
-let cachedLiveRates: EximRate[] = [];
 let hasFetched = false;
 let lastFetchTime: Date | null = null;
 
@@ -87,7 +86,6 @@ let lastFetchTime: Date | null = null;
 
 export default function CustomExchangeRatesPage() {
   const [customRates, setCustomRates] = useState<EximRate[]>(cachedCustomRates);
-  const [liveRates, setLiveRates] = useState<EximRate[]>(cachedLiveRates);
   const [fetching, setFetching] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(lastFetchTime);
   const [search, setSearch] = useState("");
@@ -119,34 +117,17 @@ export default function CustomExchangeRatesPage() {
     setFetching(true);
     try {
       // Fetch both simultaneously
-      const [customRes, liveRes] = await Promise.all([
-        fetchCustomRates(),
-        fetchExternalExchangeRates()
-      ]);
-
+      const customRes = await fetchCustomRates();
       const cData = customRes.data || [];
-      const lData = liveRes.data || [];
-      
+
       cachedCustomRates = cData;
-      cachedLiveRates = lData;
       hasFetched = true;
       const now = new Date();
       lastFetchTime = now;
-      
+
       setCustomRates(cData);
-      setLiveRates(lData);
       setFetchedAt(now);
-      
-      // Check if live rates are from today's live fetch or cache
-      const STORAGE_KEY = "exim_live_rates_cache";
-      const cached = localStorage.getItem(STORAGE_KEY);
-      const cacheState = cached ? JSON.parse(cached) : null;
-      
-      if (cacheState && cacheState.count >= 10) {
-        toast.info("Daily live rate limit reached. Showing last fetched data.");
-      } else {
-        toast.success("Exchange rates updated successfully");
-      }
+      toast.success("Exchange rates updated successfully");
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to refresh rates"));
     } finally {
@@ -209,7 +190,6 @@ export default function CustomExchangeRatesPage() {
     return { inrPerKg, inrPerLtr };
   }, [customRates, convPrice, convCurrency, convExpense]);
 
-  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar"];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
@@ -218,7 +198,7 @@ export default function CustomExchangeRatesPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-normal flex items-center gap-2">
             <Globe className="h-6 w-6 text-primary" />
-            Detailed Live Rates
+            Detailed Live Exchange Rates
           </h1>
           <p className="text-sm text-muted-foreground">
             View live market rates and manage custom exchange data
@@ -246,43 +226,6 @@ export default function CustomExchangeRatesPage() {
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Top Cards (Live Exchange Rates) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {keyCurrencies.map((ccy) => {
-          const rate = liveRates.find(r => r.currency === ccy);
-          const meta = CURRENCY_MAP[ccy];
-          return (
-            <Card key={ccy} className="card-hover border-l-4 border-l-primary/50 overflow-hidden relative">
-              <div className="absolute top-1 right-2 opacity-10 pointer-events-none">
-                <img src={meta?.flag} alt="" className="w-10 grayscale" />
-              </div>
-              <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-[13px] font-normal text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
-                  <img src={meta?.flag} alt={meta?.code} className="h-4 w-6 object-cover rounded-sm shadow-sm" />
-                  {meta?.short} to INR
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4 pt-1 px-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-normal tracking-tighter text-primary">
-                    ₹ {rate ? fmtRate(Number(rate.import), 2) : "---"}
-                  </span>
-                </div>
-                <div className="mt-3 flex justify-between items-center text-[10px] uppercase font-normal text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    LIVE
-                  </span>
-                  <span>
-                    {fetchedAt ? format(fetchedAt, "HH:mm") : "--:--"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">

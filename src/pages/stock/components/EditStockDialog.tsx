@@ -88,8 +88,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   useEffect(() => {
     if (data) {
       setEStatus(data.status);
-      setERate(data.rate);
-      setEQuantity(data.quantity);
+      setERate(String(data.rate));
+      setEQuantity(String(data.quantity));
       setEVehicleNumber(data.vehicle_number ?? "");
       setELocation(data.location ?? "");
       setEEta(data.eta ?? "");
@@ -157,6 +157,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           location: eLocation.trim() || undefined,
           eta: eEta.trim() || undefined,
           transporter_name: eTransporterName.trim() || undefined,
+          created_by: email,
         });
         toast.success("Stock status metadata updated.");
       }
