@@ -162,21 +162,6 @@ function Clouds() {
         @keyframes cloudFloat2 { 0%{transform:translateX(-180px)} 100%{transform:translateX(110vw)} }
         @keyframes cloudFloat3 { 0%{transform:translateX(-160px)} 100%{transform:translateX(110vw)} }
         @keyframes cloudFloat4 { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} }
-        @keyframes seagullFly1 { 0%{transform:translateX(110vw)} 100%{transform:translateX(-220px)} }
-        @keyframes seagullFly2 { 0%{transform:translateX(110vw)} 100%{transform:translateX(-220px)} }
-        @keyframes seagullFly3 { 0%{transform:translateX(110vw)} 100%{transform:translateX(-220px)} }
-        @keyframes wingFlapL {
-          0%   { transform: rotate(-30deg); }
-          50%  { transform: rotate(22deg); }
-          100% { transform: rotate(-30deg); }
-        }
-        @keyframes wingFlapR {
-          0%   { transform: rotate(30deg); }
-          50%  { transform: rotate(-22deg); }
-          100% { transform: rotate(30deg); }
-        }
-        .sg-wingL { transform-box: fill-box; transform-origin: right center; }
-        .sg-wingR { transform-box: fill-box; transform-origin: left center; }
       `}</style>
       <div className="absolute inset-0 block dark:hidden pointer-events-none z-[1] overflow-hidden" aria-hidden="true">
         {/* Cloud 1 — large, slow */}
@@ -201,100 +186,6 @@ function Clouds() {
         </div>
       </div>
     </>
-  );
-}
-
-/* ── Seagulls (light mode only) ─────────────────────────────── */
-function Seagull({ size = 1, flapDelay = "0s", flapSpeed = "0.9s" }: { size?: number; flapDelay?: string; flapSpeed?: string }) {
-  return (
-    <svg width={110 * size} height={60 * size} viewBox="0 0 110 60" fill="none" overflow="visible" aria-hidden="true">
-      {/* ── Left wing (attaches at right edge, rotates around body) */}
-      <g className="sg-wingL" style={{ animation: `wingFlapL ${flapSpeed} ease-in-out ${flapDelay} infinite` }}>
-        {/* Wing main filled shape */}
-        <path d="M46,29 C36,24 24,15 8,19 C6,23 10,27 17,28 C28,30 40,30 46,29 Z"
-              fill="#d0dce8" stroke="#94a3b8" strokeWidth="0.7"/>
-        {/* Wing secondary coverts (inner feather band) */}
-        <path d="M46,29 C38,27 28,23 18,24 C14,24 10,25 10,27"
-              fill="none" stroke="#b8c8d8" strokeWidth="0.9"/>
-        {/* Primary feather tips */}
-        <line x1="14" y1="26" x2="8"  y2="19" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="20" y1="24" x2="14" y2="16" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="27" y1="22" x2="21" y2="14" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="34" y1="21" x2="29" y2="14" stroke="#94a3b8" strokeWidth="0.5" opacity="0.6"/>
-        {/* Wing leading-edge highlight */}
-        <path d="M46,29 C36,22 22,14 10,19" fill="none" stroke="white" strokeWidth="0.6" opacity="0.5"/>
-      </g>
-
-      {/* ── Right wing (attaches at left edge) */}
-      <g className="sg-wingR" style={{ animation: `wingFlapR ${flapSpeed} ease-in-out ${flapDelay} infinite` }}>
-        {/* Wing main filled shape */}
-        <path d="M64,29 C74,24 86,15 102,19 C104,23 100,27 93,28 C82,30 70,30 64,29 Z"
-              fill="#d0dce8" stroke="#94a3b8" strokeWidth="0.7"/>
-        {/* Wing secondary coverts */}
-        <path d="M64,29 C72,27 82,23 92,24 C96,24 100,25 100,27"
-              fill="none" stroke="#b8c8d8" strokeWidth="0.9"/>
-        {/* Primary feather tips */}
-        <line x1="96" y1="26" x2="102" y2="19" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="90" y1="24" x2="96"  y2="16" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="83" y1="22" x2="89"  y2="14" stroke="#94a3b8" strokeWidth="0.5" opacity="0.8"/>
-        <line x1="76" y1="21" x2="81"  y2="14" stroke="#94a3b8" strokeWidth="0.5" opacity="0.6"/>
-        {/* Wing leading-edge highlight */}
-        <path d="M64,29 C74,22 88,14 100,19" fill="none" stroke="white" strokeWidth="0.6" opacity="0.5"/>
-      </g>
-
-      {/* ── Tail feathers */}
-      <path d="M63,30 L73,25 L77,30 L73,35 Z" fill="#c8d8e8" stroke="#94a3b8" strokeWidth="0.6"/>
-      <line x1="65" y1="29" x2="75" y2="25" stroke="#94a3b8" strokeWidth="0.4" opacity="0.7"/>
-      <line x1="65" y1="31" x2="75" y2="35" stroke="#94a3b8" strokeWidth="0.4" opacity="0.7"/>
-
-      {/* ── Body */}
-      <ellipse cx="55" cy="30" rx="13" ry="5.5" fill="#e0e8f0" stroke="#94a3b8" strokeWidth="0.7"/>
-      {/* Belly sheen */}
-      <ellipse cx="54" cy="29" rx="9" ry="3" fill="white" opacity="0.35"/>
-
-      {/* ── Head */}
-      <circle cx="41" cy="26" r="6" fill="#edf2f7" stroke="#94a3b8" strokeWidth="0.7"/>
-      {/* Head highlight */}
-      <ellipse cx="40" cy="24" rx="3" ry="2" fill="white" opacity="0.45"/>
-
-      {/* ── Eye */}
-      <circle cx="38.5" cy="25.5" r="1.6" fill="#1e293b"/>
-      <circle cx="37.8" cy="24.9" r="0.55" fill="white" opacity="0.8"/>
-
-      {/* ── Beak (two-tone: upper mandible darker) */}
-      <path d="M35,26 L26,27.5 L35,29.5 Z" fill="#f59e0b" stroke="#d97706" strokeWidth="0.5"/>
-      <line x1="35" y1="27.7" x2="26.5" y2="27.7" stroke="#b45309" strokeWidth="0.4"/>
-      {/* Beak tip */}
-      <circle cx="26" cy="27.5" r="0.8" fill="#d97706"/>
-    </svg>
-  );
-}
-
-function Seagulls() {
-  return (
-    <div className="absolute inset-0 block dark:hidden pointer-events-none z-[2] overflow-hidden" aria-hidden="true">
-      {/* Seagull 1 — large, slow flap */}
-      <div className="absolute" style={{ top: "9%", animation: "seagullFly1 28s linear -4s infinite" }}>
-        <Seagull size={1.1} flapDelay="0s" flapSpeed="0.85s" />
-      </div>
-      {/* Seagull 2 — higher, smaller, lazy flap */}
-      <div className="absolute" style={{ top: "5%", animation: "seagullFly2 36s linear -14s infinite" }}>
-        <Seagull size={0.72} flapDelay="-0.4s" flapSpeed="1.1s" />
-      </div>
-      {/* Seagull 3 — lower, fast flap */}
-      <div className="absolute" style={{ top: "17%", animation: "seagullFly3 22s linear -8s infinite" }}>
-        <Seagull size={0.88} flapDelay="-0.2s" flapSpeed="0.72s" />
-      </div>
-      {/* Seagull 4 — tiny, far away */}
-      <div className="absolute" style={{ top: "3%", animation: "seagullFly1 44s linear -24s infinite" }}>
-        <Seagull size={0.48} flapDelay="-0.6s" flapSpeed="1.2s" />
-      </div>
-      {/* Seagull 5 & 6 — flying in loose formation */}
-      <div className="absolute flex gap-4" style={{ top: "12%", animation: "seagullFly2 32s linear -18s infinite" }}>
-        <Seagull size={0.78} flapDelay="-0.3s" flapSpeed="0.95s" />
-        <Seagull size={0.62} flapDelay="-0.7s" flapSpeed="1.05s" />
-      </div>
-    </div>
   );
 }
 

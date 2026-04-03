@@ -119,12 +119,6 @@ export default function JivoRatesPage() {
 
   /* ── derived data ──────────────────────────────────────── */
 
-  const priceRange = useMemo(() => {
-    if (preview.length === 0) return { min: 0, max: 0 };
-    const vals = preview.map((p) => p.rate);
-    return { min: Math.min(...vals), max: Math.max(...vals) };
-  }, [preview]);
-
   const rangeDataRange = useMemo(() => {
     if (rangeData.length === 0) return { min: 0, max: 0 };
     const vals = rangeData.map((p) => p.rate);
@@ -318,13 +312,13 @@ export default function JivoRatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px] font-bold text-foreground border-r" style={{ backgroundColor: "#93c47d" }}>
+                    <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-border" style={{ backgroundColor: "#93c47d" }}>
                       Jivo Rate
                     </TableHead>
                     {matrix.commodities.map((c) => (
-                      <TableHead 
-                        key={c} 
-                        className="text-center min-w-[110px] font-bold text-foreground border-r capitalize"
+                      <TableHead
+                        key={c}
+                        className="text-center min-w-[110px] font-bold text-foreground border border-border capitalize"
                         style={{ backgroundColor: "#fff3cc" }}
                       >
                         {c}
@@ -348,7 +342,7 @@ export default function JivoRatesPage() {
                   ) : (
                     matrix.packTypes.map((pt) => (
                       <TableRow key={pt} className={cn(justFetched && "animate-in fade-in duration-500", "hover:bg-muted/30 transition-colors")}>
-                        <TableCell className="font-bold border-r capitalize" style={{ backgroundColor: "#ffe699" }}>
+                        <TableCell className="font-bold text-center border border-border capitalize" style={{ backgroundColor: "#ffe699" }}>
                           {pt}
                         </TableCell>
                         {matrix.commodities.map((commodity) => {
@@ -356,7 +350,7 @@ export default function JivoRatesPage() {
                           return (
                             <TableCell
                               key={commodity}
-                              className="text-right border-r"
+                              className="text-center border border-border"
                             >
                               {rate != null ? (
                                 <span className="font-bold text-sm tabular-nums">

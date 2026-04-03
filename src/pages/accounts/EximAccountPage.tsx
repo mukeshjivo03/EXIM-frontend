@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   ArrowDown,
   ArrowUp,
@@ -530,11 +531,16 @@ export default function EximAccountPage() {
                     const barPct =
                       (Math.abs(entry.Balance) / maxAbsBalance) * 100;
                     const isPositive = entry.Balance >= 0;
+                    const lastDate = entry["Last Transaction Date"] ? new Date(entry["Last Transaction Date"]) : null;
+                    const isOld = lastDate ? (Date.now() - lastDate.getTime()) > 7 * 24 * 60 * 60 * 1000 : false;
 
                     return (
                       <TableRow
                         key={entry.CardCode}
-                        className={isTop5 ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}
+                        className={cn(
+                          isTop5 && "bg-amber-50/50 dark:bg-amber-900/10",
+                          isOld && "animate-pulse bg-red-100 dark:bg-red-900/20"
+                        )}
                       >
                         <TableCell className="font-medium">
                           {idx + 1}

@@ -9,13 +9,12 @@ import {
   ArrowRightLeft,
   DollarSign,
   Euro,
-  PoundSterling,
   Globe,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { format, isValid, parseISO } from "date-fns";
+import { format, isValid } from "date-fns";
 
-import { fetchExternalExchangeRates, fetchEximRates, type EximRate } from "@/api/customRates";
+import { fetchExternalExchangeRates, fetchCustomRates, type EximRate } from "@/api/customRates";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,8 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-
 /* ── Types & Helpers ───────────────────────────────────────── */
 
 const ALLOWED_CURRENCIES = [
@@ -51,7 +48,7 @@ const ALLOWED_CURRENCIES = [
   "UAE Dirham",
   "Australian Dollar",
   "Canadian Dollar",
-  "Sterling Pound",
+  "Chinese Yuan",
 ];
 
 const ITEMS_DATA = [
@@ -71,7 +68,7 @@ const CURRENCY_MAP: Record<string, { flag: string; icon: any; color: string; cod
   "Australian Dollar": { flag: "https://flagcdn.com/w40/au.png", icon: DollarSign, color: "text-amber-600 dark:text-amber-400", code: "AUD", short: "AUD" },
   "Euro": { flag: "https://flagcdn.com/w40/eu.png", icon: Euro, color: "text-indigo-600 dark:text-indigo-400", code: "EUR", short: "EUR" },
   "UAE Dirham": { flag: "https://flagcdn.com/w40/ae.png", icon: Globe, color: "text-emerald-600 dark:text-emerald-400", code: "AED", short: "AED" },
-  "Sterling Pound": { flag: "https://flagcdn.com/w40/gb.png", icon: PoundSterling, color: "text-purple-600 dark:text-purple-400", code: "GBP", short: "GBP" },
+  "Chinese Yuan": { flag: "https://flagcdn.com/w40/cn.png", icon: Globe, color: "text-red-600 dark:text-red-500", code: "CNY", short: "CNY" },
   "Canadian Dollar": { flag: "https://flagcdn.com/w40/ca.png", icon: DollarSign, color: "text-red-600 dark:text-red-400", code: "CAD", short: "CAD" },
 };
 
@@ -123,7 +120,7 @@ export default function CustomExchangeRatesPage() {
     try {
       // Fetch both simultaneously
       const [customRes, liveRes] = await Promise.all([
-        fetchEximRates(),
+        fetchCustomRates(),
         fetchExternalExchangeRates()
       ]);
 
@@ -217,7 +214,7 @@ export default function CustomExchangeRatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-normal flex items-center gap-2">
             <Globe className="h-6 w-6 text-primary" />
             Detailed Live Rates
           </h1>
@@ -260,18 +257,18 @@ export default function CustomExchangeRatesPage() {
                 <img src={meta?.flag} alt="" className="w-10 grayscale" />
               </div>
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-[13px] font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
+                <CardTitle className="text-[13px] font-normal text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
                   <img src={meta?.flag} alt={meta?.code} className="h-4 w-6 object-cover rounded-sm shadow-sm" />
                   {meta?.short} to INR
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-4 pt-1 px-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black tracking-tighter text-primary">
+                  <span className="text-2xl font-normal tracking-tighter text-primary">
                     ₹ {rate ? fmtRate(Number(rate.import), 2) : "---"}
                   </span>
                 </div>
-                <div className="mt-3 flex justify-between items-center text-[10px] uppercase font-black text-muted-foreground">
+                <div className="mt-3 flex justify-between items-center text-[10px] uppercase font-normal text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
@@ -291,7 +288,7 @@ export default function CustomExchangeRatesPage() {
         <div className="xl:col-span-3">
           <Card className="card-hover h-fit border-t-4 border-t-primary shadow-lg sticky top-20">
             <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg font-normal flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-primary" />
                 Quick Converter
               </CardTitle>
@@ -300,7 +297,7 @@ export default function CustomExchangeRatesPage() {
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Item</label>
+                  <label className="text-xs font-normal uppercase text-muted-foreground">Item</label>
                   <Select value={convItem} onValueChange={handleItemChange}>
                     <SelectTrigger className="h-10 text-sm">
                       <SelectValue />
@@ -313,7 +310,7 @@ export default function CustomExchangeRatesPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Origin</label>
+                  <label className="text-xs font-normal uppercase text-muted-foreground">Origin</label>
                   <Select value={convOrigin} onValueChange={setConvOrigin}>
                     <SelectTrigger className="h-10 text-sm">
                       <SelectValue />
@@ -328,7 +325,7 @@ export default function CustomExchangeRatesPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Currency</label>
+                <label className="text-xs font-normal uppercase text-muted-foreground">Currency</label>
                 <Select value={convCurrency} onValueChange={setConvCurrency}>
                   <SelectTrigger className="h-10 text-sm">
                     <SelectValue />
@@ -348,13 +345,13 @@ export default function CustomExchangeRatesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Price (Ton)</label>
+                  <label className="text-xs font-normal uppercase text-muted-foreground">Price (Ton)</label>
                   <div className="relative">
                     <Input
                       type="number"
                       value={convPrice}
                       onChange={(e) => setConvPrice(e.target.value)}
-                      className="pl-10 h-10 text-sm font-bold"
+                      className="pl-10 h-10 text-sm font-normal"
                     />
                     <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50">
                       <img src={CURRENCY_MAP[convCurrency]?.flag} alt="" className="h-4 w-6 object-cover" />
@@ -362,15 +359,15 @@ export default function CustomExchangeRatesPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Expense (%)</label>
+                  <label className="text-xs font-normal uppercase text-muted-foreground">Expense (%)</label>
                   <div className="relative">
                     <Input
                       type="number"
                       value={convExpense}
                       onChange={(e) => setConvExpense(e.target.value)}
-                      className="pr-8 h-10 text-sm font-bold"
+                      className="pr-8 h-10 text-sm font-normal"
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold opacity-50">%</div>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-normal opacity-50">%</div>
                   </div>
                 </div>
               </div>
@@ -378,12 +375,12 @@ export default function CustomExchangeRatesPage() {
               <div className="pt-2">
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-semibold text-muted-foreground">Price/KG</span>
-                    <span className="font-bold text-base">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
+                    <span className="font-normal text-muted-foreground">Price/KG</span>
+                    <span className="font-normal text-base">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
                   </div>
                   <div className="flex justify-between items-center bg-primary/10 p-2.5 rounded border border-primary/20">
-                    <span className="text-sm font-bold text-primary">Price/Liter</span>
-                    <span className="text-xl font-black text-primary">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
+                    <span className="text-sm font-normal text-primary">Price/Liter</span>
+                    <span className="text-xl font-normal text-primary">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
                   </div>
                 </div>
               </div>
@@ -397,7 +394,7 @@ export default function CustomExchangeRatesPage() {
             <CardHeader className="pb-3 border-b">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <CardTitle className="text-xl">Custom Exchange Rates</CardTitle>
+                  <CardTitle className="text-xl font-normal">Custom Exchange Rates</CardTitle>
                   <CardDescription className="text-sm">
                     {hasFetched
                       ? `Updated as of ${fetchedAt ? format(fetchedAt, "dd MMM yyyy, HH:mm:ss") : "--"}`
@@ -422,12 +419,12 @@ export default function CustomExchangeRatesPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30 text-sm font-black uppercase tracking-widest h-14">
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>CURRENCY</TableHead>
-                      <TableHead className="text-right">IMPORT</TableHead>
-                      <TableHead className="text-right">EXPORT</TableHead>
-                      <TableHead className="text-center">DATE</TableHead>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30 text-sm font-normal uppercase tracking-widest h-14">
+                      <TableHead className="w-12 font-normal">#</TableHead>
+                      <TableHead className="font-normal">CURRENCY</TableHead>
+                      <TableHead className="text-right font-normal">IMPORT</TableHead>
+                      <TableHead className="text-right font-normal">EXPORT</TableHead>
+                      <TableHead className="text-center font-normal">DATE</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -436,7 +433,7 @@ export default function CustomExchangeRatesPage() {
                         <TableCell colSpan={5} className="h-64 text-center">
                           <div className="flex flex-col items-center justify-center gap-3">
                             <RefreshCw className="h-10 w-10 animate-spin text-primary opacity-50" />
-                            <span className="text-muted-foreground font-semibold text-base">Refreshing rates...</span>
+                            <span className="text-muted-foreground font-normal text-base">Refreshing rates...</span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -445,7 +442,7 @@ export default function CustomExchangeRatesPage() {
                         <TableCell colSpan={5}>
                           <div className="flex flex-col items-center gap-3 text-muted-foreground py-24">
                             <PackageOpen className="h-16 w-16 stroke-1 opacity-20" />
-                            <p className="font-bold text-base">No custom rates available</p>
+                            <p className="font-normal text-base">No custom rates available</p>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -456,28 +453,28 @@ export default function CustomExchangeRatesPage() {
                         
                         return (
                           <TableRow key={rate.currency} className="hover:bg-accent/5 transition-colors group h-20">
-                            <TableCell className="text-sm text-muted-foreground font-mono font-black">
+                            <TableCell className="text-sm text-muted-foreground font-mono font-normal">
                               {(idx + 1).toString().padStart(2, '0')}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-4">
                                 <img src={meta?.flag} alt={meta?.code} className="h-7 w-11 object-cover rounded shadow-md border border-muted" />
                                 <div className="flex flex-col">
-                                  <span className="font-black text-lg tracking-tight leading-none">
+                                  <span className="font-normal text-lg tracking-tight leading-none">
                                     {rate.currency.replace("U.S.", "US ")}
                                   </span>
-                                  <span className="text-xs font-black text-muted-foreground uppercase mt-1 tracking-tighter">{meta?.short}</span>
+                                  <span className="text-xs font-normal text-muted-foreground uppercase mt-1 tracking-tighter">{meta?.short}</span>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-mono font-black text-lg text-primary">
+                            <TableCell className="text-right font-mono font-normal text-lg text-primary">
                               {rate.import}
                             </TableCell>
-                            <TableCell className="text-right font-mono font-black text-lg text-emerald-600">
+                            <TableCell className="text-right font-mono font-normal text-lg text-emerald-600">
                               {rate.export}
                             </TableCell>
                             <TableCell className="text-center">
-                              <span className="text-sm font-black text-muted-foreground">
+                              <span className="text-sm font-normal text-muted-foreground">
                                 {isValid(rDate) ? format(rDate, "dd-MM-yyyy") : "---"}
                               </span>
                             </TableCell>
@@ -496,7 +493,7 @@ export default function CustomExchangeRatesPage() {
         <div className="xl:col-span-3">
           <Card className="card-hover h-fit border-t-4 border-t-emerald-500 shadow-lg sticky top-20">
             <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg font-normal flex items-center gap-2">
                 <ArrowRightLeft className="h-5 w-5 text-emerald-500" />
                 Quick Converter Local
               </CardTitle>
@@ -506,7 +503,7 @@ export default function CustomExchangeRatesPage() {
               <div className="bg-emerald-500/10 p-4 rounded-full mb-4">
                 <ArrowRightLeft className="h-8 w-8 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Feature Coming Soon</h3>
+              <h3 className="text-lg font-normal text-foreground">Feature Coming Soon</h3>
               <p className="text-sm text-muted-foreground mt-2 max-w-[200px]">
                 Local cost conversion tools are currently under development.
               </p>

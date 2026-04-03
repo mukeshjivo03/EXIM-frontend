@@ -143,7 +143,6 @@ export default function DomesticContracts2627Page() {
   // list view state
   const [rows, setRows] = useState<DomesticContract26[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [listError, setListError] = useState("");
 
   // search & filters
   const [search, setSearch] = useState("");
@@ -181,7 +180,6 @@ export default function DomesticContracts2627Page() {
 
   async function fetchList() {
     setLoadingList(true);
-    setListError("");
     try {
       const data = await getContracts26(2026);
       setRows(data.filter((r) => r.deleted === 0).sort((a, b) => b.id - a.id));
