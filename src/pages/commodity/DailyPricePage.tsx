@@ -352,15 +352,15 @@ export default function DailyPricePage() {
           <div className="rounded-md border overflow-x-auto">
             <Table style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 text-center border border-black">S.No</TableHead>
-                  <TableHead className="text-center border border-black">Commodity</TableHead>
-                  <TableHead className="text-center border border-black">Factory (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With Packing (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With GST (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With GST (₹/Ltr)</TableHead>
-                </TableRow>
-              </TableHeader>
+  <TableRow className="bg-[#ff9900] hover:bg-[#ff9900]"> 
+    <TableHead className="w-12 text-center border border-black text-black font-bold">S.No</TableHead>
+    <TableHead className="text-center border border-black text-black font-bold">Commodity</TableHead>
+    <TableHead className="text-center border border-black text-black font-bold">Factory (₹/Kg)</TableHead>
+    <TableHead className="text-center border border-black text-black font-bold">With Packing (₹/Kg)</TableHead>
+    <TableHead className="text-center border border-black text-black font-bold">With GST (₹/Kg)</TableHead>
+    <TableHead className="text-center border border-black text-black font-bold">With GST (₹/Ltr)</TableHead>
+  </TableRow>
+</TableHeader>
               <TableBody>
                 {filteredPrices.length === 0 ? (
                   <TableRow>
