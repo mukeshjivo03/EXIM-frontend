@@ -391,7 +391,7 @@ export default function DomesticContracts2627Page() {
 
   async function handleFreightSubmit() {
     if (!freightContractId) { setFreightError("Please select a contract."); return; }
-    if (!transporterCode) { setFreightError("Please select a transporter."); return; }
+    if (!transporterName.trim()) { setFreightError("Transporter name is required."); return; }
     if (!vehicleNumber.trim()) { setFreightError("Vehicle number is required."); return; }
     if (!biltyNumber.trim()) { setFreightError("Bilty number is required."); return; }
     if (!biltyDate) { setFreightError("Bilty date is required."); return; }
@@ -1202,27 +1202,13 @@ export default function DomesticContracts2627Page() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                 <div className="space-y-1.5">
-                  <Label>Transporter Name <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={transporterCode}
-                    onValueChange={(v) => {
-                      setTransporterCode(v);
-                      const vendor = vendors.find(vend => vend.card_code === v);
-                      if (vendor) setTransporterName(vendor.card_name);
-                    }}
-                    disabled={loadingDropdowns}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingDropdowns ? "Loading..." : "Select Transporter"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vendors.map((v) => (
-                        <SelectItem key={v.card_code} value={v.card_code}>
-                          {v.card_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="transporter_name">Transporter Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="transporter_name"
+                    placeholder="Enter transporter name"
+                    value={transporterName}
+                    onChange={(e) => setTransporterName(e.target.value)}
+                  />
                 </div>
 
                 <div className="space-y-1.5">

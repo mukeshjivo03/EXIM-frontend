@@ -312,13 +312,13 @@ export default function JivoRatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-border" style={{ backgroundColor: "#93c47d" }}>
+                    <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-black" style={{ backgroundColor: "#93c47d" }}>
                       Jivo Rate
                     </TableHead>
                     {matrix.commodities.map((c) => (
                       <TableHead
                         key={c}
-                        className="text-center min-w-[110px] font-bold text-foreground border border-border capitalize"
+                        className="text-center min-w-[110px] font-bold text-foreground border border-black capitalize"
                         style={{ backgroundColor: "#fff3cc" }}
                       >
                         {c}
@@ -342,7 +342,7 @@ export default function JivoRatesPage() {
                   ) : (
                     matrix.packTypes.map((pt) => (
                       <TableRow key={pt} className={cn(justFetched && "animate-in fade-in duration-500", "hover:bg-muted/30 transition-colors")}>
-                        <TableCell className="font-bold text-center border border-border capitalize" style={{ backgroundColor: "#ffe699" }}>
+                        <TableCell className="font-bold text-center border border-black capitalize" style={{ backgroundColor: "#ffe699" }}>
                           {pt}
                         </TableCell>
                         {matrix.commodities.map((commodity) => {
@@ -350,7 +350,7 @@ export default function JivoRatesPage() {
                           return (
                             <TableCell
                               key={commodity}
-                              className="text-center border border-border"
+                              className="text-center border border-black"
                             >
                               {rate != null ? (
                                 <span className="font-bold text-sm tabular-nums">

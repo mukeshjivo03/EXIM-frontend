@@ -349,16 +349,16 @@ export default function DailyPricePage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">S.No</TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead className="text-right">Factory (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With Packing (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With GST (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With GST (₹/Ltr)</TableHead>
+                  <TableHead className="w-12 text-center border border-black">S.No</TableHead>
+                  <TableHead className="text-center border border-black">Commodity</TableHead>
+                  <TableHead className="text-center border border-black">Factory (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With Packing (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With GST (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With GST (₹/Ltr)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -382,18 +382,18 @@ export default function DailyPricePage() {
                         className={cn(justFetched && "animate-in fade-in duration-500")}
                         style={{ animationDelay: `${idx * 50}ms` }}
                       >
-                        <TableCell className="font-medium">{idx + 1}</TableCell>
-                        <TableCell className="font-medium">{item.commodity_name}</TableCell>
+                        <TableCell className="font-medium text-center border border-black">{idx + 1}</TableCell>
+                        <TableCell className="font-medium text-center border border-black">{item.commodity_name}</TableCell>
                         <TableCell
-                          className="text-right"
+                          className="text-center border border-black"
                           style={{ backgroundColor: heatmapBg(factoryVal, priceRange.min, priceRange.max) }}
                         >
                           <span className="font-semibold">{fmtPrice(item.factory_kg)}</span>
                           <DeltaBadge current={factoryVal} previous={prevVal} />
                         </TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.packing_kg)}</TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.gst_kg)}</TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.gst_ltr, 4)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.packing_kg)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.gst_kg)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.gst_ltr, 4)}</TableCell>
                       </TableRow>
                     );
                   })
@@ -441,16 +441,16 @@ export default function DailyPricePage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table>
+            <Table style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">S.No</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead className="text-right">Factory (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With Packing (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With GST (₹/Kg)</TableHead>
-                  <TableHead className="text-right">With GST (₹/Ltr)</TableHead>
+                  <TableHead className="w-12 text-center border border-black">S.No</TableHead>
+                  <TableHead className="text-center border border-black">Date</TableHead>
+                  <TableHead className="text-center border border-black">Commodity</TableHead>
+                  <TableHead className="text-center border border-black">Factory (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With Packing (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With GST (₹/Kg)</TableHead>
+                  <TableHead className="text-center border border-black">With GST (₹/Ltr)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -477,18 +477,18 @@ export default function DailyPricePage() {
                     const factoryVal = Number(item.factory_price);
                     return (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">{idx + 1}</TableCell>
-                        <TableCell className="tabular-nums text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
-                        <TableCell className="font-medium">{item.commodity_name}</TableCell>
+                        <TableCell className="font-medium text-center border border-black">{idx + 1}</TableCell>
+                        <TableCell className="tabular-nums text-center border border-black text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
+                        <TableCell className="font-medium text-center border border-black">{item.commodity_name}</TableCell>
                         <TableCell
-                          className="text-right"
+                          className="text-center border border-black"
                           style={{ backgroundColor: heatmapBg(factoryVal, rangeRange.min, rangeRange.max) }}
                         >
                           <span className="font-semibold">{fmtPrice(item.factory_price)}</span>
                         </TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.packing_cost_kg)}</TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.with_gst_kg)}</TableCell>
-                        <TableCell className="text-right">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.packing_cost_kg)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_kg)}</TableCell>
+                        <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
                       </TableRow>
                     );
                   })
