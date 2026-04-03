@@ -220,12 +220,7 @@ export default function EximAccountPage() {
     return new Set(sorted.slice(0, 5).map((e) => e.CardCode));
   }, [entries]);
 
-  /* ── Max absolute balance (for bar width) ────────────────── */
 
-  const maxAbsBalance = useMemo(() => {
-    if (entries.length === 0) return 1;
-    return Math.max(...entries.map((e) => Math.abs(e.Balance)), 1);
-  }, [entries]);
 
   /* ── Sort handler ────────────────────────────────────────── */
 
@@ -474,7 +469,6 @@ export default function EximAccountPage() {
                       <SortIcon column="Balance" />
                     </button>
                   </TableHead>
-                  <TableHead className="w-[120px]" />
                   <TableHead className="text-right">
                     <button
                       type="button"
@@ -500,7 +494,7 @@ export default function EximAccountPage() {
               <TableBody>
                 {filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={6}>
                       <div className="flex flex-col items-center gap-2 text-muted-foreground py-12">
                         <PackageOpen className="h-10 w-10 stroke-1" />
                         <p className="font-medium">
@@ -528,8 +522,6 @@ export default function EximAccountPage() {
                 ) : (
                   filteredEntries.map((entry, idx) => {
                     const isTop5 = top5Ids.has(entry.CardCode);
-                    const barPct =
-                      (Math.abs(entry.Balance) / maxAbsBalance) * 100;
                     const isPositive = entry.Balance >= 0;
                     const lastDate = entry["Last Transaction Date"] ? new Date(entry["Last Transaction Date"]) : null;
                     const isOld = lastDate ? (Date.now() - lastDate.getTime()) > 7 * 24 * 60 * 60 * 1000 : false;
@@ -579,19 +571,6 @@ export default function EximAccountPage() {
                           </div>
                         </TableCell>
 
-                        {/* Balance bar */}
-                        <TableCell className="px-2">
-                          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                isPositive
-                                  ? "bg-green-500/60"
-                                  : "bg-red-500/60"
-                              }`}
-                              style={{ width: `${Math.max(barPct, 2)}%` }}
-                            />
-                          </div>
-                        </TableCell>
 
                         <TableCell className="text-right text-sm">
                           {fmtDate(entry["Last Transaction Date"])}
@@ -610,7 +589,7 @@ export default function EximAccountPage() {
               {filteredEntries.length > 0 && (
                 <TableFooter>
                   <TableRow className="font-semibold">
-                    <TableCell colSpan={3} className="text-right">
+                    <TableCell colSpan={2} className="text-right">
                       Totals
                     </TableCell>
                     <TableCell className="text-right">
