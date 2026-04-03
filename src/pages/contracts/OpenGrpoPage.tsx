@@ -209,7 +209,7 @@ export default function OpenGrpoPage() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> &gt; 6d</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400 inline-block" /> &gt; 3d</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> &lt; 10d</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> ≤ 3d</span>
             </div>
           </div>
         </CardHeader>
@@ -259,7 +259,7 @@ export default function OpenGrpoPage() {
                   filtered.map((g, idx) => {
                     const meta = pendingMeta(g["Pending Days"]);
                     return (
-                      <TableRow key={g["GRPO Number"]} className={cn("transition-colors", meta.row)}>
+                      <TableRow key={g["GRPO Number"]} className={cn("transition-colors", meta.row, g["Pending Days"] > 6 && "animate-[pulse_0.6s_ease-in-out_infinite] bg-red-400 dark:bg-red-700/70")}>
                         <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
                         <TableCell className="font-mono font-semibold">{g["GRPO Number"]}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{g["Vendor Ref No"]}</TableCell>

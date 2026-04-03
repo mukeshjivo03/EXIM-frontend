@@ -209,7 +209,7 @@ export default function CustomExchangeRatesPage() {
     return { inrPerKg, inrPerLtr };
   }, [customRates, convPrice, convCurrency, convExpense]);
 
-  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar", "Sterling Pound"];
+  const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar"];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
@@ -376,13 +376,13 @@ export default function CustomExchangeRatesPage() {
 
               <div className="pt-2">
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-normal text-muted-foreground">Price/KG</span>
-                    <span className="font-normal text-base">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-normal text-muted-foreground">Price/KG</span>
+                    <span className="text-lg font-normal">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
                   </div>
-                  <div className="flex justify-between items-center bg-primary/10 p-2.5 rounded border border-primary/20">
-                    <span className="text-sm font-normal text-primary">Price/Liter</span>
-                    <span className="text-xl font-normal text-primary">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-normal text-muted-foreground">Price/Liter</span>
+                    <span className="text-lg font-normal">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
                   </div>
                 </div>
               </div>
