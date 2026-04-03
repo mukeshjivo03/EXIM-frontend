@@ -192,19 +192,21 @@ export default function CustomExchangeRatesPage() {
   /* ── Converter Logic ─────────────────────────────────────── */
 
   const conversionResults = useMemo(() => {
-    // Usually conversions use official/custom rates
     const target = customRates.find(r => r.currency === convCurrency);
     if (!target || isNaN(Number(convPrice))) return null;
 
-    const pricePerTon = Number(convPrice);
-    const rateValue = Number(target.import);
+    const pricePerMTS = Number(convPrice);
+    const importRate = Number(target.import);
     const expensePct = isNaN(Number(convExpense)) ? 0 : Number(convExpense);
-    
-    const inrPerTon = (pricePerTon * rateValue) * (1 + (expensePct / 100));
-    const inrPerKg = inrPerTon / 1000;
-    const inrPerLtr = inrPerKg * 1.0989;
 
-    return { inrPerTon, inrPerKg, inrPerLtr };
+    // Convert foreign price per MTS to INR per KG
+    const inrPerKgBase = (pricePerMTS * importRate) / 1000;
+    // Add expense % to final value
+    const inrPerKg = inrPerKgBase * (1 + expensePct / 100);
+    // 1 KG = 1.0989 LTR, so INR per LTR = INR per KG / 1.0989
+    const inrPerLtr = inrPerKg / 1.0989;
+
+    return { inrPerKg, inrPerLtr };
   }, [customRates, convPrice, convCurrency, convExpense]);
 
   const keyCurrencies = ["U.S.Dollar", "Euro", "UAE Dirham", "Australian Dollar", "Canadian Dollar", "Sterling Pound"];
@@ -345,7 +347,7 @@ export default function CustomExchangeRatesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-normal uppercase text-muted-foreground">Price (Ton)</label>
+                  <label className="text-xs font-normal uppercase text-muted-foreground">Price (MTS)</label>
                   <div className="relative">
                     <Input
                       type="number"

@@ -524,14 +524,14 @@ export default function EximAccountPage() {
                     const isTop5 = top5Ids.has(entry.CardCode);
                     const isPositive = entry.Balance >= 0;
                     const lastDate = entry["Last Transaction Date"] ? new Date(entry["Last Transaction Date"]) : null;
-                    const isOld = lastDate ? (Date.now() - lastDate.getTime()) > 7 * 24 * 60 * 60 * 1000 : false;
+                    const isOld = lastDate ? (Date.now() - lastDate.getTime()) > 25 * 24 * 60 * 60 * 1000 : false;
 
                     return (
                       <TableRow
                         key={entry.CardCode}
                         className={cn(
                           isTop5 && "bg-amber-50/50 dark:bg-amber-900/10",
-                          isOld && "animate-pulse bg-red-100 dark:bg-red-900/20"
+                          isOld && "animate-[pulse_0.6s_ease-in-out_infinite] bg-red-400 dark:bg-red-700/70"
                         )}
                       >
                         <TableCell className="font-medium">
