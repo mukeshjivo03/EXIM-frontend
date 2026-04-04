@@ -320,12 +320,12 @@ export default function CustomExchangeRatesPage() {
               <div className="pt-2">
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-normal text-muted-foreground">Price/KG</span>
-                    <span className="text-lg font-normal">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
+                    <span className="text-lg font-normal text-foreground">Price/KG</span>
+                    <span className="text-lg font-semibold text-foreground">₹ {fmtRate(conversionResults?.inrPerKg || 0, 2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-normal text-muted-foreground">Price/Liter</span>
-                    <span className="text-lg font-normal">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
+                    <span className="text-lg font-normal text-foreground">Price/Liter</span>
+                    <span className="text-lg font-semibold text-foreground">₹ {fmtRate(conversionResults?.inrPerLtr || 0, 2)}</span>
                   </div>
                 </div>
               </div>

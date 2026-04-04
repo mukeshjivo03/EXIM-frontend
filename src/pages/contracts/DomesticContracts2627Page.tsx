@@ -8,6 +8,7 @@ import {
   FileText,
   FileCheck,
   Eye,
+  Pencil,
   Search,
   X,
   Scale,
@@ -18,12 +19,14 @@ import {
 
 import {
   createContract26,
+  updateContract26,
   getContractsDropdown,
   getContract26,
   getContracts26,
   submitLoadingForm,
   submitFreightForm,
   type NewContractPayload,
+  type EditContractPayload,
   type FreightPayload,
   type ContractDropdownItem,
   type DomesticContract26,
@@ -156,6 +159,13 @@ export default function DomesticContracts2627Page() {
 
   // view dialog
   const [viewData, setViewData] = useState<DomesticContract26 | null>(null);
+
+  // edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<EditContractPayload>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -405,12 +415,12 @@ export default function DomesticContracts2627Page() {
         transporter_name: transporterName,
         vehicle_number: vehicleNumber,
         bility_number: biltyNumber,
-        bility_date: biltyDate,
+        bility_date: biltyDate || null,
         freight_rate: freightRate ? Number(freightRate) : 0,
         brokerage_amount: Number(brokerageAmount) || 0,
         invoice_number: invoiceNumber,
         grpo_number: grpoNumber,
-        grpo_date: grpoDate,
+        grpo_date: grpoDate || null,
       };
       await submitFreightForm(freightContractId, payload);
       toast.success("Freight details saved successfully.");
@@ -420,6 +430,53 @@ export default function DomesticContracts2627Page() {
       toastApiError(err, "Failed to save freight details");
     } finally {
       setFreightSaving(false);
+    }
+  }
+
+  function handleEditOpen(row: DomesticContract26) {
+    setEditId(row.id);
+    setEditForm({
+      status: row.status,
+      product_code: row.product_code,
+      vendor_code: row.vendor_code,
+      po_number: row.po_number,
+      po_date: row.po_date || null,
+      contract_qty: Number(row.contract_qty),
+      contract_rate: Number(row.contract_rate),
+      load_qty: row.load_qty ? Number(row.load_qty) : null,
+      unload_qty: row.unload_qty ? Number(row.unload_qty) : null,
+      transporter_code: row.transporter_code || "",
+      transporter_name: row.transporter_name || "",
+      vehicle_number: row.vehicle_number || "",
+      bility_number: row.bility_number || "",
+      bility_date: row.bility_date || null,
+      freight_rate: row.frieght_rate ? Number(row.frieght_rate) : 0,
+      brokerage_amount: row.brokerage_amount ? Number(row.brokerage_amount) : 0,
+      invoice_number: row.invoice_number || "",
+      grpo_number: row.grpo_number || "",
+      grpo_date: row.grpo_date || null,
+    });
+    setEditError("");
+    setEditOpen(true);
+  }
+
+  async function handleEditSubmit() {
+    if (!editId) return;
+    if (!editForm.status) { setEditError("Status is required."); return; }
+    if (!editForm.po_number?.trim()) { setEditError("PO number is required."); return; }
+    if (!editForm.contract_qty || Number(editForm.contract_qty) <= 0) { setEditError("Contract quantity must be > 0."); return; }
+    if (!editForm.contract_rate || Number(editForm.contract_rate) <= 0) { setEditError("Contract rate must be > 0."); return; }
+    setEditSaving(true);
+    setEditError("");
+    try {
+      await updateContract26(editId, editForm);
+      toast.success("Contract updated successfully.");
+      setEditOpen(false);
+      fetchList();
+    } catch (err) {
+      toastApiError(err, "Failed to update contract");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -676,14 +733,14 @@ export default function DomesticContracts2627Page() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setViewData(row)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewData(row)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOpen(row)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1467,6 +1524,141 @@ export default function DomesticContracts2627Page() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+      {/* ── Edit Contract Dialog ─────────────────────────────── */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Edit Contract
+            </DialogTitle>
+            <DialogDescription>Update all contract fields below.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-1">
+            {/* Contract Information */}
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Contract Information</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Status <span className="text-destructive">*</span></Label>
+                  <Select value={editForm.status ?? ""} onValueChange={(v) => setEditForm((f) => ({ ...f, status: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                    <SelectContent>{STATUS_CHOICES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Product <span className="text-destructive">*</span></Label>
+                  <Select value={editForm.product_code ?? ""} onValueChange={(v) => setEditForm((f) => ({ ...f, product_code: v }))} disabled={loadingDropdowns}>
+                    <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                    <SelectContent>{rmItems.map((item) => <SelectItem key={item.item_code} value={item.item_code}>{item.item_code} — {item.item_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vendor <span className="text-destructive">*</span></Label>
+                  <Select value={editForm.vendor_code ?? ""} onValueChange={(v) => setEditForm((f) => ({ ...f, vendor_code: v }))} disabled={loadingDropdowns}>
+                    <SelectTrigger><SelectValue placeholder="Select vendor" /></SelectTrigger>
+                    <SelectContent>{vendors.map((v) => <SelectItem key={v.card_code} value={v.card_code}>{v.card_code} — {v.card_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>PO Number <span className="text-destructive">*</span></Label>
+                  <Input value={editForm.po_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, po_number: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>PO Date</Label>
+                  <DatePicker value={editForm.po_date ?? ""} onChange={(v) => setEditForm((f) => ({ ...f, po_date: v || null }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Contract Qty (MTS) <span className="text-destructive">*</span></Label>
+                  <Input type="number" value={editForm.contract_qty ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contract_qty: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Contract Rate (₹) <span className="text-destructive">*</span></Label>
+                  <Input type="number" value={editForm.contract_rate ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contract_rate: Number(e.target.value) }))} />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Loading Details */}
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Loading Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Load Qty</Label>
+                  <Input type="number" value={editForm.load_qty ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, load_qty: e.target.value ? Number(e.target.value) : null }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Unload Qty</Label>
+                  <Input type="number" value={editForm.unload_qty ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, unload_qty: e.target.value ? Number(e.target.value) : null }))} />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Freight Details */}
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Freight Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Transporter Code</Label>
+                  <Input value={editForm.transporter_code ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, transporter_code: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Transporter Name</Label>
+                  <Input value={editForm.transporter_name ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, transporter_name: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vehicle Number</Label>
+                  <Input value={editForm.vehicle_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, vehicle_number: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Bilty Number</Label>
+                  <Input value={editForm.bility_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, bility_number: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Bilty Date</Label>
+                  <DatePicker value={editForm.bility_date ?? ""} onChange={(v) => setEditForm((f) => ({ ...f, bility_date: v || null }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Freight Rate (₹)</Label>
+                  <Input type="number" value={editForm.freight_rate ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, freight_rate: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Brokerage Amount</Label>
+                  <Input type="number" value={editForm.brokerage_amount ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, brokerage_amount: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Invoice Number</Label>
+                  <Input value={editForm.invoice_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, invoice_number: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>GRPO Number</Label>
+                  <Input value={editForm.grpo_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, grpo_number: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>GRPO Date</Label>
+                  <DatePicker value={editForm.grpo_date ?? ""} onChange={(v) => setEditForm((f) => ({ ...f, grpo_date: v || null }))} />
+                </div>
+              </div>
+            </div>
+
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSubmit} disabled={editSaving}>
+              {editSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

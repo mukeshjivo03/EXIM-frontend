@@ -65,13 +65,13 @@ export interface FreightPayload {
   transporter_code: string;
   transporter_name: string;
   bility_number: string;
-  bility_date: string;
+  bility_date: string | null;
   freight_rate: number;
   brokerage_amount: number;
   vehicle_number: string;
   invoice_number: string;
   grpo_number?: string;
-  grpo_date?: string;
+  grpo_date?: string | null;
 }
 
 export async function createContract26(payload: NewContractPayload): Promise<DomesticContract26> {
@@ -101,5 +101,32 @@ export async function submitLoadingForm(id: number, payload: LoadingPayload): Pr
 
 export async function submitFreightForm(id: number, payload: FreightPayload): Promise<DomesticContract26> {
   const { data } = await api.put<DomesticContract26>(`/dc/freight/create/${id}/`, payload);
+  return data;
+}
+
+export interface EditContractPayload {
+  status?: string;
+  product_code?: string;
+  vendor_code?: string;
+  po_number?: string;
+  po_date?: string | null;
+  contract_qty?: number;
+  contract_rate?: number;
+  load_qty?: number | null;
+  unload_qty?: number | null;
+  transporter_code?: string;
+  transporter_name?: string;
+  vehicle_number?: string;
+  bility_number?: string;
+  bility_date?: string | null;
+  freight_rate?: number;
+  brokerage_amount?: number;
+  invoice_number?: string;
+  grpo_number?: string;
+  grpo_date?: string | null;
+}
+
+export async function updateContract26(id: number, payload: EditContractPayload): Promise<DomesticContract26> {
+  const { data } = await api.patch<DomesticContract26>(`/dc/${id}/`, payload);
   return data;
 }

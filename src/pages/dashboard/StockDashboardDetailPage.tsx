@@ -15,6 +15,7 @@ import {
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
 import { getStockStatuses, type StockStatus } from "@/api/stockStatus";
+import { getVendors } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,16 +79,21 @@ export default function StockDashboardDetailPage() {
   const [records, setRecords] = useState<StockStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit>("MTS");
+  const [vendorMap, setVendorMap] = useState<Map<string, string>>(new Map());
 
   async function fetchData() {
     setLoading(true);
     try {
-      const [res, recs] = await Promise.all([
+      const [res, recs, vendors] = await Promise.all([
         getStockDashboard(),
         getStockStatuses({ status: status ?? "" }),
+        getVendors(),
       ]);
       setData(res);
       setRecords((recs ?? []).filter((r) => !r.deleted));
+      const map = new Map<string, string>();
+      for (const v of vendors.parties) map.set(v.card_code, v.card_name);
+      setVendorMap(map);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load stock data"));
     } finally {
@@ -256,11 +262,14 @@ export default function StockDashboardDetailPage() {
                       <th className="sticky left-0 z-10 px-8 py-5 text-left font-medium uppercase tracking-[0.2em] border-r bg-muted/20 backdrop-blur-md text-sm">
                         Item Code
                       </th>
-                      {vendorKeys.map((key) => (
-                        <th key={key} className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm border-r last:border-r-0", meta.textColor)}>
-                          {key.split("__")[1]}
-                        </th>
-                      ))}
+                      {vendorKeys.map((key) => {
+                        const code = key.split("__")[1];
+                        return (
+                          <th key={key} className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm border-r last:border-r-0", meta.textColor)}>
+                            {vendorMap.get(code) ?? code}
+                          </th>
+                        );
+                      })}
                       <th className="px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm bg-primary text-primary-foreground shadow-2xl">
                         TOTAL
                       </th>
@@ -319,7 +328,7 @@ export default function StockDashboardDetailPage() {
                     {records.map((rec, idx) => (
                       <tr key={rec.id} className={cn("border-b transition-all hover:bg-primary/5", idx % 2 === 0 ? "bg-card" : "bg-muted/10")}>
                         <td className="sticky left-0 z-10 px-6 py-4 font-normal border-r bg-inherit text-base">{rec.item_code}</td>
-                        <td className="px-6 py-4 text-base border-r">{rec.vendor_code}</td>
+                        <td className="px-6 py-4 text-base border-r">{vendorMap.get(rec.vendor_code) ?? rec.vendor_code}</td>
                         <td className="px-6 py-4 text-base border-r">
                           {rec.vehicle_number
                             ? <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{rec.vehicle_number}</span>

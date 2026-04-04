@@ -242,14 +242,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             );
           })}
 
-          {/* ── Commodity Price (ADM | MNG) ── */}
+          {/* ── Contracts (ADM | MNG) ── */}
           {isAdminOrManager && (
             <>
               <Separator className="my-3" />
 
-              <SectionLabel label="Commodity Price" collapsed={collapsed} isActive={isSectionActive(commodityLinks)} />
+              <SectionLabel label="Domestic Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
 
-              {commodityLinks.map((link) => (
+              {contractsLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -296,14 +296,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             </>
           )}
 
-          {/* ── Foreign exchange rates (ADM | MNG) ── */}
+          {/* ── Commodity Price (ADM | MNG) ── */}
           {isAdminOrManager && (
             <>
               <Separator className="my-3" />
 
-              <SectionLabel label="Custom exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
+              <SectionLabel label="Commodity Price" collapsed={collapsed} isActive={isSectionActive(commodityLinks)} />
 
-              {forexLinks.map((link) => (
+              {commodityLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -323,14 +323,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             </>
           )}
 
-          {/* ── Contracts (ADM | MNG) ── */}
+          {/* ── Foreign exchange rates (ADM | MNG) ── */}
           {isAdminOrManager && (
             <>
               <Separator className="my-3" />
 
-              <SectionLabel label="Domestic Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
+              <SectionLabel label="Custom exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
 
-              {contractsLinks.map((link) => (
+              {forexLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}

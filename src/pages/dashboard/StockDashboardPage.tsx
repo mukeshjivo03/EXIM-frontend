@@ -159,15 +159,32 @@ export default function StockDashboardPage() {
     return { topItem };
   }, [data]);
 
-  // Filtered rows based on hideZeroRows
+  // Filtered rows based on hideZeroRows — includes tank-only items
   const displayItems = useMemo(() => {
     if (!data) return [];
-    if (!hideZeroRows) return data.items;
-    return data.items.filter(item => {
+
+    // Build set of item codes already in the stock table
+    const stockItemCodes = new Set(data.items.map((i) => i.item_code));
+
+    // Synthetic rows for tank items not in stock table
+    const tankOnlyRows: typeof data.items = (tankSummary?.items ?? [])
+      .filter((t) => !stockItemCodes.has(t.tank_item_code))
+      .map((t) => ({
+        item_code: t.tank_item_code,
+        in_factory: 0,
+        outside_factory: 0,
+        status_data: {},
+        total: 0,
+      }));
+
+    const merged = [...data.items, ...tankOnlyRows];
+
+    if (!hideZeroRows) return merged;
+    return merged.filter(item => {
       const tankVal = tankQtyMap.get(item.item_code) ?? 0;
       return tankVal > 0 || item.total > 0;
     });
-  }, [data, hideZeroRows, tankQtyMap]);
+  }, [data, hideZeroRows, tankQtyMap, tankSummary]);
 
   /* ── Export to Excel ─────────────────────────────────────── */
 
