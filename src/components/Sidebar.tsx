@@ -49,9 +49,15 @@ const ROLE_LABELS: Record<string, string> = {
   MNG: "Manager",
 };
 
+const reportsLinks = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3 },
+  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse },
+  { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck },
+];
+
 const stockLinks = [
   { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList },
-  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse },
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },
@@ -184,34 +190,27 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
           </NavLink>
           {isAdminOrManager && (
             <>
-              <NavLink
-                to="/dashboard"
-                title="Dashboard"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  } ${collapsed ? "justify-center px-0" : ""}`
-                }
-              >
-                <LayoutDashboard className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>Dashboard</span>}
-              </NavLink>
-              <NavLink
-                to="/stock-dashboard"
-                title="Stock Dashboard"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  } ${collapsed ? "justify-center px-0" : ""}`
-                }
-              >
-                <BarChart3 className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>Stock Dashboard</span>}
-              </NavLink>
+              <Separator className="my-3" />
+
+              <SectionLabel label="Reports" collapsed={collapsed} isActive={isSectionActive(reportsLinks)} />
+
+              {reportsLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  title={link.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    } ${collapsed ? "justify-center px-0" : ""}`
+                  }
+                >
+                  <link.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              ))}
             </>
           )}
 

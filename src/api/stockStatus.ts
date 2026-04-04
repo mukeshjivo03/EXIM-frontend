@@ -191,6 +191,20 @@ export async function arriveBatch(data: {
   return res.data;
 }
 
+export interface VehicleReport {
+  vehicle_number: string;
+  quantity_in_litre: number;
+  eta: string | null;
+  status: string;
+  job_work: string | null;
+  item_name: string;
+}
+
+export async function getVehicleReport(status: string): Promise<VehicleReport[]> {
+  const res = await api.get<VehicleReport[]>("/stock-status/vehicle-report/", { params: { status } });
+  return res.data ?? [];
+}
+
 export async function softDeleteStockStatus(record: StockStatus): Promise<StockStatus> {
   const res = await api.patch<StockStatus>(`/stock-status/${record.id}/`, {
     deleted: true,

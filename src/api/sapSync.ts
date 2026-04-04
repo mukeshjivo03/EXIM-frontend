@@ -257,6 +257,11 @@ export async function getWarehouseInventory(): Promise<WarehouseInventoryItem[]>
   return res.data.inventory ?? [];
 }
 
+export async function getFinishedInventory(): Promise<WarehouseInventoryItem[]> {
+  const res = await api.get<{ finished_inventory: WarehouseInventoryItem[] }>("/sap-sync/finished-inventory/");
+  return res.data.finished_inventory ?? [];
+}
+
 // Sync Logs
 
 export interface SyncLog {

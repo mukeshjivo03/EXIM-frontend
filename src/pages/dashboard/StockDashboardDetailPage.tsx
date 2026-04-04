@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
+import { getStockStatuses, type StockStatus } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,13 +43,16 @@ const STATUS_ORDER = [
   "IN_CONTRACT",
   "ON_THE_SEA",
   "MUNDRA_PORT",
-  "ON_THE_WAY",
+  "OTW_TO_REFINERY",
   "AT_REFINERY",
   "UNDER_LOADING",
-  "OTW_TO_REFINERY",
+  "ON_THE_WAY",
   "OUT_SIDE_FACTORY",
   "IN_FACTORY"
 ];
+
+// Statuses shown as vendor-pivot matrix (aggregated by vendor)
+const MATRIX_STATUSES = new Set(["IN_CONTRACT", "ON_THE_SEA", "MUNDRA_PORT"]);
 
 const STATUS_META: Record<string, { label: string; headerBg: string; textColor: string; icon: any }> = {
   IN_FACTORY:       { label: "In Factory",       headerBg: "bg-green-50 dark:bg-green-900/20",   textColor: "text-green-800 dark:text-green-200", icon: Factory },
@@ -71,14 +75,19 @@ export default function StockDashboardDetailPage() {
   const navigate = useNavigate();
 
   const [data, setData] = useState<StockDashboardResponse | null>(null);
+  const [records, setRecords] = useState<StockStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit>("MTS");
 
   async function fetchData() {
     setLoading(true);
     try {
-      const res = await getStockDashboard();
+      const [res, recs] = await Promise.all([
+        getStockDashboard(),
+        getStockStatuses({ status: status ?? "" }),
+      ]);
       setData(res);
+      setRecords((recs ?? []).filter((r) => !r.deleted));
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load stock data"));
     } finally {
@@ -233,12 +242,13 @@ export default function StockDashboardDetailPage() {
                   <Skeleton key={i} className="h-12 w-full rounded-xl" />
                 ))}
               </div>
-            ) : !data || rows.length === 0 ? (
+            ) : (!data || (MATRIX_STATUSES.has(status ?? "") ? rows.length === 0 : records.length === 0)) ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
                 <Inbox className="h-12 w-12 opacity-10" />
                 <p className="font-bold uppercase tracking-widest text-sm">No stock found for this status</p>
               </div>
-            ) : (
+            ) : MATRIX_STATUSES.has(status ?? "") ? (
+              /* ── Matrix view (vendor pivot) — up to Mundra Port ── */
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -246,91 +256,89 @@ export default function StockDashboardDetailPage() {
                       <th className="sticky left-0 z-10 px-8 py-5 text-left font-medium uppercase tracking-[0.2em] border-r bg-muted/20 backdrop-blur-md text-sm">
                         Item Code
                       </th>
-                      {isSimpleStatus ? (
-                        <th className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm", meta.textColor)}>
-                          Quantity ({UNIT_LABELS[unit]})
+                      {vendorKeys.map((key) => (
+                        <th key={key} className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm border-r last:border-r-0", meta.textColor)}>
+                          {key.split("__")[1]}
                         </th>
-                      ) : (
-                        <>
-                          {vendorKeys.map((key) => (
-                            <th key={key} className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm border-r last:border-r-0", meta.textColor)}>
-                              {key.split("__")[1]}
-                            </th>
-                          ))}
-                          <th className="px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm bg-primary text-primary-foreground shadow-2xl">
-                            TOTAL
-                          </th>
-                        </>
-                      )}
+                      ))}
+                      <th className="px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm bg-primary text-primary-foreground shadow-2xl">
+                        TOTAL
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((item, idx) => {
-                      const rowTotal = isSimpleStatus
-                        ? (status === "IN_FACTORY" ? item.in_factory : item.outside_factory)
-                        : vendorKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
-
+                      const rowTotal = vendorKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
                       return (
-                        <tr
-                          key={item.item_code}
-                          className={cn(
-                            "border-b transition-all group hover:bg-primary/5",
-                            idx % 2 === 0 ? "bg-card" : "bg-muted/10"
-                          )}
-                        >
+                        <tr key={item.item_code} className={cn("border-b transition-all group hover:bg-primary/5", idx % 2 === 0 ? "bg-card" : "bg-muted/10")}>
                           <td className="sticky left-0 z-10 px-8 py-5 font-normal border-r bg-inherit shadow-sm text-base group-hover:text-primary transition-colors">
                             {item.item_code}
                           </td>
-                          {isSimpleStatus ? (
-                            <td className="px-8 py-5 text-right tabular-nums text-base font-normal">
-                              {fmtNum(rowTotal, unit)}
-                            </td>
-                          ) : (
-                            <>
-                              {vendorKeys.map((key) => {
-                                const val = item.status_data[key] ?? 0;
-                                return (
-                                  <td key={key} className="px-8 py-5 text-right tabular-nums text-base font-normal border-r last:border-r-0">
-                                    {val > 0 ? (
-                                      <span className="text-foreground">{fmtNum(val, unit)}</span>
-                                    ) : (
-                                      <span className="opacity-10">·</span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                              <td className="px-8 py-5 text-right tabular-nums font-normal bg-muted/30 text-base">
-                                {fmtNum(rowTotal, unit)}
+                          {vendorKeys.map((key) => {
+                            const val = item.status_data[key] ?? 0;
+                            return (
+                              <td key={key} className="px-8 py-5 text-right tabular-nums text-base font-normal border-r last:border-r-0">
+                                {val > 0 ? <span>{fmtNum(val, unit)}</span> : <span className="opacity-10">·</span>}
                               </td>
-                            </>
-                          )}
+                            );
+                          })}
+                          <td className="px-8 py-5 text-right tabular-nums font-normal bg-muted/30 text-base">
+                            {fmtNum(rowTotal, unit)}
+                          </td>
                         </tr>
                       );
                     })}
-
-                    {/* Totals row */}
-                    <tr className="bg-muted/80 backdrop-blur-md font-normal border-t-2 border-primary/20">
-                      <td className="sticky left-0 z-10 px-8 py-6 uppercase tracking-widest border-r bg-inherit text-base">
-                        Grand Total
-                      </td>
-                      {isSimpleStatus ? (
-                        <td className="px-8 py-6 text-right tabular-nums text-primary text-base">
-                          {fmtNum(grandTotal, unit)}
+                    <tr className="bg-muted/80 font-normal border-t-2 border-primary/20">
+                      <td className="sticky left-0 z-10 px-8 py-6 uppercase tracking-widest border-r bg-inherit text-base">Grand Total</td>
+                      {vendorKeys.map((key) => (
+                        <td key={key} className="px-8 py-6 text-right tabular-nums border-r last:border-r-0 text-base">
+                          {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
                         </td>
-                      ) : (
-                        <>
-                          {vendorKeys.map((key) => (
-                            <td key={key} className="px-8 py-6 text-right tabular-nums border-r last:border-r-0 text-base">
-                              {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
-                            </td>
-                          ))}
-                          <td className="px-8 py-6 text-right tabular-nums bg-primary text-primary-foreground shadow-2xl text-base rounded-bl-3xl">
-                            {fmtNum(grandTotal, unit)}
-                          </td>
-                        </>
-                      )}
+                      ))}
+                      <td className="px-8 py-6 text-right tabular-nums bg-primary text-primary-foreground shadow-2xl text-base">
+                        {fmtNum(grandTotal, unit)}
+                      </td>
                     </tr>
                   </tbody>
+                </table>
+              </div>
+            ) : (
+              /* ── Vehicle breakdown — after Mundra Port ── */
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className={cn("border-b-2", meta.headerBg)}>
+                      <th className="sticky left-0 z-10 px-6 py-4 text-left font-medium uppercase tracking-[0.15em] border-r bg-muted/20 backdrop-blur-md text-sm">Item Code</th>
+                      <th className="px-6 py-4 text-left font-medium uppercase tracking-[0.15em] text-sm border-r">Vendor</th>
+                      <th className="px-6 py-4 text-left font-medium uppercase tracking-[0.15em] text-sm border-r">Vehicle No.</th>
+                      <th className={cn("px-6 py-4 text-right font-medium uppercase tracking-[0.15em] text-sm border-r", meta.textColor)}>Qty ({UNIT_LABELS[unit]})</th>
+                      <th className="px-6 py-4 text-right font-medium uppercase tracking-[0.15em] text-sm">Rate (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {records.map((rec, idx) => (
+                      <tr key={rec.id} className={cn("border-b transition-all hover:bg-primary/5", idx % 2 === 0 ? "bg-card" : "bg-muted/10")}>
+                        <td className="sticky left-0 z-10 px-6 py-4 font-normal border-r bg-inherit text-base">{rec.item_code}</td>
+                        <td className="px-6 py-4 text-base border-r">{rec.vendor_code}</td>
+                        <td className="px-6 py-4 text-base border-r">
+                          {rec.vehicle_number
+                            ? <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{rec.vehicle_number}</span>
+                            : <span className="text-muted-foreground text-sm italic">—</span>}
+                        </td>
+                        <td className="px-6 py-4 text-right tabular-nums text-base border-r">{fmtNum(Number(rec.quantity), unit)}</td>
+                        <td className="px-6 py-4 text-right tabular-nums text-base">₹ {Number(rec.rate).toLocaleString("en-IN")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted/80 font-normal border-t-2 border-primary/20">
+                      <td colSpan={3} className="sticky left-0 z-10 px-6 py-4 uppercase tracking-widest bg-inherit text-sm">Grand Total</td>
+                      <td className="px-6 py-4 text-right tabular-nums text-primary text-base">
+                        {fmtNum(records.reduce((s, r) => s + Number(r.quantity), 0), unit)}
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}

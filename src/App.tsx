@@ -22,6 +22,7 @@ import TankDataPage from "@/pages/stock/TankDataPage";
 import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
+import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
@@ -67,6 +68,14 @@ function App() {
 
             {/* ADM | MNG | FTR — Tank pages (view only for FTR) */}
             <Route path="/stock/warehouse-inventory" element={<WarehouseInventoryPage />} />
+            <Route
+              path="/reports/vehicle-report"
+              element={
+                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                  <VehicleReportPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/stock/tank-items" element={<TankItemsPage />} />
             <Route path="/stock/tank-monitoring" element={<TankMonitoringPage />} />
             <Route path="/stock/tank-data" element={<TankDataPage />} />

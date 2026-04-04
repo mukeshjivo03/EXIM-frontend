@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw, Warehouse, PackageOpen } from "lucide-react";
 
-import { getWarehouseInventory, type WarehouseInventoryItem } from "@/api/sapSync";
+import { getWarehouseInventory, getFinishedInventory, type WarehouseInventoryItem } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,22 +19,32 @@ function fmtNum(n: number) {
   return n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
+// Only these warehouses are shown, in this order
+const ALLOWED_WAREHOUSES = ["BH-EC", "BH-GJ", "BH-CRUDE", "GP-FG", "BH-EX", "BH-PF", "BH-PC", "BH-VA"];
+
+// These use the finished-goods inventory API
+const FINISHED_WAREHOUSES = new Set(["BH-EC", "GP-FG"]);
+
 const WAREHOUSE_COLORS: Record<string, string> = {
-  "BH-CRUDE": "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800",
-  "BH-EX":    "bg-sky-50 dark:bg-sky-950/20 border-sky-200 dark:border-sky-800",
-  "BH-FG":    "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
+  "BH-EC":    "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800",
   "BH-GJ":    "bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800",
-  "BH-GR":    "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
-  "BH-LO":    "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
-  "BH-OT":    "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800",
-  "BH-PC":    "bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800",
-  "BH-PF":    "bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800",
-  "BH-PM":    "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800",
-  "BH-PP":    "bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800",
-  "BH-VA":    "bg-lime-50 dark:bg-lime-950/20 border-lime-200 dark:border-lime-800",
-  "DL-FG":    "bg-fuchsia-50 dark:bg-fuchsia-950/20 border-fuchsia-200 dark:border-fuchsia-800",
-  "DL-GR":    "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
+  "BH-CRUDE": "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800",
   "GP-FG":    "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800",
+  "BH-EX":    "bg-sky-50 dark:bg-sky-950/20 border-sky-200 dark:border-sky-800",
+  "BH-PF":    "bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800",
+  "BH-PC":    "bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800",
+  "BH-VA":    "bg-lime-50 dark:bg-lime-950/20 border-lime-200 dark:border-lime-800",
+};
+
+const HEADER_COLORS: Record<string, string> = {
+  "BH-EC":    "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200",
+  "BH-GJ":    "bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200",
+  "BH-CRUDE": "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200",
+  "GP-FG":    "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200",
+  "BH-EX":    "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200",
+  "BH-PF":    "bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200",
+  "BH-PC":    "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200",
+  "BH-VA":    "bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-200",
 };
 
 function warehouseColor(wh: string) {
@@ -42,24 +52,7 @@ function warehouseColor(wh: string) {
 }
 
 function headerColor(wh: string) {
-  const map: Record<string, string> = {
-    "BH-CRUDE": "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200",
-    "BH-EX":    "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200",
-    "BH-FG":    "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200",
-    "BH-GJ":    "bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200",
-    "BH-GR":    "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200",
-    "BH-LO":    "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200",
-    "BH-OT":    "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200",
-    "BH-PC":    "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200",
-    "BH-PF":    "bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200",
-    "BH-PM":    "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200",
-    "BH-PP":    "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200",
-    "BH-VA":    "bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-200",
-    "DL-FG":    "bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-800 dark:text-fuchsia-200",
-    "DL-GR":    "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200",
-    "GP-FG":    "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200",
-  };
-  return map[wh] ?? "bg-muted/50 text-foreground";
+  return HEADER_COLORS[wh] ?? "bg-muted/50 text-foreground";
 }
 
 export default function WarehouseInventoryPage() {
@@ -70,8 +63,13 @@ export default function WarehouseInventoryPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const data = await getWarehouseInventory();
-      setItems(data);
+      const [regular, finished] = await Promise.all([
+        getWarehouseInventory(),
+        getFinishedInventory(),
+      ]);
+      // Merge: finished warehouses use finished API, rest use regular
+      const regularFiltered = regular.filter((i) => !FINISHED_WAREHOUSES.has(i.Warehouse));
+      setItems([...regularFiltered, ...finished]);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load warehouse inventory"));
     } finally {
@@ -81,9 +79,8 @@ export default function WarehouseInventoryPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const allWarehouses = useMemo(() => {
-    return [...new Set(items.map((i) => i.Warehouse))].sort();
-  }, [items]);
+  // Fixed ordered list — only show allowed warehouses
+  const allWarehouses = ALLOWED_WAREHOUSES;
 
   function toggleWarehouse(wh: string) {
     setSelectedWarehouses((prev) => {
