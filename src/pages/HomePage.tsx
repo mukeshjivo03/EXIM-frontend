@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Globe,
+  Warehouse,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -48,15 +49,17 @@ interface QuickLink {
   label: string;
   icon: any;
   desc: string;
-  category: "Analytics" | "Operations" | "Commercials" | "Administration";
+  category: "Reports" | "Operations" | "Commercials" | "Administration";
   roles?: string[];
 }
 
 const quickLinks: QuickLink[] = [
-  // Analytics
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", category: "Analytics", roles: ["ADM", "MNG"] },
-  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", category: "Analytics", roles: ["ADM", "MNG"] },
-  
+  // Reports
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", category: "Reports", roles: ["ADM", "MNG"] },
+  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", category: "Reports", roles: ["ADM", "MNG"] },
+  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse, desc: "Live inventory by warehouse", category: "Reports", roles: ["ADM", "MNG"] },
+  { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck, desc: "Vehicle-wise stock movement", category: "Reports", roles: ["ADM", "MNG"] },
+
   // Operations
   { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses", category: "Operations", roles: ["ADM", "MNG"] },
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals", category: "Operations" },
@@ -83,7 +86,7 @@ const quickLinks: QuickLink[] = [
 ];
 
 const CATEGORY_STYLES = {
-  Analytics: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white",
+  Reports: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white",
   Operations: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white",
   Commercials: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white",
   Administration: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white",
@@ -259,7 +262,7 @@ export default function HomePage() {
 
   const grouped = useMemo(() => {
     const cats: Record<string, QuickLink[]> = {
-      Analytics: [],
+      Reports: [],
       Operations: [],
       Commercials: [],
       Administration: [],
