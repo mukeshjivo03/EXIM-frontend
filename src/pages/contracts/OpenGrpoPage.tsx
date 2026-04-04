@@ -259,9 +259,9 @@ export default function OpenGrpoPage() {
                   filtered.map((g, idx) => {
                     const meta = pendingMeta(g["Pending Days"]);
                     return (
-                      <TableRow key={g["GRPO Number"]} className={cn("transition-colors", meta.row, g["Pending Days"] > 6 && "animate-[pulse_0.6s_ease-in-out_infinite] bg-red-400 dark:bg-red-700/70")}>
+                      <TableRow key={g["GRPO Number"]} className={cn("transition-colors", meta.row, g["Pending Days"] > 6 && "row-blink")}>
                         <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                        <TableCell className="font-mono font-semibold">{g["GRPO Number"]}</TableCell>
+                        <TableCell>{g["GRPO Number"]}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{g["Vendor Ref No"]}</TableCell>
                         <TableCell className="text-sm">{g["User Name"]}</TableCell>
                         <TableCell className="max-w-[240px]">

@@ -21,6 +21,7 @@ import TankItemsPage from "@/pages/stock/TankItemsPage";
 import TankDataPage from "@/pages/stock/TankDataPage";
 import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
+import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
@@ -65,6 +66,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
 
             {/* ADM | MNG | FTR — Tank pages (view only for FTR) */}
+            <Route path="/stock/warehouse-inventory" element={<WarehouseInventoryPage />} />
             <Route path="/stock/tank-items" element={<TankItemsPage />} />
             <Route path="/stock/tank-monitoring" element={<TankMonitoringPage />} />
             <Route path="/stock/tank-data" element={<TankDataPage />} />

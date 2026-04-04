@@ -419,8 +419,8 @@ export default function StockDashboardPage() {
                   </tr>
                   {/* Row 2 — Vendor sub-headers */}
                   <tr className="border-b shadow-sm">
-                    <th className="border border-foreground/30 bg-muted/20 py-1 text-xs text-center text-muted-foreground uppercase" />
-                    <th className="border border-foreground/30 bg-muted/20 py-1 text-xs text-center text-muted-foreground uppercase" />
+                    <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
+                    <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
                     {statusGroups.map((group) => {
                       return group.vendors.map(({ key, vendor }) => (
                         <th
@@ -429,7 +429,7 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center text-sm font-semibold truncate transition-colors uppercase tracking-wider border border-foreground/30 bg-muted/20",
+                            "px-2 py-2 text-center text-base font-semibold truncate transition-colors uppercase tracking-wider border border-foreground/30 bg-muted/20",
                             hoveredCol === key ? "brightness-90" : ""
                           )}
                         >
@@ -459,7 +459,7 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 font-mono text-center border border-foreground/30 transition-colors",
+                          "sticky left-0 z-20 px-4 py-3 font-mono text-base text-center border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_code}
@@ -515,7 +515,7 @@ export default function StockDashboardPage() {
                             )}
                           </Fragment>
                         ))}
-                        <td className="px-4 py-3 text-center tabular-nums font-semibold bg-muted/20 border border-foreground/30">
+                        <td className="px-4 py-3 text-center tabular-nums text-base font-semibold bg-muted/20 border border-foreground/30">
                           {Math.round(grandTotal).toLocaleString("en-IN")}
                         </td>
                       </tr>

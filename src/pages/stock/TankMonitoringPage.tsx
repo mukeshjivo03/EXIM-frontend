@@ -82,6 +82,142 @@ function getStatusBucket(pct: number): string {
   return "Nearly Full";
 }
 
+/* ─── Industrial IBC Tote Visual ─── */
+
+function ToteVisual({ pct, fillHex, currentL, unit }: {
+  pct: number;
+  fillHex: string;
+  currentL: string;
+  unit: Unit;
+}) {
+  // SVG viewport: 160 wide × 210 tall
+  // Body: x=10, y=18, w=140, h=130  (wide & squat IBC shape)
+  const bx = 10, by = 18, bw = 140, bh = 130;
+  const liquidH = (pct / 100) * bh;
+  const liquidY = by + bh - liquidH;
+
+  // parse fillHex to rgba for plastic-diffused look
+  const r = parseInt(fillHex.slice(1, 3), 16);
+  const g = parseInt(fillHex.slice(3, 5), 16);
+  const b = parseInt(fillHex.slice(5, 7), 16);
+  const liquidFill  = `rgba(${r},${g},${b},0.55)`;   // seen through plastic — muted
+  const liquidSurf  = `rgba(${r},${g},${b},0.35)`;   // flat surface highlight
+
+  // cage bars
+  const vBars = [bx + bw * 0.33, bx + bw * 0.66];
+  const hBars = [by + bh * 0.25, by + bh * 0.5, by + bh * 0.75];
+
+  return (
+    <svg width={160} height={196} viewBox="0 0 160 196" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Clip to inner bottle area */}
+        <clipPath id={`tc-${pct}`}>
+          <rect x={bx + 4} y={by + 4} width={bw - 8} height={bh - 8} rx="3" />
+        </clipPath>
+      </defs>
+
+      {/* ── Fill opening on top (plastic cap) ── */}
+      <rect x="68" y="6" width="24" height="8" rx="3" fill="#6b7280" />
+      <rect x="74" y="3" width="12" height="6" rx="2" fill="#4b5563" />
+
+      {/* ── Outer cage top rail ── */}
+      <rect x={bx} y={by - 4} width={bw} height="6" rx="1" fill="#9ca3af" />
+
+      {/* ── Plastic inner bottle (frosted HDPE) ── */}
+      <rect x={bx + 4} y={by + 4} width={bw - 8} height={bh - 8} rx="3" fill="#f1f5f9" opacity="0.18" />
+
+      {/* ── Liquid fill (clipped, flat top) ── */}
+      <g clipPath={`url(#tc-${pct})`}>
+        {/* liquid body */}
+        <rect x={bx + 4} y={liquidY} width={bw - 8} height={liquidH} fill={liquidFill} />
+        {/* flat surface line */}
+        {pct > 0 && pct < 98 && (
+          <rect x={bx + 4} y={liquidY} width={bw - 8} height="3" fill={liquidSurf} />
+        )}
+      </g>
+
+      {/* ── Outer cage body ── */}
+      <rect x={bx} y={by} width={bw} height={bh} rx="2"
+        fill="none" stroke="#9ca3af" strokeWidth="2.5" />
+
+      {/* ── Cage vertical bars ── */}
+      {vBars.map((x, i) => (
+        <line key={i} x1={x} y1={by} x2={x} y2={by + bh} stroke="#9ca3af" strokeWidth="1.5" />
+      ))}
+
+      {/* ── Cage horizontal rungs ── */}
+      {hBars.map((y, i) => (
+        <line key={i} x1={bx} y1={y} x2={bx + bw} y2={y} stroke="#9ca3af" strokeWidth="1.5" />
+      ))}
+
+      {/* ── Cage corner bolts ── */}
+      {[[bx + 2, by + 2],[bx + bw - 2, by + 2],[bx + 2, by + bh - 2],[bx + bw - 2, by + bh - 2]].map(([cx, cy], i) => (
+        <circle key={i} cx={cx} cy={cy} r="3" fill="#6b7280" />
+      ))}
+
+      {/* ── Outer cage bottom rail ── */}
+      <rect x={bx} y={by + bh - 2} width={bw} height="6" rx="1" fill="#9ca3af" />
+
+      {/* ── Outlet valve ── */}
+      <rect x="62" y={by + bh + 4} width="36" height="8" rx="2" fill="#6b7280" />
+      <rect x="70" y={by + bh + 12} width="20" height="5" rx="1" fill="#4b5563" />
+      {/* valve handle */}
+      <rect x="76" y={by + bh + 17} width="8" height="3" rx="1" fill="#374151" />
+
+      {/* ── Quantity text inside bottle ── */}
+      {pct > 14 && (
+        <text
+          x="80" y={liquidY + liquidH - 6}
+          textAnchor="middle" fontSize="9" fontWeight="600"
+          fill="white"
+          style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.7))" }}
+        >
+          {currentL} {unit}
+        </text>
+      )}
+      {pct === 0 && (
+        <text x="80" y={by + bh / 2 + 4} textAnchor="middle" fontSize="9" fill="#9ca3af">
+          Empty
+        </text>
+      )}
+
+      {/* ── Pallet ── sits flush under the cage */}
+      {/* py = start of pallet, right below valve area */}
+      {(() => {
+        const py = by + bh + 20; // start of pallet top deck
+        const pw = 152;
+        const px = 4;
+        const deckH = 6;
+        const blockH = 14;
+        const skidH = 5;
+        // 3 solid blocks + 2 fork-pocket openings between them
+        const blockW = 38;
+        const gap = (pw - blockW * 3) / 2; // space between blocks = fork opening width
+        return (
+          <>
+            {/* Top deck — solid, full width */}
+            <rect x={px} y={py} width={pw} height={deckH} rx="2" fill="#c8cdd5" />
+            {/* Top deck edge shadow */}
+            <rect x={px} y={py + deckH - 1} width={pw} height="2" fill="#a8adb5" opacity="0.5" />
+
+            {/* 3 solid block feet */}
+            <rect x={px}                        y={py + deckH} width={blockW} height={blockH} rx="1" fill="#d1d5db" />
+            <rect x={px + blockW + gap}          y={py + deckH} width={blockW} height={blockH} rx="1" fill="#d1d5db" />
+            <rect x={px + blockW * 2 + gap * 2}  y={py + deckH} width={blockW} height={blockH} rx="1" fill="#d1d5db" />
+
+            {/* Fork pocket openings — dark recessed gaps */}
+            <rect x={px + blockW}               y={py + deckH} width={gap} height={blockH} fill="#1f2937" opacity="0.55" />
+            <rect x={px + blockW * 2 + gap}     y={py + deckH} width={gap} height={blockH} fill="#1f2937" opacity="0.55" />
+
+            {/* Bottom skid — full width */}
+            <rect x={px} y={py + deckH + blockH} width={pw} height={skidH} rx="2" fill="#c8cdd5" />
+          </>
+        );
+      })()}
+    </svg>
+  );
+}
+
 /* ─── SVG wave paths ─── */
 
 function WaveSvg({ color, className }: { color: string; className?: string }) {
@@ -368,7 +504,11 @@ export default function TankMonitoringPage() {
       ) : (
         /* ─── Grouped Tank Grid ─── */
         <div className="space-y-8">
-          {groupedTanks.map(({ label, tanks: groupTanks }) => (
+          {groupedTanks.map(({ label, tanks: groupTanks }) => {
+            const regularTanks = groupTanks.filter((t) => t.tank_type !== "TOTES");
+            const totes = groupTanks.filter((t) => t.tank_type === "TOTES");
+
+            return (
             <div key={label || "__all__"}>
               {label && (
                 <div className="flex items-center gap-3 mb-4">
@@ -377,191 +517,194 @@ export default function TankMonitoringPage() {
                   <Badge variant="secondary" className="text-[10px]">{groupTanks.length}</Badge>
                 </div>
               )}
-              <div className={cn("grid gap-5", kiosk ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
-                {groupTanks.map((tank) => {
-                  const pct = fillPercent(tank);
-                  const color = tank.item_code ? colorMap.get(tank.item_code) ?? null : null;
-                  const currentL = tank.current_capacity ? formatCapacity(tank.current_capacity, unit) : "0";
-                  const totalL = formatCapacity(tank.tank_capacity, unit);
-                  const fillHex = color ?? "#94a3b8";
-                  const fillSolid = hexToRgba(fillHex, 0.8);
-                  const fillLight = hexToRgba(fillHex, 0.5);
-                  const glowColor = hexToRgba(fillHex, 0.3);
 
-                  const isCriticalHigh = pct > 90;
-                  const isCriticalLow = pct > 0 && pct < 10;
-                  const isEmpty = pct === 0;
-                  const isUnassigned = !tank.item_code;
+              {/* ── Regular Tanks ── */}
+              {regularTanks.length > 0 && (
+                <div className={cn("grid gap-5 mb-6", kiosk ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
+                  {regularTanks.map((tank) => {
+                    const pct = fillPercent(tank);
+                    const color = tank.item_code ? colorMap.get(tank.item_code) ?? null : null;
+                    const currentL = tank.current_capacity ? formatCapacity(tank.current_capacity, unit) : "0";
+                    const totalL = formatCapacity(tank.tank_capacity, unit);
+                    const fillHex = color ?? "#94a3b8";
+                    const fillSolid = hexToRgba(fillHex, 0.8);
+                    const fillLight = hexToRgba(fillHex, 0.5);
+                    const glowColor = hexToRgba(fillHex, 0.3);
+                    const isCriticalHigh = pct > 90;
+                    const isCriticalLow = pct > 0 && pct < 10;
+                    const isEmpty = pct === 0;
+                    const isUnassigned = !tank.item_code;
 
-                  return (
-                    <div
-                      key={tank.tank_code}
-                      className={cn(
-                        "tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3 group relative",
-                        isCriticalHigh && "tank-critical-high",
-                        isCriticalLow && "tank-critical-low",
-                        (isEmpty || isUnassigned) && "tank-empty",
-                        splashing && "tank-splash",
-                      )}
-                    >
-                      {/* Critical badges */}
-                      {isCriticalHigh && (
-                        <div className="absolute -top-2 -right-2 z-20">
-                          <Badge className="bg-red-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
-                            <AlertTriangle className="h-3 w-3" /> {pct}%
-                          </Badge>
-                        </div>
-                      )}
-                      {isCriticalLow && (
-                        <div className="absolute -top-2 -right-2 z-20">
-                          <Badge className="bg-amber-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
-                            <AlertTriangle className="h-3 w-3" /> LOW
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Tank Number */}
-                      <h3 className="font-bold text-base tracking-wide">{tank.tank_code}</h3>
-
-                      {/* Item Code */}
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {tank.item_code ? (
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: fillHex }} />
-                            {tank.item_code}
-                          </span>
-                        ) : (
-                          <span className="italic">No Item Assigned</span>
+                    return (
+                      <div
+                        key={tank.tank_code}
+                        className={cn(
+                          "tank-card rounded-2xl border bg-card p-5 flex flex-col items-center gap-3 group relative",
+                          isCriticalHigh && "tank-critical-high",
+                          isCriticalLow && "tank-critical-low",
+                          (isEmpty || isUnassigned) && "tank-empty",
+                          splashing && "tank-splash",
                         )}
-                      </p>
-
-                      {/* ─── Industrial Tank Visual ─── */}
-                      <div className="relative flex items-start gap-2 my-1">
-                        {/* Level gauge */}
-                        <div className="relative z-10 flex flex-col items-center" style={{ marginTop: 27, height: 190 }}>
-                          <span className="text-[9px] font-bold text-muted-foreground mb-1">{pct}%</span>
-                          <div className="relative flex-1 w-[5px] rounded-full border border-border/50 bg-muted overflow-hidden">
-                            <div
-                              className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000"
-                              style={{ height: `${pct}%`, backgroundColor: fillHex }}
-                            />
+                      >
+                        {isCriticalHigh && (
+                          <div className="absolute -top-2 -right-2 z-20">
+                            <Badge className="bg-red-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                              <AlertTriangle className="h-3 w-3" /> {pct}%
+                            </Badge>
                           </div>
-                        </div>
-
-                        {/* Tank structure */}
-                        <div className="relative flex flex-col items-center">
-                          {/* Glow behind tank */}
-                          {pct > 0 && (
-                            <div
-                              className={cn("tank-glow absolute -inset-5 rounded-3xl blur-2xl pointer-events-none", isCriticalHigh && "tank-glow-critical")}
-                              style={{ backgroundColor: glowColor }}
-                            />
+                        )}
+                        {isCriticalLow && (
+                          <div className="absolute -top-2 -right-2 z-20">
+                            <Badge className="bg-amber-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                              <AlertTriangle className="h-3 w-3" /> LOW
+                            </Badge>
+                          </div>
+                        )}
+                        <h3 className="font-bold text-base tracking-wide">{tank.tank_code}</h3>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {tank.item_code ? (
+                            <span className="flex items-center gap-1.5">
+                              <span className="inline-block h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: fillHex }} />
+                              {tank.item_code}
+                            </span>
+                          ) : (
+                            <span className="italic">No Item Assigned</span>
                           )}
-
-                          {/* Dome cap */}
-                          <div className="relative z-10 w-[130px] h-[20px] rounded-t-[55%] border-2 border-b-0 border-border tank-dome overflow-hidden">
-                            <div className="absolute top-[4px] left-[25%] right-[25%] h-[4px] bg-white/10 rounded-full blur-[1px]" />
-                          </div>
-
-                          {/* Top flange */}
-                          <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-t-2 border-border tank-flange" />
-
-                          {/* Tank body */}
-                          <div className="tank-shell relative z-10 w-[130px] h-[190px] border-x-2 border-border overflow-hidden">
-                            {/* Reinforcement bands */}
-                            <div className="absolute top-[28%] left-0 right-0 h-[4px] tank-band z-20" />
-                            <div className="absolute top-[62%] left-0 right-0 h-[4px] tank-band z-20" />
-
-                            {/* Liquid fill */}
-                            <div
-                              className="absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out"
-                              style={{
-                                height: `${pct}%`,
-                                background: `linear-gradient(to top, ${fillSolid}, ${fillLight})`,
-                              }}
-                            >
-                              {/* Wave layers */}
-                              {pct > 0 && pct < 97 && (
-                                <div className={cn("absolute -top-[8px] left-0 right-0 overflow-hidden tank-wave-1", splashing && "tank-wave-splash")}>
-                                  <WaveSvg color={fillSolid} />
-                                </div>
-                              )}
-                              {pct > 0 && pct < 97 && (
-                                <div className={cn("absolute -top-[6px] left-0 right-0 overflow-hidden tank-wave-2 opacity-60", splashing && "tank-wave-splash")}>
-                                  <WaveSvg color={fillLight} />
-                                </div>
-                              )}
-
-                              {/* Vertical shine streak */}
-                              <div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                  background:
-                                    "linear-gradient(to right, transparent 15%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.08) 62%, transparent 85%)",
-                                }}
-                              />
-                            </div>
-
-                            {/* Glass reflection on empty area */}
-                            <div
-                              className="absolute inset-0 pointer-events-none"
-                              style={{
-                                background:
-                                  "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)",
-                              }}
-                            />
-
-                            {/* Capacity text */}
-                            <div className="absolute inset-0 flex items-end justify-center pb-3 z-10">
-                              {pct > 15 ? (
-                                <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                                  {currentL} {unit}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-semibold text-white/70">
-                                  {pct === 0 ? "Empty" : `${currentL} ${unit}`}
-                                </span>
-                              )}
+                        </p>
+                        <div className="relative flex items-start gap-2 my-1">
+                          <div className="relative z-10 flex flex-col items-center" style={{ marginTop: 27, height: 190 }}>
+                            <span className="text-[9px] font-bold text-muted-foreground mb-1">{pct}%</span>
+                            <div className="relative flex-1 w-[5px] rounded-full border border-border/50 bg-muted overflow-hidden">
+                              <div className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-1000" style={{ height: `${pct}%`, backgroundColor: fillHex }} />
                             </div>
                           </div>
-
-                          {/* Bottom flange */}
-                          <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-b-2 border-border tank-flange" />
-
-                          {/* Support legs */}
-                          <div className="relative z-10 flex justify-between w-[118px]">
-                            <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
-                            <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
+                          <div className="relative flex flex-col items-center">
+                            {pct > 0 && (
+                              <div className={cn("tank-glow absolute -inset-5 rounded-3xl blur-2xl pointer-events-none", isCriticalHigh && "tank-glow-critical")} style={{ backgroundColor: glowColor }} />
+                            )}
+                            <div className="relative z-10 w-[130px] h-[20px] rounded-t-[55%] border-2 border-b-0 border-border tank-dome overflow-hidden">
+                              <div className="absolute top-[4px] left-[25%] right-[25%] h-[4px] bg-white/10 rounded-full blur-[1px]" />
+                            </div>
+                            <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-t-2 border-border tank-flange" />
+                            <div className="tank-shell relative z-10 w-[130px] h-[190px] border-x-2 border-border overflow-hidden">
+                              <div className="absolute top-[28%] left-0 right-0 h-[4px] tank-band z-20" />
+                              <div className="absolute top-[62%] left-0 right-0 h-[4px] tank-band z-20" />
+                              <div className="absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out" style={{ height: `${pct}%`, background: `linear-gradient(to top, ${fillSolid}, ${fillLight})` }}>
+                                {pct > 0 && pct < 97 && (
+                                  <div className={cn("absolute -top-[8px] left-0 right-0 overflow-hidden tank-wave-1", splashing && "tank-wave-splash")}>
+                                    <WaveSvg color={fillSolid} />
+                                  </div>
+                                )}
+                                {pct > 0 && pct < 97 && (
+                                  <div className={cn("absolute -top-[6px] left-0 right-0 overflow-hidden tank-wave-2 opacity-60", splashing && "tank-wave-splash")}>
+                                    <WaveSvg color={fillLight} />
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to right, transparent 15%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.08) 62%, transparent 85%)" }} />
+                              </div>
+                              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)" }} />
+                              <div className="absolute inset-0 flex items-end justify-center pb-3 z-10">
+                                {pct > 15 ? (
+                                  <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{currentL} {unit}</span>
+                                ) : (
+                                  <span className="text-[10px] font-semibold text-white/70">{pct === 0 ? "Empty" : `${currentL} ${unit}`}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="relative z-10 w-[144px] h-[7px] border-x-2 border-b-2 border-border tank-flange" />
+                            <div className="relative z-10 flex justify-between w-[118px]">
+                              <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
+                              <div className="w-[12px] h-[16px] border border-border border-t-0 tank-leg rounded-b-sm" />
+                            </div>
+                            <div className="relative z-10 w-[140px] h-[4px] rounded-b-sm tank-base" />
                           </div>
-
-                          {/* Base plate */}
-                          <div className="relative z-10 w-[140px] h-[4px] rounded-b-sm tank-base" />
+                        </div>
+                        <div className="w-full space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${pct}%`, backgroundColor: fillHex }} />
+                            </div>
+                            <span className="text-xs font-bold w-10 text-right">{pct}%</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-muted-foreground">
+                            <span>Current: {currentL} {unit}</span>
+                            <span>Total: {totalL} {unit}</span>
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                      {/* Fill progress bar */}
-                      <div className="w-full space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-1000"
-                              style={{ width: `${pct}%`, backgroundColor: fillHex }}
-                            />
-                          </div>
-                          <span className="text-xs font-bold w-10 text-right">{pct}%</span>
-                        </div>
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>Current: {currentL} {unit}</span>
-                          <span>Total: {totalL} {unit}</span>
-                        </div>
-                      </div>
-
+              {/* ── Totes ── */}
+              {totes.length > 0 && (
+                <>
+                  {regularTanks.length > 0 && (
+                    <div className="flex items-center gap-3 mb-4">
+                      <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Totes</h3>
+                      <div className="h-[1px] flex-1 bg-border/50" />
+                      <Badge variant="outline" className="text-[10px]">{totes.length}</Badge>
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                  <div className={cn("grid gap-5", kiosk ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6")}>
+                    {totes.map((tank) => {
+                      const pct = fillPercent(tank);
+                      const color = tank.item_code ? colorMap.get(tank.item_code) ?? null : null;
+                      const currentL = tank.current_capacity ? formatCapacity(tank.current_capacity, unit) : "0";
+                      const totalL = formatCapacity(tank.tank_capacity, unit);
+                      const fillHex = color ?? "#94a3b8";
+                      const fillSolid = hexToRgba(fillHex, 0.8);
+                      const fillLight = hexToRgba(fillHex, 0.5);
+                      const glowColor = hexToRgba(fillHex, 0.3);
+                      const isCriticalHigh = pct > 90;
+                      const isCriticalLow = pct > 0 && pct < 10;
+
+                      return (
+                        <div
+                          key={tank.tank_code}
+                          className={cn(
+                            "rounded-2xl border bg-card p-3 flex flex-col items-center gap-2 relative",
+                            isCriticalHigh && "border-red-400",
+                            isCriticalLow && "border-amber-400",
+                          )}
+                        >
+                          {isCriticalHigh && (
+                            <div className="absolute -top-2 -right-2 z-20">
+                              <Badge className="bg-red-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                                <AlertTriangle className="h-3 w-3" /> {pct}%
+                              </Badge>
+                            </div>
+                          )}
+                          {isCriticalLow && (
+                            <div className="absolute -top-2 -right-2 z-20">
+                              <Badge className="bg-amber-500 text-white border-none text-[9px] px-1.5 py-0 gap-1 animate-pulse shadow-lg">
+                                <AlertTriangle className="h-3 w-3" /> LOW
+                              </Badge>
+                            </div>
+                          )}
+                          <h3 className="font-bold text-sm tracking-wide">{tank.tank_code}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {tank.item_code ? (
+                              <span className="flex items-center gap-1">
+                                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: fillHex }} />
+                                {tank.item_code}
+                              </span>
+                            ) : <span className="italic">Unassigned</span>}
+                          </p>
+                          <ToteVisual pct={pct} fillHex={fillHex} currentL={currentL} unit={unit} />
+                          <div className="flex justify-between text-[10px] text-muted-foreground w-full">
+                            <span>Cap: {totalL} {unit}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

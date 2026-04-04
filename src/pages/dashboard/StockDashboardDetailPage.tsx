@@ -199,23 +199,23 @@ export default function StockDashboardDetailPage() {
       {/* ── Visual Stats Summary ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className={cn("rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none", meta.headerBg)}>
-          <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", meta.textColor)}>Active Items</p>
+          <p className={cn("text-xs font-normal uppercase tracking-[0.2em]", meta.textColor)}>Active Items</p>
           <div className="flex items-end justify-between mt-2">
-            <h3 className={cn("text-4xl font-black tracking-tighter", meta.textColor)}>{rows.length}</h3>
+            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>{rows.length}</h3>
             <LayoutGrid className={cn("h-8 w-8 opacity-20", meta.textColor)} />
           </div>
         </div>
         <div className={cn("rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none", meta.headerBg)}>
-          <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", meta.textColor)}>Total Volume</p>
+          <p className={cn("text-xs font-normal uppercase tracking-[0.2em]", meta.textColor)}>Total Volume</p>
           <div className="flex items-end justify-between mt-2">
-            <h3 className={cn("text-4xl font-black tracking-tighter", meta.textColor)}>{fmtNum(grandTotal, unit)}</h3>
-            <p className={cn("text-xs font-bold uppercase", meta.textColor)}>{UNIT_LABELS[unit]}</p>
+            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>{fmtNum(grandTotal, unit)}</h3>
+            <p className={cn("text-sm font-normal uppercase", meta.textColor)}>{UNIT_LABELS[unit]}</p>
           </div>
         </div>
         <div className="rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none bg-indigo-50 dark:bg-indigo-950/20">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Status Type</p>
+          <p className="text-xs font-normal uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Status Type</p>
           <div className="flex items-end justify-between mt-2">
-            <h3 className="text-2xl font-black tracking-tight text-indigo-800 dark:text-indigo-200">
+            <h3 className="text-2xl font-normal tracking-tight text-indigo-800 dark:text-indigo-200">
               {isSimpleStatus ? "Single Category" : "Vendor Breakdown"}
             </h3>
             <ChevronRight className="h-8 w-8 text-indigo-500 opacity-20" />
@@ -243,21 +243,21 @@ export default function StockDashboardDetailPage() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className={cn("border-b-2", meta.headerBg)}>
-                      <th className="sticky left-0 z-10 px-8 py-5 text-left font-black uppercase tracking-[0.2em] border-r bg-muted/20 backdrop-blur-md text-xs">
+                      <th className="sticky left-0 z-10 px-8 py-5 text-left font-medium uppercase tracking-[0.2em] border-r bg-muted/20 backdrop-blur-md text-sm">
                         Item Code
                       </th>
                       {isSimpleStatus ? (
-                        <th className={cn("px-8 py-5 text-right font-black uppercase tracking-[0.2em] text-xs", meta.textColor)}>
+                        <th className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm", meta.textColor)}>
                           Quantity ({UNIT_LABELS[unit]})
                         </th>
                       ) : (
                         <>
                           {vendorKeys.map((key) => (
-                            <th key={key} className={cn("px-8 py-5 text-right font-black uppercase tracking-[0.2em] text-xs border-r last:border-r-0", meta.textColor)}>
+                            <th key={key} className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm border-r last:border-r-0", meta.textColor)}>
                               {key.split("__")[1]}
                             </th>
                           ))}
-                          <th className="px-8 py-5 text-right font-black uppercase tracking-[0.2em] text-xs bg-primary text-primary-foreground shadow-2xl">
+                          <th className="px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm bg-primary text-primary-foreground shadow-2xl">
                             TOTAL
                           </th>
                         </>
@@ -278,11 +278,11 @@ export default function StockDashboardDetailPage() {
                             idx % 2 === 0 ? "bg-card" : "bg-muted/10"
                           )}
                         >
-                          <td className="sticky left-0 z-10 px-8 py-5 font-mono font-black border-r bg-inherit shadow-sm text-sm group-hover:text-primary transition-colors">
+                          <td className="sticky left-0 z-10 px-8 py-5 font-normal border-r bg-inherit shadow-sm text-base group-hover:text-primary transition-colors">
                             {item.item_code}
                           </td>
                           {isSimpleStatus ? (
-                            <td className="px-8 py-5 text-right tabular-nums text-sm font-black">
+                            <td className="px-8 py-5 text-right tabular-nums text-base font-normal">
                               {fmtNum(rowTotal, unit)}
                             </td>
                           ) : (
@@ -290,16 +290,16 @@ export default function StockDashboardDetailPage() {
                               {vendorKeys.map((key) => {
                                 const val = item.status_data[key] ?? 0;
                                 return (
-                                  <td key={key} className="px-8 py-5 text-right tabular-nums text-sm font-medium border-r last:border-r-0">
+                                  <td key={key} className="px-8 py-5 text-right tabular-nums text-base font-normal border-r last:border-r-0">
                                     {val > 0 ? (
-                                      <span className="font-black text-foreground">{fmtNum(val, unit)}</span>
+                                      <span className="text-foreground">{fmtNum(val, unit)}</span>
                                     ) : (
                                       <span className="opacity-10">·</span>
                                     )}
                                   </td>
                                 );
                               })}
-                              <td className="px-8 py-5 text-right tabular-nums font-black bg-muted/30 text-sm">
+                              <td className="px-8 py-5 text-right tabular-nums font-normal bg-muted/30 text-base">
                                 {fmtNum(rowTotal, unit)}
                               </td>
                             </>
@@ -309,22 +309,22 @@ export default function StockDashboardDetailPage() {
                     })}
 
                     {/* Totals row */}
-                    <tr className="bg-muted/80 backdrop-blur-md font-black border-t-2 border-primary/20">
-                      <td className="sticky left-0 z-10 px-8 py-6 uppercase tracking-widest border-r bg-inherit text-xs">
+                    <tr className="bg-muted/80 backdrop-blur-md font-normal border-t-2 border-primary/20">
+                      <td className="sticky left-0 z-10 px-8 py-6 uppercase tracking-widest border-r bg-inherit text-base">
                         Grand Total
                       </td>
                       {isSimpleStatus ? (
-                        <td className="px-8 py-6 text-right tabular-nums text-primary text-lg">
+                        <td className="px-8 py-6 text-right tabular-nums text-primary text-base">
                           {fmtNum(grandTotal, unit)}
                         </td>
                       ) : (
                         <>
                           {vendorKeys.map((key) => (
-                            <td key={key} className="px-8 py-6 text-right tabular-nums border-r last:border-r-0 text-sm">
+                            <td key={key} className="px-8 py-6 text-right tabular-nums border-r last:border-r-0 text-base">
                               {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
                             </td>
                           ))}
-                          <td className="px-8 py-6 text-right tabular-nums bg-primary text-primary-foreground shadow-2xl text-xl rounded-bl-3xl">
+                          <td className="px-8 py-6 text-right tabular-nums bg-primary text-primary-foreground shadow-2xl text-base rounded-bl-3xl">
                             {fmtNum(grandTotal, unit)}
                           </td>
                         </>

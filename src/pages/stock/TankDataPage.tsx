@@ -12,6 +12,7 @@ import {
   List,
   Pencil,
   DatabaseZap,
+  PackageOpen,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
@@ -25,6 +26,7 @@ import {
   getTanks,
   createTank,
   deleteTank,
+  emptyTank,
   getTankSummary,
   updateTank,
   getTankItems,
@@ -154,12 +156,17 @@ export default function TankDataPage() {
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
+  const [createType, setCreateType] = useState<"TANK" | "TOTES">("TANK");
   const [tankCapacity, setTankCapacity] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Tank | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Empty tank confirmation
+  const [emptyTarget, setEmptyTarget] = useState<Tank | null>(null);
+  const [emptying, setEmptying] = useState(false);
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<Tank | null>(null);
@@ -260,8 +267,9 @@ export default function TankDataPage() {
 
   /* ── Create ──────────────────────────────────────── */
 
-  function openCreateDialog() {
+  function openCreateDialog(type: "TANK" | "TOTES" = "TANK") {
     setTankCapacity("");
+    setCreateType(type);
     setCreateOpen(true);
   }
 
@@ -276,8 +284,9 @@ export default function TankDataPage() {
         tank_capacity: tankCapacity.trim(),
         current_capacity: null,
         item_code: null,
+        tank_type: createType,
       });
-      toast.success(`Tank "${created.tank_code}" created successfully.`);
+      toast.success(`${createType === "TOTES" ? "Tote" : "Tank"} "${created.tank_code}" created successfully.`);
       setCreateOpen(false);
       await fetchData();
       fetchTankSummary();
@@ -285,6 +294,31 @@ export default function TankDataPage() {
       toastApiError(err, "Failed to create tank.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  /* ── Empty Tank ──────────────────────────────────── */
+
+  async function handleEmptyTank() {
+    if (!emptyTarget) return;
+    setEmptying(true);
+    try {
+      await emptyTank(emptyTarget.tank_code);
+      setTanks((prev) =>
+        prev.map((t) =>
+          t.tank_code === emptyTarget.tank_code
+            ? { ...t, current_capacity: "0", item_code: null }
+            : t
+        )
+      );
+      setEmptyTarget(null);
+      toast.success(`Tank "${emptyTarget.tank_code}" emptied.`);
+      fetchTankSummary();
+    } catch (err) {
+      toastApiError(err, "Failed to empty tank.");
+      setEmptyTarget(null);
+    } finally {
+      setEmptying(false);
     }
   }
 
@@ -377,10 +411,16 @@ export default function TankDataPage() {
           </p>
         </div>
         {canCreateDelete && (
-          <Button onClick={openCreateDialog} className="btn-press gap-2">
-            <Plus className="h-4 w-4" />
-            Create Tank
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => openCreateDialog("TANK")} className="btn-press gap-2">
+              <Plus className="h-4 w-4" />
+              Create Tank
+            </Button>
+            <Button onClick={() => openCreateDialog("TOTES")} variant="outline" className="btn-press gap-2">
+              <Plus className="h-4 w-4" />
+              Create Tote
+            </Button>
+          </div>
         )}
       </div>
 
@@ -674,6 +714,15 @@ export default function TankDataPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                                onClick={() => setEmptyTarget(tank)}
+                                title="Empty Tank"
+                              >
+                                <PackageOpen className="h-4 w-4" />
+                              </Button>
                               {canCreateDelete && (
                                 <Button
                                   variant="ghost"
@@ -746,6 +795,15 @@ export default function TankDataPage() {
                             title="Edit"
                           >
                             <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-orange-500"
+                            onClick={() => setEmptyTarget(tank)}
+                            title="Empty Tank"
+                          >
+                            <PackageOpen className="h-3.5 w-3.5" />
                           </Button>
                           {canCreateDelete && (
                             <Button
@@ -836,15 +894,17 @@ export default function TankDataPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Container className="h-5 w-5" />
-              Create Tank
+              {createType === "TOTES" ? "Create Tote" : "Create Tank"}
             </DialogTitle>
             <DialogDescription>
-              Add a new tank. Tank code will be auto-generated.
+              {createType === "TOTES"
+                ? "Add a new tote. Tote code will be auto-generated."
+                : "Add a new tank. Tank code will be auto-generated."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="tank-capacity">Tank Capacity (L) *</Label>
+              <Label htmlFor="tank-capacity">{createType === "TOTES" ? "Tote" : "Tank"} Capacity (L) *</Label>
               <Input
                 id="tank-capacity"
                 type="number"
@@ -867,7 +927,7 @@ export default function TankDataPage() {
                 type="submit"
                 disabled={submitting || !tankCapacity.trim()}
               >
-                {submitting ? "Creating..." : "Create"}
+                {submitting ? "Creating..." : createType === "TOTES" ? "Create Tote" : "Create Tank"}
               </Button>
             </DialogFooter>
           </form>
@@ -898,6 +958,32 @@ export default function TankDataPage() {
               disabled={deleting}
             >
               {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Empty Tank Confirmation Dialog */}
+      <Dialog open={!!emptyTarget} onOpenChange={() => setEmptyTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Empty Tank</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to empty{" "}
+              <strong>{emptyTarget?.tank_code}</strong>? This will set the
+              current stock to zero.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmptyTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleEmptyTank}
+              disabled={emptying}
+            >
+              {emptying ? "Emptying..." : "Empty Tank"}
             </Button>
           </DialogFooter>
         </DialogContent>

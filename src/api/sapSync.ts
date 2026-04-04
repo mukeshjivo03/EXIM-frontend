@@ -244,6 +244,19 @@ export async function syncBalanceSheet(): Promise<BalanceEntry[]> {
   return key ? d[key] : [];
 }
 
+// Warehouse Inventory
+
+export interface WarehouseInventoryItem {
+  Warehouse: string;
+  Category: string;
+  Total: number;
+}
+
+export async function getWarehouseInventory(): Promise<WarehouseInventoryItem[]> {
+  const res = await api.get<{ inventory: WarehouseInventoryItem[] }>("/sap-sync/inventory/");
+  return res.data.inventory ?? [];
+}
+
 // Sync Logs
 
 export interface SyncLog {

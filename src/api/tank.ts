@@ -51,12 +51,14 @@ export interface Tank {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  tank_type?: string;
 }
 
 export interface TankPayload {
   tank_capacity: string;
   current_capacity: string | null;
   item_code: string | null;
+  tank_type?: string;
 }
 
 export async function getTanks(): Promise<Tank[]> {
@@ -71,6 +73,10 @@ export async function createTank(data: TankPayload): Promise<Tank> {
 
 export async function deleteTank(tankCode: string): Promise<void> {
   await api.delete(`/tank/${tankCode}/`);
+}
+
+export async function emptyTank(tankCode: string): Promise<void> {
+  await api.patch(`/tank/empty-tank/?tank_code=${tankCode}`);
 }
 
 export async function updateTank(

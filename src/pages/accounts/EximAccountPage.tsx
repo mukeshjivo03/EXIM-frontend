@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Clock,
   Crown,
   Download,
   PackageOpen,
@@ -23,6 +24,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -227,6 +229,26 @@ export default function EximAccountPage() {
 
 
 
+  /* ── Days Pending list ───────────────────────────────────── */
+
+  const daysPendingList = useMemo(() => {
+    return [...entries]
+      .map((e) => {
+        const d = e["Last Transaction Date"] ? new Date(e["Last Transaction Date"]) : null;
+        const days = d ? Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)) : null;
+        return { ...e, daysPending: days };
+      })
+      .sort((a, b) => (b.daysPending ?? -1) - (a.daysPending ?? -1));
+  }, [entries]);
+
+  function agingBucket(days: number | null): { label: string; cls: string } {
+    if (days === null) return { label: "No date", cls: "text-muted-foreground" };
+    if (days > 25) return { label: `${days}d`, cls: "text-red-600 dark:text-red-400 font-semibold" };
+    if (days > 15) return { label: `${days}d`, cls: "text-orange-500 dark:text-orange-400 font-semibold" };
+    if (days > 7)  return { label: `${days}d`, cls: "text-yellow-600 dark:text-yellow-400" };
+    return { label: `${days}d`, cls: "text-green-600 dark:text-green-400" };
+  }
+
   /* ── Sort handler ────────────────────────────────────────── */
 
   function handleSort(key: SortKey) {
@@ -391,6 +413,17 @@ export default function EximAccountPage() {
         </Card>
       </div>
 
+      {/* Tabs */}
+      <Tabs defaultValue="outstanding">
+        <TabsList className="mb-2">
+          <TabsTrigger value="outstanding">Outstanding Balances</TabsTrigger>
+          <TabsTrigger value="days-pending" className="gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Days Pending
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="outstanding">
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
@@ -511,12 +544,13 @@ export default function EximAccountPage() {
                       <SortIcon column="LastAmount" />
                     </button>
                   </TableHead>
+                  <TableHead className="text-right">Days Pending</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <div className="flex flex-col items-center gap-2 text-muted-foreground py-12">
                         <PackageOpen className="h-10 w-10 stroke-1" />
                         <p className="font-medium">
@@ -546,14 +580,15 @@ export default function EximAccountPage() {
                     const isTop5 = top5Ids.has(entry.CardCode);
                     const isPositive = entry.Balance >= 0;
                     const lastDate = entry["Last Transaction Date"] ? new Date(entry["Last Transaction Date"]) : null;
-                    const isOld = lastDate ? (Date.now() - lastDate.getTime()) > 25 * 24 * 60 * 60 * 1000 : false;
+                    const daysPending = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                    const isOld = (daysPending ?? 0) > 25;
 
                     return (
                       <TableRow
                         key={entry.CardCode}
                         className={cn(
                           isTop5 && "bg-amber-50/50 dark:bg-amber-900/10",
-                          isOld && "animate-[pulse_0.6s_ease-in-out_infinite] bg-red-400 dark:bg-red-700/70"
+                          isOld && "row-blink"
                         )}
                       >
                         <TableCell className="font-medium">
@@ -561,7 +596,7 @@ export default function EximAccountPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs">
+                            <span>
                               {entry.CardCode}
                             </span>
                             {isTop5 && (
@@ -601,6 +636,22 @@ export default function EximAccountPage() {
                           ₹{" "}
                           {fmtDecimal(entry["Last Transanction Amount"])}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {daysPending !== null ? (
+                            <Badge className={cn(
+                              "text-xs font-semibold tabular-nums min-w-[40px] justify-center",
+                              daysPending > 25
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800"
+                                : daysPending > 15
+                                ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800"
+                                : daysPending > 7
+                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
+                            )}>
+                              {daysPending}d
+                            </Badge>
+                          ) : "—"}
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -636,6 +687,7 @@ export default function EximAccountPage() {
                     <TableCell />
                     <TableCell />
                     <TableCell />
+                    <TableCell />
                   </TableRow>
                 </TableFooter>
               )}
@@ -643,6 +695,86 @@ export default function EximAccountPage() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="days-pending">
+          <Card className="card-hover shimmer-hover">
+            <CardHeader>
+              <CardTitle>Days Pending</CardTitle>
+              <CardDescription>
+                Entries sorted by days since last transaction — oldest first
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Aging legend */}
+              <div className="flex flex-wrap gap-3 mb-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-500" /> ≤ 7d</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-yellow-400" /> 8–15d</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-orange-400" /> 16–25d</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500" /> &gt; 25d</span>
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">S.No</TableHead>
+                      <TableHead>Card Code</TableHead>
+                      <TableHead>Card Name</TableHead>
+                      <TableHead className="text-right">Balance (₹)</TableHead>
+                      <TableHead className="text-right">Last Trans. Date</TableHead>
+                      <TableHead className="text-right">Days Pending</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {daysPendingList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground py-12">
+                            <Clock className="h-10 w-10 stroke-1" />
+                            <p className="font-medium">No data loaded</p>
+                            <p className="text-sm">Sync the balance sheet first.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      daysPendingList.map((entry, idx) => {
+                        const bucket = agingBucket(entry.daysPending);
+                        const isOld = (entry.daysPending ?? 0) > 25;
+                        return (
+                          <TableRow
+                            key={entry.CardCode}
+                            className={cn(isOld && "row-blink")}
+                          >
+                            <TableCell className="font-medium">{idx + 1}</TableCell>
+                            <TableCell>
+                              <span>{entry.CardCode}</span>
+                            </TableCell>
+                            <TableCell>{entry.CardName}</TableCell>
+                            <TableCell className={`text-right font-semibold ${entry.Balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Badge variant="outline" className={`text-[10px] px-1 py-0 ${entry.Balance >= 0 ? "border-green-300 text-green-600 dark:border-green-700 dark:text-green-400" : "border-red-300 text-red-600 dark:border-red-700 dark:text-red-400"}`}>
+                                  {entry.Balance >= 0 ? "DR" : "CR"}
+                                </Badge>
+                                {entry.Balance < 0 ? "-" : ""}₹ {fmtDecimal(Math.abs(entry.Balance))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              {fmtDate(entry["Last Transaction Date"])}
+                            </TableCell>
+                            <TableCell className={`text-right ${bucket.cls}`}>
+                              {bucket.label}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
