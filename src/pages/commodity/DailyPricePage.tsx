@@ -69,8 +69,7 @@ function fmtPrice(v: number | string, decimals = 2): string {
 function DeltaBadge({ current, previous }: { current: number; previous: number | null }) {
   if (previous === null || previous === 0) return null;
   const diff = current - previous;
-  const pct = (diff / previous) * 100;
-  if (Math.abs(pct) < 0.01) return null;
+  if (Math.abs(diff) < 0.001) return null;
   const isUp = diff > 0;
   return (
     <span className={cn(
@@ -78,7 +77,7 @@ function DeltaBadge({ current, previous }: { current: number; previous: number |
       isUp ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
     )}>
       {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
-      {Math.abs(pct).toFixed(1)}%
+      ₹{Math.abs(diff).toFixed(2)}
     </span>
   );
 }
