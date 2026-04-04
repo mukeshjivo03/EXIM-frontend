@@ -395,7 +395,7 @@ export default function DomesticContracts2627Page() {
     if (!vehicleNumber.trim()) { setFreightError("Vehicle number is required."); return; }
     if (!biltyNumber.trim()) { setFreightError("Bilty number is required."); return; }
     if (!biltyDate) { setFreightError("Bilty date is required."); return; }
-    if (!freightRate || Number(freightRate) <= 0) { setFreightError("Freight rate must be > 0."); return; }
+    if (freightRate && Number(freightRate) < 0) { setFreightError("Freight rate cannot be negative."); return; }
 
     setFreightSaving(true);
     setFreightError("");
@@ -406,7 +406,7 @@ export default function DomesticContracts2627Page() {
         vehicle_number: vehicleNumber,
         bility_number: biltyNumber,
         bility_date: biltyDate,
-        freight_rate: Number(freightRate),
+        freight_rate: freightRate ? Number(freightRate) : 0,
         brokerage_amount: Number(brokerageAmount) || 0,
         invoice_number: invoiceNumber,
         grpo_number: grpoNumber,
@@ -1266,7 +1266,7 @@ export default function DomesticContracts2627Page() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
                 <div className="space-y-1.5">
-                  <Label htmlFor="freight_rate">Freight Rate <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="freight_rate">Freight Rate </Label>
                   <div className="relative">
                     <Input
                       id="freight_rate"
