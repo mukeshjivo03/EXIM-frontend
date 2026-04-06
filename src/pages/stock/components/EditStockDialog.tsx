@@ -174,7 +174,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
 
   return (
     <Dialog open={!!data} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-lg overflow-hidden">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-5 w-5" />

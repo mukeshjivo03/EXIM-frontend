@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, Container } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp } from "lucide-react";
 
 import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
@@ -42,9 +42,7 @@ const TABS: { key: StatusKey; label: string; color: string; badge: string }[] = 
   },
 ];
 
-function fmtLtr(n: number) {
-  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-}
+
 
 function fmtMts(n: number) {
   return (n / 1098.9).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
@@ -159,8 +157,7 @@ export default function VehicleReportPage() {
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-24 bg-emerald-200/50 dark:bg-emerald-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{fmtLtr(insights.totalLtrAll)}</h3>}
-            <p className="text-xs text-muted-foreground">{fmtMts(insights.totalLtrAll)} MTS</p>
+              : <h3 className="text-2xl font-bold tabular-nums">{fmtMts(insights.totalLtrAll)} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>}
           </CardContent>
         </Card>
 
@@ -226,7 +223,7 @@ export default function VehicleReportPage() {
             <div>
               <CardTitle className="text-base">{tab.label}</CardTitle>
               <CardDescription>
-                {isLoading ? "Loading..." : `${rows.length} vehicles · ${fmtLtr(totalLtr)} LTR · ${fmtMts(totalLtr)} MTS`}
+                {isLoading ? "Loading..." : `${rows.length} vehicles · ${fmtMts(totalLtr)} MTS`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchStatus(activeTab)} disabled={isLoading}>
@@ -252,7 +249,6 @@ export default function VehicleReportPage() {
                     <TableHead className="w-10">S.No</TableHead>
                     <TableHead>Vehicle No.</TableHead>
                     <TableHead>Item</TableHead>
-                    <TableHead className="text-right">Qty (LTR)</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
                     <TableHead>Days</TableHead>
                     <TableHead>ETA</TableHead>
@@ -268,7 +264,6 @@ export default function VehicleReportPage() {
                         </span>
                       </TableCell>
                       <TableCell>{r.item_name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmtLtr(r.quantity_in_litre)}</TableCell>
                       <TableCell className="text-right tabular-nums">{fmtMts(r.quantity_in_litre)}</TableCell>
                       <TableCell className="tabular-nums">
                         {(() => {
@@ -294,7 +289,6 @@ export default function VehicleReportPage() {
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
                     <td colSpan={3} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtLtr(totalLtr)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalLtr)}</td>
                     <td colSpan={2} />
                   </tr>
