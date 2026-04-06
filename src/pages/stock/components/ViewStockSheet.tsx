@@ -168,8 +168,8 @@ export function ViewStockSheet({ data, loading, tankItems, vendors, onClose, onE
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Estimated Arrival (ETA)</p>
-                    <p className="text-sm font-medium">{data.eta ? fmtDateTime(data.eta) : "—"}</p>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">{data.arrival_date ? "Arrival Date" : "Estimated Arrival (ETA)"}</p>
+                    <p className="text-sm font-medium">{data.arrival_date ? fmtDateTime(data.arrival_date) : data.eta ? fmtDateTime(data.eta) : "—"}</p>
                   </div>
                 </div>
               </div>

@@ -31,6 +31,7 @@ export interface StockStatus {
   vehicle_number?: string;
   location?: string;
   eta?: string;
+  arrival_date?: string;
   transporter_name?: string;
   job_work_vendor?: string;
   created_at: string;

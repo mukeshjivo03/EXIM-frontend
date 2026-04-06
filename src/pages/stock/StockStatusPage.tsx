@@ -587,13 +587,13 @@ export default function StockStatusPage() {
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
                     <TableHead className="w-12">S.No</TableHead>
-                    <TableHead>Item</TableHead>
+                    <TableHead>RM Code</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">Vendor</TableHead>
+                    <TableHead className="hidden sm:table-cell">Party Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
-                    <TableHead className="hidden lg:table-cell">Total (&#8377;)</TableHead>
-                    <TableHead className="hidden lg:table-cell">ETA</TableHead>
+                    <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -622,13 +622,13 @@ export default function StockStatusPage() {
                       />
                     </TableHead>
                     <TableHead className="w-12">S.No</TableHead>
-                    <TableHead>Item</TableHead>
+                    <TableHead>RM Code</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">Vendor</TableHead>
+                    <TableHead className="hidden sm:table-cell">Party Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
-                    <TableHead className="hidden lg:table-cell">Total (&#8377;)</TableHead>
-                    <TableHead className="hidden lg:table-cell">ETA</TableHead>
+                    <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -661,11 +661,16 @@ export default function StockStatusPage() {
                           </TableCell>
                           <TableCell className="font-bold">{row.item_code}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={cn("capitalize font-medium shadow-none", statusColorClass(row.status))}>
+                            <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
                               {formatStatus(row.status).toLowerCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell">{row.vendor_code}</TableCell>
+                          <TableCell className="hidden sm:table-cell font-medium">
+                            {vendors.find(v => v.card_code === row.vendor_code)?.card_name || row.vendor_code}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell font-medium">
+                            {row.vehicle_number || "—"}
+                          </TableCell>
                           <TableCell className="hidden md:table-cell tabular-nums">
                             ₹{Number(row.rate).toLocaleString("en-IN")}
                           </TableCell>
@@ -676,11 +681,16 @@ export default function StockStatusPage() {
                             />
                             <span className="relative z-10 font-bold">{Number(row.quantity).toLocaleString("en-IN")}</span>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell font-semibold text-primary">
-                            ₹{Number(row.total).toLocaleString("en-IN")}
-                          </TableCell>
                           <TableCell className="hidden lg:table-cell">
-                            {countdown ? (
+                            {row.arrival_date ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-medium">{fmtDateTime(row.arrival_date).split(",")[0]}</span>
+                                <div className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full w-fit bg-green-100 text-green-700">
+                                  <Clock className="h-3 w-3" />
+                                  Arrived
+                                </div>
+                              </div>
+                            ) : countdown ? (
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-xs font-medium">{fmtDateTime(row.eta ?? "").split(",")[0]}</span>
                                 <div className={cn(

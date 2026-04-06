@@ -62,7 +62,6 @@ const stockLinks = [
   { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container },
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText },
-  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
 ];
 
 const commodityLinks = [
@@ -95,6 +94,7 @@ const adminLinks = [
   { to: "/admin/sync-finished-goods-data", label: "Sync Finished Goods", icon: RefreshCw },
   { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
   { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
+  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
 ];
 
 interface SidebarProps {

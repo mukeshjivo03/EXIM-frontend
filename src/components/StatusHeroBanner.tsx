@@ -149,46 +149,197 @@ function SeaScene() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SCENE: MUNDRA_PORT — Crane loading container
+   SCENE: MUNDRA_PORT — Ship docked left, crane loads containers onto flatbed trucks
 ═══════════════════════════════════════════════════════════ */
 function PortScene() {
+  const HY = HORIZON_Y;
   return (
     <g>
-      {/* Quay */}
-      <rect x="0" y={HORIZON_Y} width="1200" height="80" fill="#3D2E22" />
-      <rect x="0" y={HORIZON_Y - 4} width="1200" height="6" fill={C.steel} />
-      {/* Water behind */}
-      <rect x="0" y={HORIZON_Y - 14} width="1200" height="12" fill={C.navyMid} opacity="0.5" />
-      {/* Stacked containers */}
-      {[[350,170,C.red],[350,144,C.gold],[350,118,C.green],[400,170,C.navyMid],[400,144,C.brown],[450,170,C.grey],[450,144,C.red],[500,170,C.green]].map(([x,y,c],i) => (
-        <rect key={i} x={x as number} y={y as number} width="46" height="24" rx="1" fill={c as string} />
+      {/* Quay ground */}
+      <rect x="0" y={HY - 2} width="1200" height="82" fill="#2A1F14" />
+      <rect x="0" y={HY - 4} width="1200" height="6" fill="#5A4A35" />
+
+      {/* Water (left, behind ship) */}
+      <rect x="0" y={HY - 20} width="490" height="22" fill={C.navyMid} opacity="0.7" />
+      <motion.path d="M0,216 Q50,210 100,216 Q150,222 200,216 Q250,210 300,216 Q350,222 400,216 Q450,210 490,216"
+        stroke={C.tealLight} strokeWidth="1.5" fill="none" opacity="0.35"
+        animate={{ x: [0, -50, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "linear" }} />
+
+      {/* ═══ SHIP (left side, docked) ═══ */}
+      {/* Hull body */}
+      <path d={`M 15,${HY - 42} L 15,${HY + 8} Q 30,${HY + 18} 55,${HY + 18} L 420,${HY + 18} Q 460,${HY + 16} 475,${HY} L 475,${HY - 42} Z`} fill={C.steel} />
+      {/* Anti-fouling red stripe */}
+      <path d={`M 30,${HY + 6} L 420,${HY + 6} L 445,${HY + 18} L 45,${HY + 18} Z`} fill={C.red} opacity="0.8" />
+      {/* Waterline highlight */}
+      <line x1="15" y1={HY - 3} x2="475" y2={HY - 3} stroke={C.white} strokeWidth="1.5" opacity="0.25" />
+      {/* Main deck */}
+      <rect x="15" y={HY - 44} width="460" height="5" fill={C.navyLight} />
+      {/* Superstructure / bridge (stern = left) */}
+      <rect x="22" y={HY - 130} width="85" height="90" rx="3" fill={C.steelLight} />
+      <rect x="28" y={HY - 118} width="73" height="14" rx="2" fill={C.navyLight} />
+      {/* Bridge windows */}
+      {[34, 56, 78].map(x => (
+        <rect key={x} x={x} y={HY - 113} width="14" height="9" rx="2" fill={C.cyan} opacity="0.5" />
       ))}
-      {/* Gantry crane */}
-      {[600].map(cx => (
-        <g key={cx}>
-          <rect x={cx - 4} y="60" width="8" height={HORIZON_Y - 60} fill={C.steelLight} />
-          <rect x={cx + 70 - 4} y="60" width="8" height={HORIZON_Y - 60} fill={C.steelLight} />
-          <rect x={cx - 30} y="52" width="130" height="10" rx="2" fill={C.dim} />
-          {/* Trolley */}
-          <motion.g animate={{ x: [0, 40, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
-            <rect x={cx + 10} y="62" width="20" height="8" rx="2" fill={C.gold} />
-            {/* Cable + container */}
-            <motion.g animate={{ y: [0, 60, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
-              <line x1={cx + 20} y1="70" x2={cx + 20} y2="100" stroke={C.dim} strokeWidth="1.5" />
-              <rect x={cx + 6} y="100" width="28" height="18" rx="1" fill={C.red} />
-            </motion.g>
-          </motion.g>
-          {/* Mast */}
-          <rect x={cx + 28} y="16" width="8" height="40" fill={C.steelLight} />
-          <rect x={cx + 20} y="38" width="24" height="16" rx="2" fill={C.navyMid} />
+      {/* Funnel */}
+      <rect x="60" y={HY - 154} width="18" height="28" rx="2" fill={C.navyMid} />
+      <rect x="57" y={HY - 158} width="24" height="7" rx="2" fill={C.navyLight} />
+      <motion.circle cx="69" cy={HY - 164} r="4" fill={C.dim} opacity="0.6"
+        animate={{ opacity: [0.6, 0], y: [0, -16], scale: [1, 2.2] }}
+        transition={{ duration: 2.2, repeat: Infinity }} />
+      <motion.circle cx="66" cy={HY - 174} r="5" fill={C.dim} opacity="0.4"
+        animate={{ opacity: [0.4, 0], y: [0, -20], scale: [1, 2.8] }}
+        transition={{ duration: 2.2, repeat: Infinity, delay: 0.9 }} />
+      {/* Ship containers on deck (rows) */}
+      {[148, 192, 236, 280, 324].map((x, i) => (
+        <g key={i}>
+          <rect x={x} y={HY - 84} width="40" height="26" rx="1" fill={[C.red, C.navyMid, C.green, C.gold, C.grey][i]} />
+          {i < 4 && <rect x={x} y={HY - 112} width="40" height="26" rx="1" fill={[C.brown, C.red, C.navyMid, C.green][i]} opacity="0.8" />}
         </g>
       ))}
-      {/* Docked ship silhouette */}
-      <path d="M750,180 L950,180 L960,210 L740,210 Z" fill={C.navyLight} opacity="0.6" />
-      <rect x="780" y="155" width="120" height="26" fill={C.steel} opacity="0.5" />
-      <rect x="810" y="138" width="70" height="18" fill={C.steelLight} opacity="0.4" />
-      {/* Bollards */}
-      {[300,500,700,900].map(x => <rect key={x} x={x} y={HORIZON_Y} width="8" height="10" rx="2" fill={C.steel} />)}
+      {/* Ship mast + boom */}
+      <line x1="390" y1={HY - 44} x2="390" y2={HY - 136} stroke={C.steelLight} strokeWidth="3.5" />
+      <line x1="390" y1={HY - 136} x2="320" y2={HY - 112} stroke={C.steelLight} strokeWidth="1.5" opacity="0.6" />
+      {/* Bollards on quay */}
+      {[70, 200, 370].map(x => (
+        <g key={x}>
+          <rect x={x - 5} y={HY - 4} width="10" height="14" rx="3" fill={C.dim} opacity="0.8" />
+          <rect x={x - 8} y={HY - 5} width="16" height="4" rx="2" fill={C.dim} opacity="0.6" />
+        </g>
+      ))}
+      {/* Mooring lines */}
+      <line x1="70" y1={HY - 1} x2="100" y2={HY - 30} stroke={C.dim} strokeWidth="1.5" opacity="0.3" strokeDasharray="4 3" />
+      <line x1="200" y1={HY - 1} x2="230" y2={HY - 30} stroke={C.dim} strokeWidth="1.5" opacity="0.3" strokeDasharray="4 3" />
+
+      {/* ═══ GANTRY CRANE (center) ═══ */}
+      {/* Legs */}
+      <rect x="500" y="28" width="11" height={HY - 28} fill={C.steelLight} opacity="0.9" />
+      <rect x="612" y="28" width="11" height={HY - 28} fill={C.steelLight} opacity="0.9" />
+      {/* Rail base */}
+      <rect x="490" y={HY - 7} width="144" height="9" rx="3" fill={C.dim} opacity="0.5" />
+      {/* Diagonal bracing */}
+      <line x1="500" y1="55" x2="623" y2="125" stroke={C.dim} strokeWidth="1.5" opacity="0.35" />
+      <line x1="623" y1="55" x2="500" y2="125" stroke={C.dim} strokeWidth="1.5" opacity="0.35" />
+      <line x1="500" y1="130" x2="623" y2="200" stroke={C.dim} strokeWidth="1.5" opacity="0.35" />
+      <line x1="623" y1="130" x2="500" y2="200" stroke={C.dim} strokeWidth="1.5" opacity="0.35" />
+      {/* Horizontal boom — extends left over ship and right over trucks */}
+      <rect x="340" y="20" width="450" height="14" rx="3" fill={C.steel} />
+      <rect x="340" y="22" width="450" height="5" fill={C.steelLight} opacity="0.3" />
+      {/* Operator cab */}
+      <rect x="498" y="34" width="32" height="24" rx="3" fill={C.navyMid} />
+      <rect x="502" y="37" width="24" height="15" rx="2" fill={C.cyan} opacity="0.3" />
+
+      {/* ── Crane Trolley Animation ──
+          Phase timeline (10s cycle):
+          0.00-0.12: Lower cable onto ship container (y drops)
+          0.12-0.18: Grip pause (cable at bottom, over ship)
+          0.18-0.45: Move trolley from ship→truck (x slides right), cable stays up
+          0.45-0.55: Lower cable to place container on truck flatbed (y drops)
+          0.55-0.60: Release pause
+          0.60-0.70: Raise cable (empty)
+          0.70-1.00: Move trolley back to ship side (x slides left)
+      */}
+      <motion.g
+        animate={{ x: [0, 0, 0, 230, 230, 230, 230, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.12, 0.18, 0.45, 0.55, 0.60, 0.70, 1.0] }}
+      >
+        {/* Trolley carriage */}
+        <rect x="348" y="22" width="30" height="18" rx="3" fill={C.gold} />
+        {/* Trolley wheels */}
+        <circle cx="354" cy="22" r="3" fill={C.dim} />
+        <circle cx="372" cy="22" r="3" fill={C.dim} />
+
+        {/* Cable + spreader + container */}
+        <motion.g
+          animate={{ y: [0, 80, 80, 0, 0, 80, 80, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.12, 0.18, 0.45, 0.45, 0.55, 0.60, 0.70] }}
+        >
+          {/* Cable lines (two wires) */}
+          <line x1="355" y1="40" x2="355" y2="96" stroke={C.dim} strokeWidth="1.5" />
+          <line x1="371" y1="40" x2="371" y2="96" stroke={C.dim} strokeWidth="1.5" />
+          {/* Spreader bar */}
+          <rect x="346" y="96" width="34" height="6" rx="1" fill={C.steelLight} />
+          {/* Container being moved */}
+          <rect x="348" y="102" width="30" height="20" rx="2" fill={C.red} />
+          <rect x="348" y="105" width="30" height="3" fill={C.white} opacity="0.25" />
+          <rect x="348" y="116" width="30" height="3" fill={C.white} opacity="0.15" />
+          {/* Corner castings */}
+          <rect x="348" y="102" width="4" height="4" fill={C.dim} opacity="0.6" />
+          <rect x="374" y="102" width="4" height="4" fill={C.dim} opacity="0.6" />
+          <rect x="348" y="118" width="4" height="4" fill={C.dim} opacity="0.6" />
+          <rect x="374" y="118" width="4" height="4" fill={C.dim} opacity="0.6" />
+        </motion.g>
+      </motion.g>
+
+      {/* ═══ FLATBED TRUCKS (right side, no tankers) ═══ */}
+      {/* Truck 1 — parked under crane, receiving containers */}
+      <g>
+        {/* Chassis frame */}
+        <rect x="690" y={HY - 16} width="230" height="6" rx="1" fill={C.navyMid} />
+        {/* Flatbed platform */}
+        <rect x="690" y={HY - 45} width="168" height="6" rx="1" fill={C.steelLight} />
+        {/* Flatbed side rails */}
+        <rect x="690" y={HY - 45} width="3" height="30" fill={C.dim} />
+        <rect x="855" y={HY - 45} width="3" height="30" fill={C.dim} />
+        {/* Cross beams on flatbed */}
+        {[710, 740, 770, 800, 830].map(x => (
+          <line key={x} x1={x} y1={HY - 45} x2={x} y2={HY - 39} stroke={C.dim} strokeWidth="1" opacity="0.4" />
+        ))}
+        {/* Already-loaded containers on flatbed */}
+        <rect x="694" y={HY - 71} width="36" height="26" rx="1" fill={C.green} />
+        <rect x="694" y={HY - 65} width="36" height="3" fill={C.white} opacity="0.2" />
+        <rect x="734" y={HY - 71} width="36" height="26" rx="1" fill={C.gold} />
+        <rect x="734" y={HY - 65} width="36" height="3" fill={C.white} opacity="0.2" />
+        {/* Cab */}
+        <rect x="870" y={HY - 72} width="50" height="52" rx="6" fill={C.navyMid} />
+        <rect x="878" y={HY - 67} width="36" height="22" rx="4" fill={C.cyan} opacity="0.35" />
+        {/* Headlights */}
+        <rect x="920" y={HY - 50} width="4" height="8" rx="1" fill={C.cyanLight} opacity="0.6" />
+        {/* Exhaust pipe */}
+        <rect x="913" y={HY - 96} width="5" height="26" rx="1" fill={C.navyMid} />
+        {/* Wheels — rear dual axle + front */}
+        {[710, 738, 882, 908].map(cx => (
+          <g key={cx}>
+            <circle cx={cx} cy={HY - 10} r="14" fill={C.navy} />
+            <circle cx={cx} cy={HY - 10} r="6" fill={C.steelLight} />
+            <circle cx={cx} cy={HY - 10} r="2" fill={C.dim} />
+          </g>
+        ))}
+        {/* Mud flaps */}
+        <rect x="694" y={HY - 6} width="4" height="8" rx="1" fill={C.navyMid} opacity="0.6" />
+        <rect x="752" y={HY - 6} width="4" height="8" rx="1" fill={C.navyMid} opacity="0.6" />
+      </g>
+
+      {/* Truck 2 — waiting behind, dimmer */}
+      <g opacity="0.5" transform="translate(240, 4)">
+        {/* Chassis */}
+        <rect x="690" y={HY - 16} width="210" height="5" rx="1" fill={C.navyMid} />
+        {/* Flatbed */}
+        <rect x="690" y={HY - 42} width="152" height="5" rx="1" fill={C.steel} />
+        <rect x="690" y={HY - 42} width="3" height="26" fill={C.dim} opacity="0.6" />
+        <rect x="839" y={HY - 42} width="3" height="26" fill={C.dim} opacity="0.6" />
+        {/* Empty flatbed — waiting to be loaded */}
+        {/* Cab */}
+        <rect x="852" y={HY - 64} width="44" height="46" rx="5" fill={C.navy} />
+        <rect x="860" y={HY - 59} width="30" height="18" rx="3" fill={C.tealDark} opacity="0.4" />
+        {/* Wheels */}
+        {[710, 734, 858, 884].map(cx => (
+          <g key={cx}>
+            <circle cx={cx} cy={HY - 10} r="12" fill={C.navy} />
+            <circle cx={cx} cy={HY - 10} r="5" fill={C.steelLight} opacity="0.6" />
+          </g>
+        ))}
+      </g>
+
+      {/* Stacked containers on quay waiting area (background detail) */}
+      <g opacity="0.4">
+        {[660, 700, 740].map((x, i) => (
+          <g key={i}>
+            <rect x={x} y={HY + 20} width="30" height="18" rx="1" fill={[C.brown, C.grey, C.navyMid][i]} />
+            {i < 2 && <rect x={x} y={HY + 2} width="30" height="18" rx="1" fill={[C.red, C.green][i]} />}
+          </g>
+        ))}
+      </g>
     </g>
   );
 }
