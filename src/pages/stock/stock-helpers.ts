@@ -15,20 +15,33 @@ export function formatStatus(s: string) {
   return s.replace(/_/g, " ");
 }
 
-export function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
+export function statusColorClass(s: string): string {
   switch (s) {
+    case "OUT_SIDE_FACTORY":
+      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+    case "UNDER_LOADING":
+      return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+    case "ON_THE_SEA":
+      return "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800";
+    case "MUNDRA_PORT":
+      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+    case "IN_CONTRACT":
+      return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
+    case "ON_THE_WAY":
+    case "OTW_TO_REFINERY":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
+    case "AT_REFINERY":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
     case "DELIVERED":
     case "COMPLETED":
     case "IN_TANK":
-      return "default";
+    case "KANDLA_STORAGE":
+      return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
     case "PENDING":
     case "PROCESSING":
-    case "IN_CONTRACT":
-      return "secondary";
-    case "OUT_SIDE_FACTORY":
-      return "destructive";
+      return "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700";
     default:
-      return "outline";
+      return "bg-muted text-muted-foreground border-border";
   }
 }
 

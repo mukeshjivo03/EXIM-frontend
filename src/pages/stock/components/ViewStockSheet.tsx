@@ -4,8 +4,9 @@ import type { StockStatus } from "@/api/stockStatus";
 import type { TankItem } from "@/api/tank";
 import type { Vendor } from "@/api/sapSync";
 import { fmtDateTime, fmtNum } from "@/lib/formatters";
-import { formatStatus, statusBadgeVariant } from "../stock-helpers";
+import { formatStatus, statusColorClass } from "../stock-helpers";
 import { StatusTimeline } from "./StatusTimeline";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +84,7 @@ export function ViewStockSheet({ data, loading, tankItems, vendors, onClose, onE
                   </div>
                   <div>
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Status</p>
-                    <Badge variant={statusBadgeVariant(data.status)} className="mt-0.5">
+                    <Badge variant="outline" className={cn("mt-0.5", statusColorClass(data.status))}>
                       {formatStatus(data.status)}
                     </Badge>
                   </div>

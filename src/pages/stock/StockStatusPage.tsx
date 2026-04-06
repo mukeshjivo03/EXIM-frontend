@@ -42,7 +42,7 @@ import { fmtDateTime, fmtNum } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Pagination } from "@/components/Pagination";
-import { formatStatus, statusBadgeVariant, getEtaCountdown, STATUS_ORDER } from "./stock-helpers";
+import { formatStatus, statusColorClass, getEtaCountdown, STATUS_ORDER } from "./stock-helpers";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -661,7 +661,7 @@ export default function StockStatusPage() {
                           </TableCell>
                           <TableCell className="font-bold">{row.item_code}</TableCell>
                           <TableCell>
-                            <Badge variant={statusBadgeVariant(row.status)} className="capitalize font-medium shadow-none">
+                            <Badge variant="outline" className={cn("capitalize font-medium shadow-none", statusColorClass(row.status))}>
                               {formatStatus(row.status).toLowerCase()}
                             </Badge>
                           </TableCell>
