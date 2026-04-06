@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { StatusHeroBanner } from "@/components/StatusHeroBanner";
 
 type Unit = "KG" | "MTS" | "LTR";
 
@@ -70,6 +71,10 @@ const STATUS_META: Record<string, { label: string; headerBg: string; textColor: 
   PENDING:          { label: "Pending",          headerBg: "bg-slate-50 dark:bg-slate-900/20",   textColor: "text-slate-800 dark:text-slate-200", icon: LayoutGrid },
   PROCESSING:       { label: "Processing",       headerBg: "bg-purple-50 dark:bg-purple-900/20", textColor: "text-purple-800 dark:text-purple-200", icon: LayoutGrid },
 };
+
+/* Scene animations are now in StatusHeroBanner component */
+
+
 
 export default function StockDashboardDetailPage() {
   const { status } = useParams<{ status: string }>();
@@ -169,6 +174,15 @@ export default function StockDashboardDetailPage() {
           })}
         </div>
       </div>
+
+      {/* ── Animated Status Banner ── */}
+      <StatusHeroBanner
+        activeStatus={status ?? ""}
+        label={meta.label}
+        itemCount={rows.length}
+        totalVolume={fmtNum(grandTotal, unit)}
+        unit={UNIT_LABELS[unit]}
+      />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">

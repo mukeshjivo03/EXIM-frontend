@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Warehouse, PackageOpen } from "lucide-react";
+import { RefreshCw, Warehouse, PackageOpen, BarChart3, TrendingUp, Building2 } from "lucide-react";
 
 import { getWarehouseInventory, getFinishedInventory, type WarehouseInventoryItem } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
@@ -121,6 +121,31 @@ export default function WarehouseInventoryPage() {
     return sum;
   }, [grouped]);
 
+  // Insight computations for selected warehouses
+  const insights = useMemo(() => {
+    let topWarehouse = { code: "—", total: 0 };
+    grouped.forEach((rows, wh) => {
+      const total = rows.reduce((s, r) => s + r.Total, 0);
+      if (total > topWarehouse.total) topWarehouse = { code: wh, total };
+    });
+
+    const categoryMap = new Map<string, number>();
+    grouped.forEach((rows) => {
+      rows.forEach((r) => {
+        categoryMap.set(r.Category, (categoryMap.get(r.Category) ?? 0) + r.Total);
+      });
+    });
+    let topCategory = { name: "—", total: 0 };
+    categoryMap.forEach((total, name) => {
+      if (total > topCategory.total) topCategory = { name, total };
+    });
+
+    const activeWarehouses = [...grouped.values()].filter((rows) => rows.length > 0).length;
+    const totalCategories = categoryMap.size;
+
+    return { topWarehouse, topCategory, activeWarehouses, totalCategories };
+  }, [grouped]);
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
       {/* Header */}
@@ -171,14 +196,52 @@ export default function WarehouseInventoryPage() {
         </CardContent>
       </Card>
 
-      {/* Overall total */}
+      {/* Insight cards */}
       {!loading && overallTotal > 0 && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Warehouse className="h-4 w-4" />
-          <span>
-            Total across {selectedWarehouses.size} warehouse{selectedWarehouses.size !== 1 ? "s" : ""}:{" "}
-            <span className="font-semibold text-foreground">{fmtNum(overallTotal)} LTR</span>
-          </span>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Stock</p>
+                <BarChart3 className="h-4 w-4 text-blue-500" />
+              </div>
+              <h3 className="text-2xl font-bold tabular-nums">{fmtNum(overallTotal)}</h3>
+              <p className="text-xs text-muted-foreground">LTR across {selectedWarehouses.size} warehouse{selectedWarehouses.size !== 1 ? "s" : ""}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Active Warehouses</p>
+                <Building2 className="h-4 w-4 text-emerald-500" />
+              </div>
+              <h3 className="text-2xl font-bold">{insights.activeWarehouses}</h3>
+              <p className="text-xs text-muted-foreground">{insights.totalCategories} categories in stock</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none bg-violet-50/60 dark:bg-violet-950/20 shadow-sm">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400">Top Warehouse</p>
+                <Warehouse className="h-4 w-4 text-violet-500" />
+              </div>
+              <h3 className="text-xl font-bold truncate">{insights.topWarehouse.code}</h3>
+              <p className="text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topWarehouse.total)} LTR</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm">
+            <CardContent className="p-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">Top Category</p>
+                <TrendingUp className="h-4 w-4 text-amber-500" />
+              </div>
+              <h3 className="text-xl font-bold truncate">{insights.topCategory.name}</h3>
+              <p className="text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topCategory.total)} LTR</p>
+            </CardContent>
+          </Card>
         </div>
       )}
 

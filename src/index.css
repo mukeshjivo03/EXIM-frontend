@@ -237,6 +237,62 @@
 .dark .wave-fill-mid   { fill: rgba(8, 22, 40, 0.7); }
 .dark .wave-fill-front { fill: rgba(5, 15, 30, 0.92); }
 
+/* ── Status Detail Banners ────────────────────────────────────── */
+
+/* Road / daylight sky — trucks, transit */
+.banner-sky-road {
+  background: linear-gradient(180deg, #5B8DB8 0%, #7EB0D5 35%, #A8D0E8 68%, #C2E0BC 100%);
+}
+.dark .banner-sky-road {
+  background: linear-gradient(180deg, #0C1E30 0%, #142840 35%, #1A3050 68%, #111E10 100%);
+}
+
+/* Industrial / factory sky — grey haze */
+.banner-sky-factory {
+  background: linear-gradient(180deg, #6A7480 0%, #7A8490 35%, #8A9098 68%, #6E7278 100%);
+}
+.dark .banner-sky-factory {
+  background: linear-gradient(180deg, #0E1218 0%, #16191F 35%, #1E2228 68%, #121418 100%);
+}
+
+/* Corporate / contract sky — indigo dusk */
+.banner-sky-contract {
+  background: linear-gradient(180deg, #3C4C80 0%, #4858960 35%, #5868A8 68%, #6070B4 100%);
+}
+.dark .banner-sky-contract {
+  background: linear-gradient(180deg, #07080F 0%, #0C1020 35%, #131828 68%, #1A2040 100%);
+}
+
+/* Truck driving animation — right → left */
+@keyframes truckDrive {
+  0%   { transform: translateX(110%); }
+  100% { transform: translateX(-70%); }
+}
+.truck-drive { animation: truckDrive 16s linear infinite; }
+
+/* Chimney smoke — rises and fades */
+@keyframes chimneySmoke {
+  0%   { opacity: 0.7;  transform: translateY(0)     scale(0.5); }
+  100% { opacity: 0;    transform: translateY(-52px) scale(2.2); }
+}
+.chimney-smoke {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chimneySmoke 3.2s ease-out infinite;
+}
+.chimney-smoke-1 { animation-delay: 0s;    }
+.chimney-smoke-2 { animation-delay: 0.8s;  }
+.chimney-smoke-3 { animation-delay: 1.6s;  }
+.chimney-smoke-4 { animation-delay: 2.4s;  }
+
+/* Terrain wave fills (green land for road scenes) */
+.terrain-fill-back  { fill: rgba(65,105,45,0.42); }
+.terrain-fill-mid   { fill: rgba(48, 84,28,0.62); }
+.terrain-fill-front { fill: rgba(32, 64,14,0.88); }
+.dark .terrain-fill-back  { fill: rgba(22,38,12,0.52); }
+.dark .terrain-fill-mid   { fill: rgba(15,28, 6,0.70); }
+.dark .terrain-fill-front { fill: rgba( 8,18, 2,0.92); }
+
 /* ── Login Card ──────────────────────────────────────────────── */
 
 /* Fade-scale entrance */

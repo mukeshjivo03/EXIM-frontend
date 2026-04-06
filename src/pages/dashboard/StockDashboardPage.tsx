@@ -57,7 +57,16 @@ function fmtLiters(n: number, unit: Unit) {
 }
 
 
-/* ── helpers ─────────────────────────────────────────────────── */
+/* ── status colour palette (cycles if >6 groups) ─────────────── */
+
+const STATUS_PALETTE = [
+  { bg: "bg-violet-100/80 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300", subBg: "bg-violet-50/60 dark:bg-violet-900/20" },
+  { bg: "bg-sky-100/80 dark:bg-sky-900/30",       text: "text-sky-700 dark:text-sky-300",       subBg: "bg-sky-50/60 dark:bg-sky-900/20" },
+  { bg: "bg-rose-100/80 dark:bg-rose-900/30",     text: "text-rose-700 dark:text-rose-300",     subBg: "bg-rose-50/60 dark:bg-rose-900/20" },
+  { bg: "bg-teal-100/80 dark:bg-teal-900/30",     text: "text-teal-700 dark:text-teal-300",     subBg: "bg-teal-50/60 dark:bg-teal-900/20" },
+  { bg: "bg-orange-100/80 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-300", subBg: "bg-orange-50/60 dark:bg-orange-900/20" },
+  { bg: "bg-pink-100/80 dark:bg-pink-900/30",     text: "text-pink-700 dark:text-pink-300",     subBg: "bg-pink-50/60 dark:bg-pink-900/20" },
+] as const;
 
 /* ── component ────────────────────────────────────────────────── */
 
@@ -407,6 +416,7 @@ export default function StockDashboardPage() {
                     <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
                     {/* status groups */}
                     {statusGroups.map((group, gi) => {
+                      const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
                       return (
                         <Fragment key={group.status}>
                           <th
@@ -415,8 +425,10 @@ export default function StockDashboardPage() {
                             onMouseEnter={() => setHoveredCol(group.status)}
                             onMouseLeave={() => setHoveredCol(null)}
                             className={cn(
-                              "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider bg-muted/20",
-                              hoveredCol === group.status && "ring-2 ring-inset ring-primary/20 z-10 shadow-lg"
+                              "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider",
+                              palette.bg,
+                              palette.text,
+                              hoveredCol === group.status && "ring-2 ring-inset ring-current/30 z-10 shadow-lg"
                             )}
                           >
                             <div className="flex items-center justify-center gap-1">
@@ -438,7 +450,8 @@ export default function StockDashboardPage() {
                   <tr className="border-b shadow-sm">
                     <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
                     <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
-                    {statusGroups.map((group) => {
+                    {statusGroups.map((group, gi) => {
+                      const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
                       return group.vendors.map(({ key, vendor }) => (
                         <th
                           key={key}
@@ -446,7 +459,9 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center text-base font-semibold truncate transition-colors uppercase tracking-wider border border-foreground/30 bg-muted/20",
+                            "px-2 py-2 text-center text-base font-semibold truncate transition-colors uppercase tracking-wider border border-foreground/30",
+                            palette.subBg,
+                            palette.text,
                             hoveredCol === key ? "brightness-90" : ""
                           )}
                         >

@@ -191,6 +191,37 @@ const WAVE_MID = "M0,55 Q90,37 180,55 Q270,73 360,55 Q450,37 540,55 Q630,73 720,
 const WAVE_FRONT = "M0,50 Q60,38 120,50 Q180,62 240,50 Q300,38 360,50 Q420,62 480,50 Q540,38 600,50 Q660,62 720,50 Q780,38 840,50 Q900,62 960,50 Q1020,38 1080,50 Q1140,62 1200,50 Q1260,38 1320,50 Q1380,62 1440,50 Q1500,38 1560,50 Q1620,62 1680,50 Q1740,38 1800,50 Q1860,62 1920,50 Q1980,38 2040,50 Q2100,62 2160,50 Q2220,38 2280,50 Q2340,62 2400,50 Q2460,38 2520,50 Q2580,62 2640,50 Q2700,38 2760,50 Q2820,62 2880,50 L2880,120 L0,120 Z";
 
 /* ── Page Component ────────────────────────────────────────── */
+function getTimeControl() {
+  const hour = new Date().getHours();
+  let skyGrad = "";
+  let horizonGrad = "";
+  let iconObj = { left: 0, top: 0, shadow: "", bg: "", size: 40 };
+
+  if (hour >= 6 && hour < 12) { // Morning
+    const progress = (hour - 6) / 6;
+    skyGrad = "linear-gradient(180deg, #7dd3fc 0%, #bae6fd 60%, #e0f2fe 100%)";
+    horizonGrad = "linear-gradient(180deg, transparent 0%, rgba(253,224,71,0.3) 70%, rgba(253,224,71,0.1) 100%)";
+    iconObj = { left: 10 + progress * 40, top: 70 - progress * 50, shadow: "0 0 50px #fde047", bg: "#fef08a", size: 60 };
+  } else if (hour >= 12 && hour < 17) { // Afternoon
+    const progress = (hour - 12) / 5;
+    skyGrad = "linear-gradient(180deg, #38bdf8 0%, #7dd3fc 60%, #bae6fd 100%)";
+    horizonGrad = "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.2) 70%, rgba(255,255,255,0.05) 100%)";
+    iconObj = { left: 50 + progress * 30, top: 20 + progress * 10, shadow: "0 0 60px #fde047", bg: "#fef08a", size: 60 };
+  } else if (hour >= 17 && hour < 20) { // Evening (Golden/Pink)
+    const progress = (hour - 17) / 3;
+    skyGrad = "linear-gradient(180deg, #4c1d95 0%, #db2777 40%, #f97316 70%, #fcd34d 100%)";
+    horizonGrad = "linear-gradient(180deg, transparent 0%, rgba(249,115,22,0.4) 70%, rgba(249,115,22,0.1) 100%)";
+    iconObj = { left: 80 + progress * 10, top: 30 + progress * 40, shadow: "0 0 80px #f97316", bg: "#fcd34d", size: 70 };
+  } else { // Night
+    let progress = hour >= 20 ? (hour - 20) / 10 : (hour + 4) / 10;
+    skyGrad = "linear-gradient(180deg, #020617 0%, #0f172a 60%, #1e293b 100%)";
+    horizonGrad = "linear-gradient(180deg, transparent 0%, rgba(99,102,241,0.2) 70%, rgba(99,102,241,0.05) 100%)";
+    iconObj = { left: 10 + progress * 80, top: 40 - Math.sin(progress * Math.PI) * 20, shadow: "0 0 30px #cbd5e1", bg: "#f1f5f9", size: 40 };
+  }
+
+  return { skyGrad, horizonGrad, iconObj };
+}
+
 export default function HomePage() {
   const { name, role } = useAuth();
   const [search, setSearch] = useState("");
@@ -253,6 +284,8 @@ export default function HomePage() {
     MNG: "Manager",
   };
 
+  const timeDisplay = useMemo(() => getTimeControl(), []);
+
   const filteredLinks = useMemo(() => {
     const q = search.toLowerCase();
     return quickLinks
@@ -281,8 +314,21 @@ export default function HomePage() {
           
           {/* Hero Banner */}
           <div className="relative overflow-hidden rounded-3xl h-[220px] sm:h-[260px] border border-black/10 dark:border-white/5 shadow-2xl group/hero">
-            <div className="absolute inset-0 banner-sky" />
-            <div className="absolute inset-0 banner-horizon" />
+            <div className="absolute inset-0 banner-sky" style={{ background: timeDisplay.skyGrad }} />
+            <div className="absolute inset-0 banner-horizon" style={{ background: timeDisplay.horizonGrad }} />
+            
+            {/* Celestial Body (Sun/Moon) */}
+            <div className="absolute rounded-full" style={{
+              left: `${timeDisplay.iconObj.left}%`,
+              top: `${timeDisplay.iconObj.top}%`,
+              width: timeDisplay.iconObj.size,
+              height: timeDisplay.iconObj.size,
+              background: timeDisplay.iconObj.bg,
+              boxShadow: timeDisplay.iconObj.shadow,
+              transform: 'translate(-50%, -50%)',
+              transition: 'all 1s ease'
+            }} />
+
             <div className="absolute inset-0 banner-text-overlay z-[1]" />
             <div className="banner-haze banner-haze-1" />
             <div className="banner-haze banner-haze-2" />
@@ -332,7 +378,7 @@ export default function HomePage() {
                 <path d={WAVE_MID} className="wave-fill-mid" />
               </svg>
             </div>
-            <div className="absolute z-[5] ship-sail pointer-events-none" style={{ bottom: "-12%", width: "280px", height: "155px" }}>
+            <div className="absolute z-[5] pointer-events-none" style={{ bottom: "-12%", width: "280px", height: "155px", animation: "shipSail 40s linear infinite" }}>
               <div className="ship-bob w-full h-full">
                 <CargoShip />
               </div>

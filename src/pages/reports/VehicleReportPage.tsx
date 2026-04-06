@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, Container } from "lucide-react";
 
 import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
@@ -56,6 +56,18 @@ function daysRemaining(eta: string | null): number | null {
   return Math.round(diff / 86400000);
 }
 
+function fmtDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = d.getDate();
+  const ord = day === 1 || day === 21 || day === 31 ? "st"
+            : day === 2 || day === 22 ? "nd"
+            : day === 3 || day === 23 ? "rd"
+            : "th";
+  return `${day}${ord} ${d.toLocaleString("en-IN", { month: "long" })} ${d.getFullYear()}`;
+}
+
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
   const [data, setData] = useState<Record<StatusKey, VehicleReport[]>>({
@@ -96,6 +108,20 @@ export default function VehicleReportPage() {
   const isLoading = loading[activeTab];
   const totalLtr = rows.reduce((s, r) => s + r.quantity_in_litre, 0);
 
+  const insights = useMemo(() => {
+    const allRows = TABS.flatMap((t) => data[t.key]);
+    const totalVehicles = allRows.length;
+    const totalLtrAll = allRows.reduce((s, r) => s + r.quantity_in_litre, 0);
+    const overdueCount = allRows.filter((r) => {
+      const d = daysRemaining(r.eta);
+      return d !== null && d < 0;
+    }).length;
+    const topTab = TABS.reduce((best, t) =>
+      data[t.key].length > data[best.key].length ? t : best, TABS[0]
+    );
+    return { totalVehicles, totalLtrAll, overdueCount, topTab };
+  }, [data]);
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
       {/* Header */}
@@ -108,6 +134,61 @@ export default function VehicleReportPage() {
           <RefreshCw className="h-4 w-4" />
           Refresh All
         </Button>
+      </div>
+
+      {/* Insight cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
+          <CardContent className="p-4 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Vehicles</p>
+              <Truck className="h-4 w-4 text-blue-500" />
+            </div>
+            {Object.values(loading).some(Boolean)
+              ? <div className="h-8 w-16 bg-blue-200/50 dark:bg-blue-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold">{insights.totalVehicles}</h3>}
+            <p className="text-xs text-muted-foreground">across all statuses</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
+          <CardContent className="p-4 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Total Quantity</p>
+              <BarChart3 className="h-4 w-4 text-emerald-500" />
+            </div>
+            {Object.values(loading).some(Boolean)
+              ? <div className="h-8 w-24 bg-emerald-200/50 dark:bg-emerald-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold tabular-nums">{fmtLtr(insights.totalLtrAll)}</h3>}
+            <p className="text-xs text-muted-foreground">{fmtMts(insights.totalLtrAll)} MTS</p>
+          </CardContent>
+        </Card>
+
+        <Card className={`border-none shadow-sm ${insights.overdueCount > 0 ? "bg-red-50/60 dark:bg-red-950/20" : "bg-green-50/60 dark:bg-green-950/20"}`}>
+          <CardContent className="p-4 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className={`text-xs uppercase tracking-wider ${insights.overdueCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>Overdue</p>
+              <AlertTriangle className={`h-4 w-4 ${insights.overdueCount > 0 ? "text-red-500" : "text-green-500"}`} />
+            </div>
+            {Object.values(loading).some(Boolean)
+              ? <div className="h-8 w-12 bg-muted/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold">{insights.overdueCount}</h3>}
+            <p className="text-xs text-muted-foreground">vehicles past ETA</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-violet-50/60 dark:bg-violet-950/20 shadow-sm">
+          <CardContent className="p-4 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400">Busiest Status</p>
+              <TrendingUp className="h-4 w-4 text-violet-500" />
+            </div>
+            {Object.values(loading).some(Boolean)
+              ? <div className="h-8 w-28 bg-violet-200/50 dark:bg-violet-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-lg font-bold leading-tight">{insights.topTab.label}</h3>}
+            <p className="text-xs text-muted-foreground">{data[insights.topTab.key].length} vehicles</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Status tabs */}
@@ -175,7 +256,6 @@ export default function VehicleReportPage() {
                     <TableHead className="text-right">Qty (MTS)</TableHead>
                     <TableHead>Days</TableHead>
                     <TableHead>ETA</TableHead>
-                    <TableHead>Refinery</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,8 +287,7 @@ export default function VehicleReportPage() {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{r.eta ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{r.job_work ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{fmtDate(r.eta)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -217,7 +296,7 @@ export default function VehicleReportPage() {
                     <td colSpan={3} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtLtr(totalLtr)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalLtr)}</td>
-                    <td colSpan={3} />
+                    <td colSpan={2} />
                   </tr>
                 </tfoot>
               </Table>
