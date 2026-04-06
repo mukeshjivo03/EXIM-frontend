@@ -66,7 +66,7 @@ const quickLinks: QuickLink[] = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items", category: "Operations" },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks", category: "Operations" },
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations" },
-  
+
   // Commercials
   { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", roles: ["ADM", "MNG"] },
@@ -75,7 +75,7 @@ const quickLinks: QuickLink[] = [
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", roles: ["ADM", "MNG"] },
   { to: "/license/dfia-license", label: "DFIA License", icon: FileText, desc: "DFIA license management", category: "Commercials", roles: ["ADM", "MNG"] },
-  
+
   // Administration
   { to: "/admin/stock-updation-logs", label: "Stock Logs", icon: ScrollText, desc: "Stock update history", category: "Administration", roles: ["ADM", "MNG"] },
   { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts", category: "Administration", roles: ["ADM"] },
@@ -234,12 +234,12 @@ export default function HomePage() {
       // Load Stock Stats
       getStockSummary()
         .then((res) => setStockStats({ count: res.summary.total_count, val: res.summary.total_value }))
-        .catch(() => {});
+        .catch(() => { });
 
       // Load Tank Stats
       getTankSummary()
         .then((res) => setTankStats({ count: res.tank_count, util: res.utilisation_rate }))
-        .catch(() => {});
+        .catch(() => { });
 
       // Load Role-based Activity
       if (role === "ADM") {
@@ -255,7 +255,7 @@ export default function HomePage() {
             }));
             setRecentActivity(activities);
           })
-          .catch(() => {});
+          .catch(() => { });
       } else {
         // Managers & Others see Stock Movement
         getStockLogs()
@@ -272,7 +272,7 @@ export default function HomePage() {
             }));
             setRecentActivity(activities);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
     loadStats();
@@ -308,15 +308,15 @@ export default function HomePage() {
     <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-8 lg:space-y-12 animate-page">
       {/* ── Hero & Grid Layout ── */}
       <div className="flex flex-col xl:flex-row gap-8">
-        
+
         {/* Main Content (Hero + Search + Grid) */}
         <div className="flex-1 space-y-8">
-          
+
           {/* Hero Banner */}
           <div className="relative overflow-hidden rounded-3xl h-[220px] sm:h-[260px] border border-black/10 dark:border-white/5 shadow-2xl group/hero">
             <div className="absolute inset-0 banner-sky" style={{ background: timeDisplay.skyGrad }} />
             <div className="absolute inset-0 banner-horizon" style={{ background: timeDisplay.horizonGrad }} />
-            
+
             {/* Celestial Body (Sun/Moon) */}
             <div className="absolute rounded-full" style={{
               left: `${timeDisplay.iconObj.left}%`,
@@ -332,7 +332,7 @@ export default function HomePage() {
             <div className="absolute inset-0 banner-text-overlay z-[1]" />
             <div className="banner-haze banner-haze-1" />
             <div className="banner-haze banner-haze-2" />
-            
+
             {/* Functional Stats Overlay */}
             <div className="absolute top-6 right-6 z-20 flex gap-3">
               <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-500">
@@ -445,7 +445,7 @@ export default function HomePage() {
 
         {/* ── Sidebar (Activity & Alerts) ── */}
         <div className="w-full xl:w-[320px] space-y-6">
-          
+
           {/* Alerts Card */}
           <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
             <div className="bg-red-50 dark:bg-red-950/20 px-6 py-4 flex items-center justify-between border-b border-red-100 dark:border-red-900/30">
@@ -493,14 +493,14 @@ export default function HomePage() {
             <div className="p-4 relative">
               {/* Timeline Line */}
               <div className="absolute left-[27px] top-6 bottom-6 w-[1px] bg-border" />
-              
+
               <div className="space-y-6">
                 {recentActivity.length > 0 ? recentActivity.map((act) => (
                   <div key={act.id} className="relative pl-8 flex flex-col gap-1">
                     <div className={cn(
                       "absolute left-0 top-1 h-3 w-3 rounded-full border-2 border-card z-10",
-                      act.status === "SUCCESS" ? "bg-emerald-500" : 
-                      act.status === "FAILURE" ? "bg-red-500" : "bg-blue-500"
+                      act.status === "SUCCESS" ? "bg-emerald-500" :
+                        act.status === "FAILURE" ? "bg-red-500" : "bg-blue-500"
                     )} />
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">{act.title}</p>
                     <p className="text-xs font-semibold leading-tight">{act.subtitle}</p>
@@ -513,9 +513,9 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-              
-              <Link 
-                to={role === "ADM" ? "/admin/sync-logs" : "/admin/stock-updation-logs"} 
+
+              <Link
+                to={role === "ADM" ? "/admin/sync-logs" : "/admin/stock-updation-logs"}
                 className="mt-6 block text-center text-[10px] font-bold uppercase tracking-widest text-primary hover:underline"
               >
                 View All History
