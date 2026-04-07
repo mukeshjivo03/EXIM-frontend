@@ -41,61 +41,101 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { logout as logoutApi } from "@/api/auth";
+import type { LucideIcon } from "lucide-react";
 
-const ROLE_LABELS: Record<string, string> = {
-  ADM: "Admin",
-  FTR: "Factory",
-  MNG: "Manager",
-};
+/* ── Data-driven link type ─────────────────────────────────── */
+interface SidebarLink {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  /** Permission modules required — link visible if user has ANY of these. Empty = visible to all. */
+  modules?: string[];
+}
 
-const reportsLinks = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3 },
-  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse },
-  { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck },
+interface SidebarSection {
+  label: string;
+  links: SidebarLink[];
+}
+
+/* ── Section definitions ───────────────────────────────────── *
+ * Each link can optionally specify `modules` — an array of
+ * backend permission keys. The link renders if the user has
+ * at least ONE of them. If `modules` is omitted the link is
+ * visible to every authenticated user.
+ *
+ * Sections auto-hide when none of their links are visible.
+ * To add a new page: just add an entry here with its module(s).
+ * ──────────────────────────────────────────────────────────── */
+const SIDEBAR_SECTIONS: SidebarSection[] = [
+  {
+    label: "Reports",
+    links: [
+      { to: "/dashboard",                label: "Dashboard",           icon: LayoutDashboard, modules: ["domesticreports", "stockstatus"] },
+      { to: "/stock-dashboard",           label: "Stock Dashboard",     icon: BarChart3,       modules: ["stockstatus"] },
+      { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse,       modules: ["inventory", "stockstatus"] },
+      { to: "/reports/vehicle-report",    label: "Vehicle Report",      icon: Truck,           modules: ["vehicle_report"] },
+    ],
+  },
+  {
+    label: "Stock",
+    links: [
+      { to: "/stock/stock-status",   label: "Stock Status",    icon: ClipboardList, modules: ["stockstatus"] },
+      { to: "/stock/tank-items",     label: "Tank Items",      icon: Droplets,      modules: ["tankitem"] },
+      { to: "/stock/tank-monitoring",label: "Tank Monitoring",  icon: Gauge,         modules: ["tankdata", "tanklayer"] },
+      { to: "/stock/tank-data",      label: "Tank Data",       icon: Container,     modules: ["tankdata"] },
+      { to: "/stock/tank-logs",      label: "Tank Logs",       icon: ScrollText,    modules: ["tanklog"] },
+    ],
+  },
+  {
+    label: "Domestic Contracts",
+    links: [
+      { to: "/domestic-contracts",       label: "FY 2025-2026", icon: FileCheck, modules: ["domesticcontract"] },
+      { to: "/contracts/domestic-2627",  label: "FY 2026-2027", icon: FileCheck, modules: ["domesticcontract"] },
+    ],
+  },
+  {
+    label: "Accounts",
+    links: [
+      { to: "/exim-account",        label: "Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
+      { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: Receipt, modules: ["open_grpos"] },
+    ],
+  },
+  {
+    label: "Commodity Price",
+    links: [
+      { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee, modules: ["dailyprice"] },
+      { to: "/commodity/jivo-rates",  label: "Jivo Rates",       icon: TrendingUp,  modules: ["jivorates"] },
+    ],
+  },
+  {
+    label: "Custom Exchange Rates",
+    links: [
+      { to: "/exim-rates", label: "Exchange Rates", icon: Globe, modules: ["exim_rates"] },
+    ],
+  },
+  {
+    label: "License",
+    links: [
+      { to: "/license/advance-license", label: "Advance License", icon: FileText,   modules: ["advancelicenseheaders"] },
+      { to: "/license/dfia-license",    label: "DFIA License",    icon: ShieldCheck, modules: ["dfialicenseheader"] },
+    ],
+  },
+  {
+    label: "Administration",
+    links: [
+      { to: "/admin/users",                  label: "Users",               icon: Users,         modules: ["user"] },
+      { to: "/admin/sync-raw-material-data",  label: "Sync Raw Material",   icon: RefreshCw,     modules: ["rmproducts"] },
+      { to: "/admin/sync-finished-goods-data",label: "Sync Finished Goods", icon: RefreshCw,     modules: ["fgproducts"] },
+      { to: "/admin/sync-vendor-data",        label: "Sync Vendor Data",    icon: Truck,         modules: ["party"] },
+      { to: "/admin/sync-logs",               label: "Sync Logs",           icon: ScrollText,    modules: ["synclogs"] },
+      { to: "/admin/stock-updation-logs",     label: "Stock Updation Logs", icon: ClipboardList, modules: ["stockstatusupdatelog"] },
+    ],
+  },
 ];
 
-const stockLinks = [
-  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList },
-  { to: "/stock/tank-items", label: "Tank Items", icon: Droplets },
-  { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge },
-  { to: "/stock/tank-data", label: "Tank Data", icon: Container },
-  { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText },
-];
-
-const commodityLinks = [
-  { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee },
-  { to: "/commodity/jivo-rates", label: "Jivo Rates", icon: TrendingUp },
-];
-
-const accountsLinks = [
-  { to: "/exim-account", label: "Dr/Cr Outstanding", icon: Scale },
-  { to: "/contracts/open-grpos", label: "Open GRPOs", icon: Receipt },
-];
-
-const forexLinks = [
-  { to: "/exim-rates", label: "Exchange Rates", icon: Globe },
-];
-
-const contractsLinks = [
-  { to: "/domestic-contracts", label: "FY 2025-2026", icon: FileCheck },
-  { to: "/contracts/domestic-2627", label: "FY 2026-2027", icon: FileCheck },
-];
-
-const licenseLinks = [
-  { to: "/license/advance-license", label: "Advance License", icon: FileText },
-  { to: "/license/dfia-license", label: "DFIA License", icon: ShieldCheck },
-];
-
-const adminLinks = [
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/sync-raw-material-data", label: "Sync Raw Material", icon: RefreshCw },
-  { to: "/admin/sync-finished-goods-data", label: "Sync Finished Goods", icon: RefreshCw },
-  { to: "/admin/sync-vendor-data", label: "Sync Vendor Data", icon: Truck },
-  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText },
-  { to: "/admin/stock-updation-logs", label: "Stock Updation Logs", icon: ClipboardList },
-];
+/* ── Helpers ────────────────────────────────────────────────── */
 
 interface SidebarProps {
   collapsed: boolean;
@@ -115,11 +155,10 @@ function SectionLabel({
   if (collapsed) return null;
   return (
     <span
-      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
-        isActive
+      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive
           ? "text-foreground"
           : "text-muted-foreground"
-      }`}
+        }`}
     >
       {isActive && (
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary mr-1.5 align-middle" />
@@ -129,17 +168,34 @@ function SectionLabel({
   );
 }
 
+const linkClass = (isActive: boolean, collapsed: boolean) =>
+  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive
+    ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
+    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+  } ${collapsed ? "justify-center px-0" : ""}`;
+
+/* ── Component ─────────────────────────────────────────────── */
+
 export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProps) {
-  const { role, name, email, clearAuth } = useAuth();
+  const { permissions, name, email, clearAuth } = useAuth();
+  const { hasPermission } = useHasPermission();
   const navigate = useNavigate();
   const location = useLocation();
-  const isAdmin = role === "ADM";
-  const isAdminOrManager = role === "ADM" || role === "MNG";
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
-  // Check if any link in a section is active
-  function isSectionActive(links: { to: string }[]) {
+  /** A link is visible if it has no module requirement OR the user has at least one of the listed modules */
+  function isLinkVisible(link: SidebarLink): boolean {
+    if (!link.modules || link.modules.length === 0) return true;
+    return link.modules.some((module) => hasPermission(module, "view"));
+  }
+
+  /** Filter to only visible links */
+  function visibleLinks(links: SidebarLink[]): SidebarLink[] {
+    return links.filter(isLinkVisible);
+  }
+
+  function isSectionActive(links: SidebarLink[]) {
     return links.some((link) => location.pathname.startsWith(link.to));
   }
 
@@ -156,9 +212,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
   return (
     <>
       <aside
-        className={`fixed left-0 top-14 bottom-12 border-r glass-sidebar flex flex-col transition-all duration-300 z-40 ${
-          mobileOpen ? "translate-x-0 w-56" : "-translate-x-full w-56"
-        } md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-56"}`}
+        className={`fixed left-0 top-14 bottom-12 border-r glass-sidebar flex flex-col transition-all duration-300 z-40 ${mobileOpen ? "translate-x-0 w-56" : "-translate-x-full w-56"
+          } md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-56"}`}
       >
         {/* Toggle button */}
         <div className={`flex p-2 ${collapsed ? "justify-center" : "justify-end"}`}>
@@ -173,245 +228,51 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1 px-2 flex-1 overflow-y-auto">
+          {/* Home — always visible */}
           <NavLink
             to="/"
             end
             title="Home"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              } ${collapsed ? "justify-center px-0" : ""}`
-            }
+            className={({ isActive }) => linkClass(isActive, collapsed)}
           >
             <Home className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Home</span>}
           </NavLink>
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
 
-              <SectionLabel label="Reports" collapsed={collapsed} isActive={isSectionActive(reportsLinks)} />
-
-              {reportsLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── Stock section (Tank pages: all roles, Stock Status: ADM|MNG) ── */}
-          <Separator className="my-3" />
-
-          <SectionLabel label="Stock" collapsed={collapsed} isActive={isSectionActive(stockLinks)} />
-
-          {stockLinks.map((link) => {
-            // Stock Status & Stock Updation Logs require ADM|MNG; Tank pages are for all authenticated users
-            const needsAdmMng = link.to === "/stock/stock-status" || link.to === "/admin/stock-updation-logs";
-            if (needsAdmMng && !isAdminOrManager) return null;
+          {/* Dynamic sections */}
+          {SIDEBAR_SECTIONS.map((section) => {
+            const visible = visibleLinks(section.links);
+            if (visible.length === 0) return null;
             return (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                title={link.label}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  } ${collapsed ? "justify-center px-0" : ""}`
-                }
-              >
-                <link.icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{link.label}</span>}
-              </NavLink>
+              <div key={section.label}>
+                <Separator className="my-3" />
+                <SectionLabel
+                  label={section.label}
+                  collapsed={collapsed}
+                  isActive={isSectionActive(visible)}
+                />
+                {visible.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    title={link.label}
+                    className={({ isActive }) => linkClass(isActive, collapsed)}
+                  >
+                    <link.icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>{link.label}</span>}
+                  </NavLink>
+                ))}
+              </div>
             );
           })}
-
-          {/* ── Contracts (ADM | MNG) ── */}
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="Domestic Contracts" collapsed={collapsed} isActive={isSectionActive(contractsLinks)} />
-
-              {contractsLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── Accounts (ADM | MNG) ── */}
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="Accounts" collapsed={collapsed} isActive={isSectionActive(accountsLinks)} />
-
-              {accountsLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── Commodity Price (ADM | MNG) ── */}
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="Commodity Price" collapsed={collapsed} isActive={isSectionActive(commodityLinks)} />
-
-              {commodityLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── Foreign exchange rates (ADM | MNG) ── */}
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="Custom exchange rates" collapsed={collapsed} isActive={isSectionActive(forexLinks)} />
-
-              {forexLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── License (ADM | MNG) ── */}
-          {isAdminOrManager && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="License" collapsed={collapsed} isActive={isSectionActive(licenseLinks)} />
-
-              {licenseLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
-
-          {/* ── Administration (ADM only) ── */}
-          {isAdmin && (
-            <>
-              <Separator className="my-3" />
-
-              <SectionLabel label="Administration" collapsed={collapsed} isActive={isSectionActive(adminLinks)} />
-
-              {adminLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  title={link.label}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    } ${collapsed ? "justify-center px-0" : ""}`
-                  }
-                >
-                  <link.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </NavLink>
-              ))}
-            </>
-          )}
         </nav>
 
         {/* Bottom section: profile + logout */}
         <div className="border-t p-2">
           <button
             onClick={() => setProfileOpen(true)}
-            className={`flex w-full items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-left hover:bg-muted transition-colors ${
-              collapsed ? "justify-center px-0" : ""
-            }`}
+            className={`flex w-full items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-left hover:bg-muted transition-colors ${collapsed ? "justify-center px-0" : ""
+              }`}
           >
             <CircleUser className="h-5 w-5 shrink-0 text-muted-foreground" />
             {!collapsed && (
@@ -421,9 +282,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
           <Button
             variant="ghost"
             size="sm"
-            className={`mt-2 w-full gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50 ${
-              collapsed ? "justify-center px-0" : "justify-start"
-            }`}
+            className={`mt-2 w-full gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50 ${collapsed ? "justify-center px-0" : "justify-start"
+              }`}
             onClick={() => setLogoutOpen(true)}
           >
             <LogOut className="h-4 w-4 shrink-0" />
@@ -447,7 +307,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
               </span>
             </div>
             <h3 className="text-lg font-semibold">{name ?? "Unknown"}</h3>
-            <Badge variant="secondary">{ROLE_LABELS[role ?? ""] ?? role ?? "—"}</Badge>
+            <Badge variant="secondary">{Object.keys(permissions).length > 0 ? "Active" : "—"}</Badge>
           </div>
 
           <Separator />
@@ -470,8 +330,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
             <div className="flex items-center gap-3 text-sm">
               <Shield className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-muted-foreground text-xs">Role</p>
-                <p className="font-medium">{ROLE_LABELS[role ?? ""] ?? role ?? "—"}</p>
+                <p className="text-muted-foreground text-xs">Permissions</p>
+                <p className="font-medium">{Object.keys(permissions).length} modules</p>
               </div>
             </div>
           </div>

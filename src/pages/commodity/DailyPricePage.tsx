@@ -35,6 +35,8 @@ import {
   type DbDailyPrice,
   type PriceTrendsResponse,
 } from "@/api/dailyPrice";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { useDailyPrice } from "@/context/DailyPriceContext";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,6 +98,16 @@ function heatmapBg(val: number, min: number, max: number): string {
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function DailyPricePage() {
+  const { hasPermission } = useHasPermission();
+  const canFetch =
+    hasPermission("dailyprice", "fetch") ||
+    hasPermission("dailyprice", "sync") ||
+    hasPermission("dailyprice", "change");
+  const canSave =
+    hasPermission("dailyprice", "add") ||
+    hasPermission("dailyprice", "change") ||
+    hasPermission("dailyprice", "edit");
+
   const { prices, count, fetched, setPrices, setCount, setFetched } = useDailyPrice();
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -264,6 +276,7 @@ export default function DailyPricePage() {
   /* ── render ────────────────────────────────────────────── */
 
   return (
+    <Guard resource="dailyprice" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view daily prices.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -274,11 +287,13 @@ export default function DailyPricePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="btn-press" onClick={handleFetch} disabled={fetching}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", fetching && "animate-spin")} />
-            {fetching ? "Fetching..." : "Fetch Prices"}
-          </Button>
-          {fetched && prices.length > 0 && (
+          {canFetch && (
+            <Button className="btn-press" onClick={handleFetch} disabled={fetching}>
+              <RefreshCw className={cn("h-4 w-4 mr-2", fetching && "animate-spin")} />
+              {fetching ? "Fetching..." : "Fetch Prices"}
+            </Button>
+          )}
+          {canSave && fetched && prices.length > 0 && (
             <Button className="btn-press" onClick={handleSave} disabled={saving} variant="secondary">
               <Save className="h-4 w-4 mr-2" />
               {saving ? "Saving..." : "Save to Database"}
@@ -630,5 +645,6 @@ export default function DailyPricePage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }

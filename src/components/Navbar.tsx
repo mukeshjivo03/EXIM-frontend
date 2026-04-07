@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/context/ThemeContext";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getRmItem, getFgItem, getVendor, deleteRmItem, deleteFgItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
 import { getTankItem, deleteTankItem, type TankItem } from "@/api/tank";
 
@@ -36,7 +37,12 @@ function saveSearchHistory(code: string) {
 
 export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { theme, toggleTheme } = useTheme();
+  const { hasPermission } = useHasPermission();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const canDeleteRm = hasPermission("rmproducts", "delete");
+  const canDeleteFg = hasPermission("fgproducts", "delete");
+  const canDeleteVendor = hasPermission("party", "delete");
+  const canDeleteTankItem = hasPermission("tankitem", "delete");
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -197,22 +203,29 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
   }
 
   // Reusable item section renderer
-  function renderItemSection(label: string, item: SapItem, onDelete: () => void) {
+  function renderItemSection(
+    label: string,
+    item: SapItem,
+    onDelete: () => void,
+    canDelete: boolean
+  ) {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {label}
           </h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={onDelete}
-            disabled={deleting}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={onDelete}
+              disabled={deleting}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
@@ -357,11 +370,11 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
             <p className="text-sm text-destructive">{searchError}</p>
           )}
 
-          {rmItem && renderItemSection("Raw Material", rmItem, handleDeleteRmItem)}
+          {rmItem && renderItemSection("Raw Material", rmItem, handleDeleteRmItem, canDeleteRm)}
 
           {rmItem && (fgItem || vendor || tankItem) && <Separator />}
 
-          {fgItem && renderItemSection("Finished Goods", fgItem, handleDeleteFgItem)}
+          {fgItem && renderItemSection("Finished Goods", fgItem, handleDeleteFgItem, canDeleteFg)}
 
           {fgItem && (vendor || tankItem) && <Separator />}
 
@@ -371,15 +384,17 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Vendor
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDeleteVendor}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canDeleteVendor && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={handleDeleteVendor}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div>
@@ -414,15 +429,17 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Tank Item
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDeleteTankItem}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canDeleteTankItem && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={handleDeleteTankItem}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div>

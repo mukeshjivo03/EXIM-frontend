@@ -26,6 +26,8 @@ import {
   type SapItem,
   type RmSummary,
 } from "@/api/sapSync";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getErrorMessage } from "@/lib/errors";
 import { fmtDecimal, fmtNum } from "@/lib/formatters";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -95,6 +97,9 @@ const VARIETY_COLORS = [
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function SyncRawMaterialDataPage() {
+  const { hasPermission } = useHasPermission();
+  const canSync = hasPermission("rmproducts", "add") || hasPermission("rmproducts", "change") || hasPermission("rmproducts", "sync");
+  const canDelete = hasPermission("rmproducts", "delete");
   const [items, setItems] = useState<SapItem[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -371,6 +376,7 @@ export default function SyncRawMaterialDataPage() {
     : varieties;
 
   return (
+    <Guard resource="rmproducts" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view raw material data.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -393,28 +399,32 @@ export default function SyncRawMaterialDataPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Enter item code"
-            value={itemCode}
-            onChange={(e) => setItemCode(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSyncOne()}
-            className="w-48"
-          />
-          <Button
-            className="btn-press"
-            onClick={handleSyncOne}
-            disabled={syncingOne || !itemCode.trim()}
-          >
-            {syncingOne ? "Syncing..." : "Sync"}
-          </Button>
-          <Button
-            className="btn-press"
-            variant="outline"
-            onClick={handleSyncAll}
-            disabled={syncingAll}
-          >
-            {syncingAll ? "Syncing All..." : "Sync All"}
-          </Button>
+          {canSync && (
+            <>
+              <Input
+                placeholder="Enter item code"
+                value={itemCode}
+                onChange={(e) => setItemCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSyncOne()}
+                className="w-48"
+              />
+              <Button
+                className="btn-press"
+                onClick={handleSyncOne}
+                disabled={syncingOne || !itemCode.trim()}
+              >
+                {syncingOne ? "Syncing..." : "Sync"}
+              </Button>
+              <Button
+                className="btn-press"
+                variant="outline"
+                onClick={handleSyncAll}
+                disabled={syncingAll}
+              >
+                {syncingAll ? "Syncing All..." : "Sync All"}
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -623,7 +633,7 @@ export default function SyncRawMaterialDataPage() {
                     <TableHead className="text-right">
                       Total Trans Value
                     </TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -656,9 +666,11 @@ export default function SyncRawMaterialDataPage() {
                       <TableCell>
                         <Skeleton className="h-4 w-24" />
                       </TableCell>
+                      {canDelete && (
                       <TableCell className="text-right">
                         <Skeleton className="h-4 w-8 ml-auto" />
                       </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -750,7 +762,7 @@ export default function SyncRawMaterialDataPage() {
                         <SortIcon column="total_trans_value" />
                       </button>
                     </TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -769,7 +781,7 @@ export default function SyncRawMaterialDataPage() {
                               ? "Try adjusting your search or variety filter."
                               : "Sync raw material data from SAP to see items here."}
                           </p>
-                          {!hasFilters ? (
+                          {!hasFilters && canSync ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -779,7 +791,7 @@ export default function SyncRawMaterialDataPage() {
                             >
                               {syncingAll ? "Syncing..." : "Sync All"}
                             </Button>
-                          ) : (
+                          ) : hasFilters ? (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -793,7 +805,7 @@ export default function SyncRawMaterialDataPage() {
                             >
                               Clear filters
                             </Button>
-                          )}
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -840,6 +852,7 @@ export default function SyncRawMaterialDataPage() {
                           <TableCell className="text-right">
                             {fmtDecimal(item.total_trans_value)}
                           </TableCell>
+                          {canDelete && (
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -850,6 +863,7 @@ export default function SyncRawMaterialDataPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
+                          )}
                         </TableRow>
                       );
                     })
@@ -898,5 +912,6 @@ export default function SyncRawMaterialDataPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

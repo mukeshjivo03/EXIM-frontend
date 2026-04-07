@@ -26,6 +26,8 @@ import {
   type TankItem,
 } from "@/api/tank";
 import { useAuth } from "@/context/AuthContext";
+import { useHasPermission } from "@/hooks/useHasPermission";
+import Guard from "@/components/Guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,8 +72,11 @@ function formatDate(dateStr: string): string {
 }
 
 export default function TankItemsPage() {
-  const { email, role } = useAuth();
-  const canEdit = role === "ADM" || role === "MNG";
+  const { email } = useAuth();
+  const { hasPermission } = useHasPermission();
+  const canAdd = hasPermission("tankitem", "add");
+  const canEdit = hasPermission("tankitem", "change") || hasPermission("tankitem", "edit");
+  const canDelete = hasPermission("tankitem", "delete");
 
   const [items, setItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,14 +171,14 @@ export default function TankItemsPage() {
   // Keyboard shortcut: Ctrl+N to create
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "n" && canEdit) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "n" && canAdd) {
         e.preventDefault();
         setCreateOpen(true);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [canEdit]);
+  }, [canAdd]);
 
   // Reset page when search changes
   useEffect(() => {
@@ -432,9 +437,14 @@ export default function TankItemsPage() {
     );
   }
 
-  const colCount = canEdit ? 8 : 6;
+  const colCount = canDelete ? 8 : 6;
 
   return (
+    <Guard
+      resource="tankitem"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view tank items.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -452,7 +462,7 @@ export default function TankItemsPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Bulk delete */}
-          {canEdit && selectedIds.size > 0 && (
+          {canDelete && selectedIds.size > 0 && (
             <Button
               variant="destructive"
               size="sm"
@@ -463,7 +473,7 @@ export default function TankItemsPage() {
               Delete ({selectedIds.size})
             </Button>
           )}
-          {canEdit && (
+          {canAdd && (
             <Button
               onClick={() => setCreateOpen(true)}
               className="btn-press gap-2"
@@ -536,14 +546,14 @@ export default function TankItemsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {canEdit && <TableHead className="w-10" />}
+                      {canDelete && <TableHead className="w-10" />}
                       <TableHead className="w-12">S.No</TableHead>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Item Name</TableHead>
                       <TableHead>Created By</TableHead>
                       <TableHead>Created At</TableHead>
-                      {canEdit && (
+                      {canDelete && (
                         <TableHead className="text-right">Actions</TableHead>
                       )}
                     </TableRow>
@@ -551,7 +561,7 @@ export default function TankItemsPage() {
                   <TableBody>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        {canEdit && (
+                        {canDelete && (
                           <TableCell>
                             <Skeleton className="h-4 w-4" />
                           </TableCell>
@@ -574,7 +584,7 @@ export default function TankItemsPage() {
                         <TableCell>
                           <Skeleton className="h-4 w-28" />
                         </TableCell>
-                        {canEdit && (
+                        {canDelete && (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Skeleton className="h-8 w-8" />
@@ -607,7 +617,7 @@ export default function TankItemsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {canEdit && (
+                    {canDelete && (
                       <TableHead className="w-10">
                         <Checkbox
                           checked={allOnPageSelected}
@@ -622,7 +632,7 @@ export default function TankItemsPage() {
                     <TableHead>Item Name</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>Created At</TableHead>
-                    {canEdit && (
+                    {canDelete && (
                       <TableHead className="text-right">Actions</TableHead>
                     )}
                   </TableRow>
@@ -638,7 +648,7 @@ export default function TankItemsPage() {
                               ? "No items match your search"
                               : "No tank items found"}
                           </p>
-                          {!search.trim() && canEdit && (
+                          {!search.trim() && canAdd && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -669,7 +679,7 @@ export default function TankItemsPage() {
                           selectedIds.has(item.tank_item_code) ? "bg-muted/50" : ""
                         }
                       >
-                        {canEdit && (
+                        {canDelete && (
                           <TableCell>
                             <Checkbox
                               checked={selectedIds.has(item.tank_item_code)}
@@ -727,27 +737,31 @@ export default function TankItemsPage() {
                         <TableCell className="text-muted-foreground">
                           {formatDate(item.created_at)}
                         </TableCell>
-                        {canEdit && (
+                        {(canEdit || canDelete) && (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => openEdit(item)}
-                                title="Edit"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeleteTarget(item)}
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openEdit(item)}
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => setDeleteTarget(item)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         )}
@@ -768,7 +782,7 @@ export default function TankItemsPage() {
                       ? "No items match your search"
                       : "No tank items found"}
                   </p>
-                  {!search.trim() && canEdit && (
+                  {!search.trim() && canAdd && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -811,7 +825,7 @@ export default function TankItemsPage() {
                         }`}
                       >
                         {/* Checkbox */}
-                        {canEdit && (
+                        {canDelete && (
                           <div className="absolute top-2 left-2">
                             <Checkbox
                               checked={isSelected}
@@ -822,26 +836,30 @@ export default function TankItemsPage() {
                         )}
 
                         {/* Actions */}
-                        {canEdit && (
+                        {(canEdit || canDelete) && (
                           <div className="absolute top-2 right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => openEdit(item)}
-                              title="Edit"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteTarget(item)}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            {canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => openEdit(item)}
+                                title="Edit"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteTarget(item)}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                           </div>
                         )}
 
@@ -893,7 +911,7 @@ export default function TankItemsPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen && canAdd} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -953,7 +971,7 @@ export default function TankItemsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={!!deleteTarget}
+        open={!!deleteTarget && canDelete}
         onOpenChange={() => setDeleteTarget(null)}
       >
         <DialogContent className="sm:max-w-sm">
@@ -981,7 +999,7 @@ export default function TankItemsPage() {
       </Dialog>
 
       {/* Bulk Delete Confirmation Dialog */}
-      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+      <Dialog open={bulkDeleteOpen && canDelete} onOpenChange={setBulkDeleteOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete {selectedIds.size} Tank Items</DialogTitle>
@@ -1012,7 +1030,7 @@ export default function TankItemsPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
+      <Dialog open={!!editTarget && canEdit} onOpenChange={() => setEditTarget(null)}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Tank Item</DialogTitle>
@@ -1061,5 +1079,6 @@ export default function TankItemsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

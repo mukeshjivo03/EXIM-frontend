@@ -38,6 +38,8 @@ import {
 import { getVendors, type Vendor } from "@/api/sapSync";
 import { getTankItems, type TankItem } from "@/api/tank";
 import { useAuth } from "@/context/AuthContext";
+import { useHasPermission } from "@/hooks/useHasPermission";
+import Guard from "@/components/Guard";
 import { fmtDateTime, fmtNum } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -68,6 +70,11 @@ import { DeleteStockDialog } from "./components/DeleteStockDialog";
 
 export default function StockStatusPage() {
   const { email } = useAuth();
+  const { hasPermission } = useHasPermission();
+  const canAdd = hasPermission("stockstatus", "add");
+  const canEdit = hasPermission("stockstatus", "change") || hasPermission("stockstatus", "edit");
+  const canDelete = hasPermission("stockstatus", "delete");
+  const canBulk = canEdit || canDelete;
 
   const [rows, setRows] = useState<StockStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -336,9 +343,14 @@ export default function StockStatusPage() {
   /* ── render ──────────────────────────────────────────────── */
 
   return (
+    <Guard
+      resource="stockstatus"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view stock status.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page relative pb-20">
       {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 && canBulk && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 border border-primary/20 backdrop-blur-md">
             <span className="text-sm font-bold flex items-center gap-2">
@@ -347,17 +359,19 @@ export default function StockStatusPage() {
             </span>
             <Separator orientation="vertical" className="h-6 bg-primary-foreground/20" />
             <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-full gap-1.5"
-                disabled={bulkProcessing}
-                onClick={handleBulkArrive}
-              >
-                <Factory className="h-3.5 w-3.5" />
-                Arrive Refinery
-              </Button>
-              {allSelectedCompleted && (
+              {canEdit && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full gap-1.5"
+                  disabled={bulkProcessing}
+                  onClick={handleBulkArrive}
+                >
+                  <Factory className="h-3.5 w-3.5" />
+                  Arrive Refinery
+                </Button>
+              )}
+              {canEdit && allSelectedCompleted && (
                 <Button
                   variant="secondary"
                   size="sm"
@@ -369,16 +383,18 @@ export default function StockStatusPage() {
                   Mark In Tank
                 </Button>
               )}
-              <Button
-                variant="destructive"
-                size="sm"
-                className="rounded-full gap-1.5 bg-red-500 hover:bg-red-600 border-none"
-                disabled={bulkProcessing}
-                onClick={handleBulkDelete}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </Button>
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="rounded-full gap-1.5 bg-red-500 hover:bg-red-600 border-none"
+                  disabled={bulkProcessing}
+                  onClick={handleBulkDelete}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -398,10 +414,12 @@ export default function StockStatusPage() {
           <h1 className="text-xl sm:text-2xl font-bold">Stock Status</h1>
           <p className="text-sm text-muted-foreground">Track and manage stock statuses</p>
         </div>
+        {canAdd && (
         <Button onClick={() => { loadDropdowns(); setCreateOpen(true); }} className="btn-press gap-2 shadow-sm shrink-0">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Add Stock Status</span>
         </Button>
+        )}
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -585,7 +603,7 @@ export default function StockStatusPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10"></TableHead>
+                    {canBulk && <TableHead className="w-10"></TableHead>}
                     <TableHead className="w-12">S.No</TableHead>
                     <TableHead>RM Code</TableHead>
                     <TableHead>Status</TableHead>
@@ -600,7 +618,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 10 }).map((_, j) => (
+                      {Array.from({ length: canBulk ? 10 : 9 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-16" />
                         </TableCell>
@@ -615,12 +633,12 @@ export default function StockStatusPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-10 px-4">
+                    {canBulk && <TableHead className="w-10 px-4">
                       <Checkbox
                         checked={selectedIds.size === paginated.length && paginated.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
-                    </TableHead>
+                    </TableHead>}
                     <TableHead className="w-12">S.No</TableHead>
                     <TableHead>RM Code</TableHead>
                     <TableHead>Status</TableHead>
@@ -635,7 +653,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16 text-center">
+                      <TableCell colSpan={canBulk ? 10 : 9} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <ClipboardList className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No stock statuses found</p>
@@ -650,12 +668,12 @@ export default function StockStatusPage() {
 
                       return (
                         <TableRow key={row.id} className={cn(selectedIds.has(row.id) && "bg-primary/5")}>
-                          <TableCell className="px-4">
+                          {canBulk && <TableCell className="px-4">
                             <Checkbox
                               checked={selectedIds.has(row.id)}
                               onCheckedChange={() => toggleSelect(row.id)}
                             />
-                          </TableCell>
+                          </TableCell>}
                           <TableCell className="text-muted-foreground">
                             {(page - 1) * perPage + idx + 1}
                           </TableCell>
@@ -734,14 +752,16 @@ export default function StockStatusPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => openEdit(row)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openEdit(row)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -763,7 +783,7 @@ export default function StockStatusPage() {
       {/* ── Dialogs & Sheets ─────────────────────────────────── */}
 
       <CreateStockDialog
-        open={createOpen}
+        open={createOpen && canAdd}
         onOpenChange={setCreateOpen}
         tankItems={tankItems}
         vendors={vendors}
@@ -777,8 +797,8 @@ export default function StockStatusPage() {
         tankItems={tankItems}
         vendors={vendors}
         onClose={() => setViewData(null)}
-        onEdit={(row) => { setViewData(null); openEdit(row); }}
-        onDelete={(row) => { setViewData(null); setDeleteData(row); }}
+        onEdit={(row) => { if (canEdit) { setViewData(null); openEdit(row); } }}
+        onDelete={(row) => { if (canDelete) { setViewData(null); setDeleteData(row); } }}
       />
 
       <EditStockDialog
@@ -788,7 +808,7 @@ export default function StockStatusPage() {
         email={email ?? "SYSTEM"}
         onClose={() => setEditData(null)}
         onSaved={refreshAll}
-        onDelete={(row) => { setEditData(null); setDeleteData(row); }}
+        onDelete={(row) => { if (canDelete) { setEditData(null); setDeleteData(row); } }}
       />
 
       <DeleteStockDialog
@@ -797,5 +817,6 @@ export default function StockStatusPage() {
         onDeleted={refreshAll}
       />
     </div>
+    </Guard>
   );
 }

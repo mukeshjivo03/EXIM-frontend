@@ -5,11 +5,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export type Permissions = Record<string, string[]>;
+
 export interface LoginResponse {
   access: string;
   refresh: string;
-  role: "ADM" | "FTR" | "MNG";
   name: string;
+  email: string;
+  id: number;
+  permissions: Permissions;
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {

@@ -21,6 +21,8 @@ import {
   getJivoRatesByRange,
   type DbJivoRate,
 } from "@/api/jivoRate";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { useAuth } from "@/context/AuthContext";
 import { useJivoRate } from "@/context/JivoRateContext";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -54,6 +56,16 @@ function heatmapBg(val: number, min: number, max: number): string {
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function JivoRatesPage() {
+  const { hasPermission } = useHasPermission();
+  const canFetch =
+    hasPermission("jivorates", "fetch") ||
+    hasPermission("jivorates", "sync") ||
+    hasPermission("jivorates", "change");
+  const canSave =
+    hasPermission("jivorates", "add") ||
+    hasPermission("jivorates", "change") ||
+    hasPermission("jivorates", "edit");
+
   const { email } = useAuth();
   const { preview, count, fetched, setPreview, setCount, setFetched } = useJivoRate();
   const [fetching, setFetching] = useState(false);
@@ -217,6 +229,7 @@ export default function JivoRatesPage() {
   /* ── render ────────────────────────────────────────────── */
 
   return (
+    <Guard resource="jivorates" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Jivo rates.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -225,11 +238,13 @@ export default function JivoRatesPage() {
           <p className="text-sm text-muted-foreground">Fetch and track Jivo commodity rates</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="btn-press" onClick={handleFetch} disabled={fetching}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", fetching && "animate-spin")} />
-            {fetching ? "Fetching..." : "Fetch Rates"}
-          </Button>
-          {fetched && preview.length > 0 && (
+          {canFetch && (
+            <Button className="btn-press" onClick={handleFetch} disabled={fetching}>
+              <RefreshCw className={cn("h-4 w-4 mr-2", fetching && "animate-spin")} />
+              {fetching ? "Fetching..." : "Fetch Rates"}
+            </Button>
+          )}
+          {canSave && fetched && preview.length > 0 && (
             <Button className="btn-press" onClick={handleSave} disabled={saving} variant="secondary">
               <Save className="h-4 w-4 mr-2" />
               {saving ? "Saving..." : "Save to Database"}
@@ -503,5 +518,6 @@ export default function JivoRatesPage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }

@@ -20,7 +20,7 @@ function fmtNum(n: number) {
 }
 
 // Only these warehouses are shown, in this order
-const ALLOWED_WAREHOUSES = ["BH-EC", "BH-GJ", "BH-CRUDE", "GP-FG", "BH-EX", "BH-PF", "BH-PC", "BH-VA"];
+const ALLOWED_WAREHOUSES = ["BH-EC", "BH-GJ", "BH-CRUDE", "BH-LO", "GP-FG", "BH-EX", "BH-PF", "BH-PC", "BH-VA"];
 
 // These use the finished-goods inventory API
 const FINISHED_WAREHOUSES = new Set(["BH-EC", "GP-FG"]);
@@ -29,6 +29,7 @@ const WAREHOUSE_COLORS: Record<string, string> = {
   "BH-EC":    "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800",
   "BH-GJ":    "bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800",
   "BH-CRUDE": "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800",
+  "BH-LO":    "bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800",
   "GP-FG":    "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800",
   "BH-EX":    "bg-sky-50 dark:bg-sky-950/20 border-sky-200 dark:border-sky-800",
   "BH-PF":    "bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800",
@@ -40,6 +41,7 @@ const HEADER_COLORS: Record<string, string> = {
   "BH-EC":    "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200",
   "BH-GJ":    "bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200",
   "BH-CRUDE": "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200",
+  "BH-LO":    "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200",
   "GP-FG":    "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200",
   "BH-EX":    "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200",
   "BH-PF":    "bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200",
@@ -67,9 +69,17 @@ export default function WarehouseInventoryPage() {
         getWarehouseInventory(),
         getFinishedInventory(),
       ]);
+      const normalizeWarehouse = (data: WarehouseInventoryItem[]) =>
+        data.map((item) => ({
+          ...item,
+          Warehouse: item.Warehouse?.trim(),
+        }));
+
+      const normalizedRegular = normalizeWarehouse(regular);
+      const normalizedFinished = normalizeWarehouse(finished);
       // Merge: finished warehouses use finished API, rest use regular
-      const regularFiltered = regular.filter((i) => !FINISHED_WAREHOUSES.has(i.Warehouse));
-      setItems([...regularFiltered, ...finished]);
+      const regularFiltered = normalizedRegular.filter((i) => !FINISHED_WAREHOUSES.has(i.Warehouse));
+      setItems([...regularFiltered, ...normalizedFinished]);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load warehouse inventory"));
     } finally {

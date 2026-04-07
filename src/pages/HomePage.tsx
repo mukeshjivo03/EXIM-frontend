@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ClipboardList,
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getStockSummary, getStockLogs } from "@/api/stockStatus";
 import { getTankSummary } from "@/api/tank";
 import { getSyncLogs } from "@/api/sapSync";
@@ -50,39 +51,40 @@ interface QuickLink {
   icon: any;
   desc: string;
   category: "Reports" | "Operations" | "Commercials" | "Administration";
-  roles?: string[];
+  /** Permission modules required — visible if user has ANY. Empty/omitted = visible to all. */
+  modules?: string[];
 }
 
 const quickLinks: QuickLink[] = [
   // Reports
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", category: "Reports", roles: ["ADM", "MNG"] },
-  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", category: "Reports", roles: ["ADM", "MNG"] },
-  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse, desc: "Live inventory by warehouse", category: "Reports", roles: ["ADM", "MNG"] },
-  { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck, desc: "Vehicle-wise stock movement", category: "Reports", roles: ["ADM", "MNG"] },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", category: "Reports", modules: ["domesticreports", "stockstatus"] },
+  { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", category: "Reports", modules: ["stockstatus"] },
+  { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse, desc: "Live inventory by warehouse", category: "Reports", modules: ["inventory", "stockstatus"] },
+  { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck, desc: "Vehicle-wise stock movement", category: "Reports", modules: ["vehicle_report"] },
 
   // Operations
-  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses", category: "Operations", roles: ["ADM", "MNG"] },
-  { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals", category: "Operations" },
-  { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items", category: "Operations" },
-  { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks", category: "Operations" },
-  { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations" },
+  { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses", category: "Operations", modules: ["stockstatus"] },
+  { to: "/stock/tank-monitoring", label: "Tank Monitoring", icon: Gauge, desc: "Live tank visuals", category: "Operations", modules: ["tankdata", "tanklayer"] },
+  { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items", category: "Operations", modules: ["tankitem"] },
+  { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks", category: "Operations", modules: ["tankdata"] },
+  { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations", modules: ["tanklog"] },
 
   // Commercials
-  { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", roles: ["ADM", "MNG"] },
-  { to: "/license/dfia-license", label: "DFIA License", icon: FileText, desc: "DFIA license management", category: "Commercials", roles: ["ADM", "MNG"] },
+  { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", modules: ["domesticcontract"] },
+  { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", modules: ["domesticcontract"] },
+  { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", modules: ["exim_rates"] },
+  { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", category: "Commercials", modules: ["debitentry"] },
+  { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", modules: ["dailyprice"] },
+  { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", modules: ["advancelicenseheaders"] },
+  { to: "/license/dfia-license", label: "DFIA License", icon: FileText, desc: "DFIA license management", category: "Commercials", modules: ["dfialicenseheader"] },
 
   // Administration
-  { to: "/admin/stock-updation-logs", label: "Stock Logs", icon: ScrollText, desc: "Stock update history", category: "Administration", roles: ["ADM", "MNG"] },
-  { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts", category: "Administration", roles: ["ADM"] },
-  { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync", category: "Administration", roles: ["ADM"] },
-  { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync", category: "Administration", roles: ["ADM"] },
-  { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync", category: "Administration", roles: ["ADM"] },
-  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history", category: "Administration", roles: ["ADM"] },
+  { to: "/admin/stock-updation-logs", label: "Stock Logs", icon: ScrollText, desc: "Stock update history", category: "Administration", modules: ["stockstatusupdatelog"] },
+  { to: "/admin/users", label: "Users", icon: Users, desc: "Manage accounts", category: "Administration", modules: ["user"] },
+  { to: "/admin/sync-raw-material-data", label: "Sync RM Data", icon: Package, desc: "Raw material sync", category: "Administration", modules: ["rmproducts"] },
+  { to: "/admin/sync-finished-goods-data", label: "Sync FG Data", icon: Boxes, desc: "Finished goods sync", category: "Administration", modules: ["fgproducts"] },
+  { to: "/admin/sync-vendor-data", label: "Sync Vendors", icon: Truck, desc: "SAP vendor sync", category: "Administration", modules: ["party"] },
+  { to: "/admin/sync-logs", label: "Sync Logs", icon: ScrollText, desc: "View sync history", category: "Administration", modules: ["synclogs"] },
 ];
 
 const CATEGORY_STYLES = {
@@ -192,7 +194,8 @@ const WAVE_FRONT = "M0,50 Q60,38 120,50 Q180,62 240,50 Q300,38 360,50 Q420,62 48
 
 /* ── Page Component ────────────────────────────────────────── */
 function getTimeControl() {
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60; // minute-level precision
   let skyGrad = "";
   let horizonGrad = "";
   let iconObj = { left: 0, top: 0, shadow: "", bg: "", size: 40 };
@@ -223,7 +226,8 @@ function getTimeControl() {
 }
 
 export default function HomePage() {
-  const { name, role } = useAuth();
+  const { name, permissions } = useAuth();
+  const { hasPermission } = useHasPermission();
   const [search, setSearch] = useState("");
   const [stockStats, setStockStats] = useState({ count: 0, val: 0 });
   const [tankStats, setTankStats] = useState({ count: 0, util: 0 });
@@ -241,8 +245,8 @@ export default function HomePage() {
         .then((res) => setTankStats({ count: res.tank_count, util: res.utilisation_rate }))
         .catch(() => { });
 
-      // Load Role-based Activity
-      if (role === "ADM") {
+      // Load Activity based on permissions
+      if (hasPermission("synclogs", "view")) {
         getSyncLogs()
           .then((res) => {
             const activities: ActivityItem[] = res.slice(0, 5).map((log) => ({
@@ -257,11 +261,9 @@ export default function HomePage() {
           })
           .catch(() => { });
       } else {
-        // Managers & Others see Stock Movement
+        // Others see Stock Movement
         getStockLogs()
           .then((res) => {
-            // Group by stock_id and time to show unique events if possible, 
-            // but for simple feed we just show last 5 raw changes
             const activities: ActivityItem[] = res.slice(0, 5).map((log) => ({
               id: log.id,
               type: "stock",
@@ -276,22 +278,22 @@ export default function HomePage() {
       }
     }
     loadStats();
-  }, [role]);
+  }, [permissions]);
 
-  const ROLE_LABELS: Record<string, string> = {
-    ADM: "Administrator",
-    FTR: "Factory User",
-    MNG: "Manager",
-  };
+  // Live sky/sun — updates every 60 seconds
+  const [timeDisplay, setTimeDisplay] = useState(() => getTimeControl());
+  useEffect(() => {
+    const id = setInterval(() => setTimeDisplay(getTimeControl()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
-  const timeDisplay = useMemo(() => getTimeControl(), []);
-
+  /** A link is visible if it has no module requirement OR the user has at least one */
   const filteredLinks = useMemo(() => {
     const q = search.toLowerCase();
     return quickLinks
-      .filter((l) => !l.roles || l.roles.includes(role ?? ""))
+      .filter((l) => !l.modules || l.modules.length === 0 || l.modules.some((m) => hasPermission(m, "view")))
       .filter((l) => l.label.toLowerCase().includes(q) || l.desc.toLowerCase().includes(q));
-  }, [search, role]);
+  }, [search, permissions, hasPermission]);
 
   const grouped = useMemo(() => {
     const cats: Record<string, QuickLink[]> = {
@@ -358,7 +360,7 @@ export default function HomePage() {
               </h1>
               <div className="flex items-center gap-3 mt-3">
                 <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md px-3 py-1">
-                  {ROLE_LABELS[role ?? ""] ?? role ?? ""}
+                  {name ?? "User"}
                 </Badge>
                 <p className="text-white/60 text-xs font-medium flex items-center gap-1.5">
                   <Activity className="h-3 w-3 text-emerald-400" />
@@ -453,11 +455,11 @@ export default function HomePage() {
                 <Bell className="h-3.5 w-3.5" /> Alerts
               </h3>
               <Badge variant="destructive" className="rounded-full px-2 py-0 h-5 text-[10px]">
-                {role === "ADM" ? "2" : "2"}
+                {"2"}
               </Badge>
             </div>
             <div className="p-4 space-y-3">
-              {role === "ADM" ? (
+              {hasPermission("synclogs", "view") ? (
                 <>
                   <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/30 transition-all cursor-pointer">
                     <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
@@ -515,7 +517,7 @@ export default function HomePage() {
               </div>
 
               <Link
-                to={role === "ADM" ? "/admin/sync-logs" : "/admin/stock-updation-logs"}
+                to={hasPermission("synclogs", "view") ? "/admin/sync-logs" : "/admin/stock-updation-logs"}
                 className="mt-6 block text-center text-[10px] font-bold uppercase tracking-widest text-primary hover:underline"
               >
                 View All History

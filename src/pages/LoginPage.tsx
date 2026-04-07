@@ -341,10 +341,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { access, refresh, role, name } = await login({ email, password });
+      const { access, refresh, permissions, name } = await login({ email, password });
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
-      localStorage.setItem("user_role", role);
+      localStorage.setItem("user_permissions", JSON.stringify(permissions));
       localStorage.setItem("user_name", name);
       localStorage.setItem("user_email", email);
 
@@ -355,7 +355,7 @@ export default function LoginPage() {
         localStorage.removeItem(REMEMBER_KEY);
       }
 
-      setAuth(name, role, email);
+      setAuth(name, permissions, email);
       navigate("/");
     } catch (err) {
       if (err instanceof AxiosError) {

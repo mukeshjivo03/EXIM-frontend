@@ -80,7 +80,7 @@ api.interceptors.response.use(
       // Refresh failed — token is fully expired, force login
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user_role");
+      localStorage.removeItem("user_permissions");
       localStorage.removeItem("user_name");
       localStorage.removeItem("user_email");
       window.location.href = "/login";

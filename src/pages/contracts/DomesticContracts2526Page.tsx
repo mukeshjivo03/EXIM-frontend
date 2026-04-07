@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { getOldContracts, type OldContract } from "@/api/oldContracts";
+import Guard from "@/components/Guard";
 import { fmtDecimal, fmtDate } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
@@ -164,6 +165,11 @@ export default function DomesticContracts2526Page() {
   /* ── render ──────────────────────────────────────────────── */
 
   return (
+    <Guard
+      resource="domesticcontract"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view domestic contracts.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div>
@@ -486,5 +492,6 @@ export default function DomesticContracts2526Page() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

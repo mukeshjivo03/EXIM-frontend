@@ -32,6 +32,8 @@ import {
   type DomesticContract26,
 } from "@/api/domesticContracts26";
 import { getRmItems, getVendors, type SapItem, type Vendor } from "@/api/sapSync";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +102,12 @@ const emptyContractForm: NewContractPayload = {
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function DomesticContracts2627Page() {
+  const { hasPermission } = useHasPermission();
+  const canAdd = hasPermission("domesticcontract", "add");
+  const canEdit =
+    hasPermission("domesticcontract", "change") ||
+    hasPermission("domesticcontract", "edit");
+
   const [rmItems, setRmItems] = useState<SapItem[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
@@ -512,6 +520,11 @@ export default function DomesticContracts2627Page() {
   /* ── render ───────────────────────────────────────────────── */
 
   return (
+    <Guard
+      resource="domesticcontract"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view domestic contracts.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -520,15 +533,21 @@ export default function DomesticContracts2627Page() {
           <p className="text-sm text-muted-foreground">Manage contracts, loading, and freight details</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={handleContractOpen} size="sm" className="btn-press">
-            <Plus className="h-4 w-4 mr-2" /> New Contract
-          </Button>
-          <Button onClick={handleLoadingOpen} variant="outline" size="sm">
-            <Truck className="h-4 w-4 mr-2" /> Loading Form
-          </Button>
-          <Button onClick={handleFreightOpen} variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-2" /> Freight Detail
-          </Button>
+          {canAdd && (
+            <Button onClick={handleContractOpen} size="sm" className="btn-press">
+              <Plus className="h-4 w-4 mr-2" /> New Contract
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={handleLoadingOpen} variant="outline" size="sm">
+              <Truck className="h-4 w-4 mr-2" /> Loading Form
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={handleFreightOpen} variant="outline" size="sm">
+              <FileText className="h-4 w-4 mr-2" /> Freight Detail
+            </Button>
+          )}
         </div>
       </div>
 
@@ -737,9 +756,11 @@ export default function DomesticContracts2627Page() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewData(row)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOpen(row)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            {canEdit && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOpen(row)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -764,7 +785,7 @@ export default function DomesticContracts2627Page() {
       </Card>
 
       {/* ── New Contract Dialog ───────────────────────────────── */}
-      <Dialog open={contractOpen} onOpenChange={setContractOpen}>
+      <Dialog open={contractOpen && canAdd} onOpenChange={setContractOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -955,7 +976,7 @@ export default function DomesticContracts2627Page() {
       </Dialog>
 
       {/* ── Loading Form Dialog ───────────────────────────────── */}
-      <Dialog open={loadingOpen} onOpenChange={setLoadingOpen}>
+      <Dialog open={loadingOpen && canEdit} onOpenChange={setLoadingOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1184,7 +1205,7 @@ export default function DomesticContracts2627Page() {
       </Dialog>
 
       {/* ── Freight Detail Dialog ──────────────────────── */}
-      <Dialog open={freightOpen} onOpenChange={setFreightOpen}>
+      <Dialog open={freightOpen && canEdit} onOpenChange={setFreightOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1526,7 +1547,7 @@ export default function DomesticContracts2627Page() {
         </Dialog>
 
       {/* ── Edit Contract Dialog ─────────────────────────────── */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog open={editOpen && canEdit} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1660,6 +1681,6 @@ export default function DomesticContracts2627Page() {
       </Dialog>
 
     </div>
+    </Guard>
   );
 }
-

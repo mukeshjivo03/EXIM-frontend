@@ -66,26 +66,61 @@ function App() {
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<HomePage />} />
 
-            {/* ADM | MNG | FTR — Tank pages (view only for FTR) */}
-            <Route path="/stock/warehouse-inventory" element={<WarehouseInventoryPage />} />
+            {/* Tank pages */}
+            <Route
+              path="/stock/warehouse-inventory"
+              element={
+                <ProtectedRoute requiredModules={["inventory", "stockstatus"]}>
+                  <WarehouseInventoryPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/reports/vehicle-report"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["vehicle_report"]}>
                   <VehicleReportPage />
                 </ProtectedRoute>
               }
             />
-            <Route path="/stock/tank-items" element={<TankItemsPage />} />
-            <Route path="/stock/tank-monitoring" element={<TankMonitoringPage />} />
-            <Route path="/stock/tank-data" element={<TankDataPage />} />
-            <Route path="/stock/tank-logs" element={<TankLogsPage />} />
+            <Route
+              path="/stock/tank-items"
+              element={
+                <ProtectedRoute requiredModules={["tankitem"]}>
+                  <TankItemsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/tank-monitoring"
+              element={
+                <ProtectedRoute requiredModules={["tankdata", "tanklayer"]}>
+                  <TankMonitoringPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/tank-data"
+              element={
+                <ProtectedRoute requiredModules={["tankdata"]}>
+                  <TankDataPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/tank-logs"
+              element={
+                <ProtectedRoute requiredModules={["tanklog"]}>
+                  <TankLogsPage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* ADM | MNG — Dashboard, Stock, Accounts, Contracts, License, Daily Price */}
+            {/* Permission-protected routes */}
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["domesticreports", "stockstatus"]}>
                   <DashboardPage />
                 </ProtectedRoute>
               }
@@ -93,7 +128,7 @@ function App() {
             <Route
               path="/stock-dashboard"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["stockstatus"]}>
                   <StockDashboardPage />
                 </ProtectedRoute>
               }
@@ -101,7 +136,7 @@ function App() {
             <Route
               path="/stock-dashboard/:status"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["stockstatus"]}>
                   <StockDashboardDetailPage />
                 </ProtectedRoute>
               }
@@ -109,7 +144,7 @@ function App() {
             <Route
               path="/stock/stock-status"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["stockstatus"]}>
                   <StockStatusPage />
                 </ProtectedRoute>
               }
@@ -117,7 +152,7 @@ function App() {
             <Route
               path="/contracts/open-grpos"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["open_grpos"]}>
                   <OpenGrpoPage />
                 </ProtectedRoute>
               }
@@ -125,7 +160,7 @@ function App() {
             <Route
               path="/domestic-contracts"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["domesticcontract"]}>
                   <DomesticContracts2526Page />
                 </ProtectedRoute>
               }
@@ -133,7 +168,7 @@ function App() {
             <Route
               path="/contracts/domestic-2627"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["domesticcontract"]}>
                   <DomesticContracts2627Page />
                 </ProtectedRoute>
               }
@@ -141,7 +176,7 @@ function App() {
             <Route
               path="/license/advance-license"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["advancelicenseheaders"]}>
                   <AdvanceLicensePage />
                 </ProtectedRoute>
               }
@@ -149,7 +184,7 @@ function App() {
             <Route
               path="/license/advance-license/:licenseNo"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["advancelicenseheaders"]}>
                   <AdvanceLicenseDetailPage />
                 </ProtectedRoute>
               }
@@ -157,7 +192,7 @@ function App() {
             <Route
               path="/license/dfia-license"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["dfialicenseheader"]}>
                   <DFIALicensePage />
                 </ProtectedRoute>
               }
@@ -165,7 +200,7 @@ function App() {
             <Route
               path="/license/dfia-license/:fileNo"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["dfialicenseheader"]}>
                   <DFIALicenseDetailPage />
                 </ProtectedRoute>
               }
@@ -173,7 +208,7 @@ function App() {
             <Route
               path="/exim-account"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["debitentry", "party"]}>
                   <EximAccountPage />
                 </ProtectedRoute>
               }
@@ -181,7 +216,7 @@ function App() {
             <Route
               path="/exim-rates"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["exim_rates"]}>
                   <CustomExchangeRatesPage />
                 </ProtectedRoute>
               }
@@ -189,7 +224,7 @@ function App() {
             <Route
               path="/commodity/daily-price"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["dailyprice"]}>
                   <DailyPricePage />
                 </ProtectedRoute>
               }
@@ -197,7 +232,7 @@ function App() {
             <Route
               path="/commodity/jivo-rates"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["jivorates"]}>
                   <JivoRatesPage />
                 </ProtectedRoute>
               }
@@ -205,17 +240,17 @@ function App() {
             <Route
               path="/admin/stock-updation-logs"
               element={
-                <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
+                <ProtectedRoute requiredModules={["stockstatusupdatelog"]}>
                   <StockUpdationLogsPage />
                 </ProtectedRoute>
               }
             />
 
-            {/* ADM only — User management, Sync operations */}
+            {/* Admin only — User management, Sync operations */}
             <Route
               path="/admin/users"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute requiredModules={["user"]}>
                   <UsersPage />
                 </ProtectedRoute>
               }
@@ -223,7 +258,7 @@ function App() {
             <Route
               path="/admin/sync-raw-material-data"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute requiredModules={["rmproducts"]}>
                   <SyncRawMaterialDataPage />
                 </ProtectedRoute>
               }
@@ -231,7 +266,7 @@ function App() {
             <Route
               path="/admin/sync-finished-goods-data"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute requiredModules={["fgproducts"]}>
                   <SyncFinishedGoodsDataPage />
                 </ProtectedRoute>
               }
@@ -239,7 +274,7 @@ function App() {
             <Route
               path="/admin/sync-vendor-data"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute requiredModules={["party"]}>
                   <SyncVendorDataPage />
                 </ProtectedRoute>
               }
@@ -247,7 +282,7 @@ function App() {
             <Route
               path="/admin/sync-logs"
               element={
-                <ProtectedRoute allowedRoles={["ADM"]}>
+                <ProtectedRoute requiredModules={["synclogs"]}>
                   <SyncLogsPage />
                 </ProtectedRoute>
               }

@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Trash2, PackageOpen } from "lucide-react";
 
 import { getFgItems, syncFgItems, syncSingleFgItem, deleteFgItem, type SapItem } from "@/api/sapSync";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,14 @@ import {
 } from "@/components/ui/dialog";
 
 export default function SyncFinishedGoodsDataPage() {
+  const { hasPermission } = useHasPermission();
+  const canSync =
+    hasPermission("fgproducts", "sync") ||
+    hasPermission("fgproducts", "fetch") ||
+    hasPermission("fgproducts", "add") ||
+    hasPermission("fgproducts", "change");
+  const canDelete = hasPermission("fgproducts", "delete");
+
   const [items, setItems] = useState<SapItem[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -132,6 +142,7 @@ export default function SyncFinishedGoodsDataPage() {
   }
 
   return (
+    <Guard resource="fgproducts" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view finished goods data.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -142,18 +153,22 @@ export default function SyncFinishedGoodsDataPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Enter item code"
-            value={itemCode}
-            onChange={(e) => setItemCode(e.target.value)}
-            className="w-48"
-          />
-          <Button className="btn-press" onClick={handleSyncOne} disabled={syncingOne || !itemCode.trim()}>
-            {syncingOne ? "Syncing..." : "Sync"}
-          </Button>
-          <Button className="btn-press" variant="outline" onClick={handleSyncAll} disabled={syncingAll}>
-            {syncingAll ? "Syncing All..." : "Sync All"}
-          </Button>
+          {canSync && (
+            <>
+              <Input
+                placeholder="Enter item code"
+                value={itemCode}
+                onChange={(e) => setItemCode(e.target.value)}
+                className="w-48"
+              />
+              <Button className="btn-press" onClick={handleSyncOne} disabled={syncingOne || !itemCode.trim()}>
+                {syncingOne ? "Syncing..." : "Sync"}
+              </Button>
+              <Button className="btn-press" variant="outline" onClick={handleSyncAll} disabled={syncingAll}>
+                {syncingAll ? "Syncing All..." : "Sync All"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -179,7 +194,7 @@ export default function SyncFinishedGoodsDataPage() {
                     <TableHead>Brand</TableHead>
                     <TableHead>Variety</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -192,7 +207,7 @@ export default function SyncFinishedGoodsDataPage() {
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+                      {canDelete && <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -210,13 +225,13 @@ export default function SyncFinishedGoodsDataPage() {
                     <TableHead>Brand</TableHead>
                     <TableHead>Variety</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-16">
+                      <TableCell colSpan={canDelete ? 8 : 7} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <PackageOpen className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No items found</p>
@@ -234,16 +249,18 @@ export default function SyncFinishedGoodsDataPage() {
                         <TableCell>{item.u_brand}</TableCell>
                         <TableCell>{item.u_variety}</TableCell>
                         <TableCell>{item.u_unit}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setDeleteTarget(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                        {canDelete && (
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteTarget(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}
@@ -260,7 +277,7 @@ export default function SyncFinishedGoodsDataPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <Dialog open={!!deleteTarget && canDelete} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Item</DialogTitle>
@@ -285,5 +302,6 @@ export default function SyncFinishedGoodsDataPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

@@ -19,6 +19,8 @@ import {
   deleteVendor,
   type Vendor,
 } from "@/api/sapSync";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +90,14 @@ const COUNTRY_COLORS: Record<string, string> = {
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function SyncVendorDataPage() {
+  const { hasPermission } = useHasPermission();
+  const canSync =
+    hasPermission("party", "sync") ||
+    hasPermission("party", "fetch") ||
+    hasPermission("party", "add") ||
+    hasPermission("party", "change");
+  const canDelete = hasPermission("party", "delete");
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -326,6 +336,7 @@ export default function SyncVendorDataPage() {
   }
 
   return (
+    <Guard resource="party" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view vendor data.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -346,20 +357,24 @@ export default function SyncVendorDataPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Enter vendor code"
-            value={vendorCode}
-            onChange={(e) => setVendorCode(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSync()}
-            className="w-48"
-          />
-          <Button
-            className="btn-press"
-            onClick={handleSync}
-            disabled={syncing || !vendorCode.trim()}
-          >
-            {syncing ? "Syncing..." : "Sync"}
-          </Button>
+          {canSync && (
+            <>
+              <Input
+                placeholder="Enter vendor code"
+                value={vendorCode}
+                onChange={(e) => setVendorCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSync()}
+                className="w-48"
+              />
+              <Button
+                className="btn-press"
+                onClick={handleSync}
+                disabled={syncing || !vendorCode.trim()}
+              >
+                {syncing ? "Syncing..." : "Sync"}
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -518,7 +533,7 @@ export default function SyncVendorDataPage() {
                     <TableHead>State</TableHead>
                     <TableHead>Main Group</TableHead>
                     <TableHead>Country</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -542,9 +557,11 @@ export default function SyncVendorDataPage() {
                       <TableCell>
                         <Skeleton className="h-5 w-12 rounded-full" />
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="h-4 w-8 ml-auto" />
-                      </TableCell>
+                      {canDelete && (
+                        <TableCell className="text-right">
+                          <Skeleton className="h-4 w-8 ml-auto" />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -606,13 +623,13 @@ export default function SyncVendorDataPage() {
                         <SortIcon column="country" />
                       </button>
                     </TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {canDelete && <TableHead className="text-right">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedVendors.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-16">
+                      <TableCell colSpan={canDelete ? 7 : 6} className="py-16">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <Users2 className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
@@ -682,16 +699,18 @@ export default function SyncVendorDataPage() {
                               "—"
                             )}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteTarget(vendor)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                          {canDelete && (
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteTarget(vendor)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })
@@ -715,7 +734,7 @@ export default function SyncVendorDataPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <Dialog open={!!deleteTarget && canDelete} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Vendor</DialogTitle>
@@ -740,5 +759,6 @@ export default function SyncVendorDataPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

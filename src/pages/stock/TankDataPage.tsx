@@ -14,7 +14,8 @@ import {
   DatabaseZap,
   PackageOpen,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { tankCreateSchema, tankEditSchema, getZodError } from "@/lib/schemas";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -140,8 +141,10 @@ function CircularGauge({ value, size = 56 }: { value: number; size?: number }) {
 
 export default function TankDataPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { role } = useAuth();
-  const canCreateDelete = role === "ADM" || role === "MNG";
+  const { hasPermission } = useHasPermission();
+  const canAdd = hasPermission("tankdata", "add");
+  const canEdit = hasPermission("tankdata", "change") || hasPermission("tankdata", "edit");
+  const canDelete = hasPermission("tankdata", "delete");
   const autoEditHandled = useRef(false);
 
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -401,6 +404,11 @@ export default function TankDataPage() {
   /* ── render ──────────────────────────────────────── */
 
   return (
+    <Guard
+      resource="tankdata"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view tank data.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -410,16 +418,20 @@ export default function TankDataPage() {
             Create and manage tanks
           </p>
         </div>
-        {canCreateDelete && (
+        {(canAdd || canDelete) && (
           <div className="flex gap-2">
+            {canAdd && (
             <Button onClick={() => openCreateDialog("TANK")} className="btn-press gap-2">
               <Plus className="h-4 w-4" />
               Create Tank
             </Button>
+            )}
+            {canAdd && (
             <Button onClick={() => openCreateDialog("TOTES")} variant="outline" className="btn-press gap-2">
               <Plus className="h-4 w-4" />
               Create Tote
             </Button>
+            )}
           </div>
         )}
       </div>
@@ -634,12 +646,12 @@ export default function TankDataPage() {
                               ? "No tanks match your search"
                               : "No tanks found"}
                           </p>
-                          {!search.trim() && canCreateDelete && (
+                          {!search.trim() && canAdd && (
                             <Button
                               size="sm"
                               variant="outline"
                               className="gap-1.5"
-                              onClick={openCreateDialog}
+                              onClick={() => openCreateDialog()}
                             >
                               <Plus className="h-3.5 w-3.5" />
                               Create Tank
@@ -705,6 +717,7 @@ export default function TankDataPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
+                              {canEdit && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -714,6 +727,8 @@ export default function TankDataPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              )}
+                              {canEdit && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -723,7 +738,8 @@ export default function TankDataPage() {
                               >
                                 <PackageOpen className="h-4 w-4" />
                               </Button>
-                              {canCreateDelete && (
+                              )}
+                              {canDelete && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -754,12 +770,12 @@ export default function TankDataPage() {
                       ? "No tanks match your search"
                       : "No tanks found"}
                   </p>
-                  {!search.trim() && canCreateDelete && (
+                  {!search.trim() && canAdd && (
                     <Button
                       size="sm"
                       variant="outline"
                       className="gap-1.5"
-                      onClick={openCreateDialog}
+                      onClick={() => openCreateDialog()}
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Create Tank
@@ -787,6 +803,7 @@ export default function TankDataPage() {
                       >
                         {/* Actions */}
                         <div className="absolute top-2 right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canEdit && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -796,6 +813,8 @@ export default function TankDataPage() {
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
+                          )}
+                          {canEdit && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -805,7 +824,8 @@ export default function TankDataPage() {
                           >
                             <PackageOpen className="h-3.5 w-3.5" />
                           </Button>
-                          {canCreateDelete && (
+                          )}
+                          {canDelete && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -889,7 +909,7 @@ export default function TankDataPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen && canAdd} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -936,7 +956,7 @@ export default function TankDataPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={!!deleteTarget}
+        open={!!deleteTarget && canDelete}
         onOpenChange={() => setDeleteTarget(null)}
       >
         <DialogContent className="sm:max-w-sm">
@@ -964,7 +984,7 @@ export default function TankDataPage() {
       </Dialog>
 
       {/* Empty Tank Confirmation Dialog */}
-      <Dialog open={!!emptyTarget} onOpenChange={() => setEmptyTarget(null)}>
+      <Dialog open={!!emptyTarget && canEdit} onOpenChange={() => setEmptyTarget(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Empty Tank</DialogTitle>
@@ -990,7 +1010,7 @@ export default function TankDataPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
+      <Dialog open={!!editTarget && canEdit} onOpenChange={() => setEditTarget(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Update Tank Capacity</DialogTitle>
@@ -1115,5 +1135,6 @@ export default function TankDataPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }
