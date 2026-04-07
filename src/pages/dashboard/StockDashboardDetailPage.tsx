@@ -36,8 +36,8 @@ function convertUnit(kg: number, unit: Unit): number {
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: unit === "MTS" ? 2 : 0,
-    maximumFractionDigits: unit === "MTS" ? 2 : 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
