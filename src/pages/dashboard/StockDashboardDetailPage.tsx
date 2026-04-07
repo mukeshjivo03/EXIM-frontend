@@ -42,15 +42,15 @@ function fmtNum(n: number, unit: Unit = "KG") {
 }
 
 const STATUS_ORDER = [
-  "IN_CONTRACT",
-  "ON_THE_SEA",
-  "MUNDRA_PORT",
-  "OTW_TO_REFINERY",
-  "AT_REFINERY",
-  "UNDER_LOADING",
-  "ON_THE_WAY",
+  "IN_FACTORY",
   "OUT_SIDE_FACTORY",
-  "IN_FACTORY"
+  "ON_THE_WAY",
+  "UNDER_LOADING",
+  "AT_REFINERY",
+  "OTW_TO_REFINERY",
+  "MUNDRA_PORT",
+  "ON_THE_SEA",
+  "IN_CONTRACT"
 ];
 
 // Statuses shown as vendor-pivot matrix (aggregated by vendor)
