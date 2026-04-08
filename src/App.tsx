@@ -23,6 +23,7 @@ import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
 import VehicleReportPage from "@/pages/reports/VehicleReportPage";
+import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
@@ -80,6 +81,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["vehicle_report"]}>
                   <VehicleReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/director-dashboard"
+              element={
+                <ProtectedRoute requiredModules={["director_report", "director_inventory", "director_inventorty", "domesticreports"]}>
+                  <DirectorDashboardPage />
                 </ProtectedRoute>
               }
             />

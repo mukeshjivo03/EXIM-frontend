@@ -61,6 +61,8 @@ export default function WarehouseInventoryPage() {
   const [items, setItems] = useState<WarehouseInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWarehouses, setSelectedWarehouses] = useState<Set<string>>(new Set(["BH-CRUDE"]));
+  const [warehouseOrder, setWarehouseOrder] = useState<string[]>(ALLOWED_WAREHOUSES);
+  const [draggingWarehouse, setDraggingWarehouse] = useState<string | null>(null);
 
   async function fetchData() {
     setLoading(true);
@@ -89,8 +91,8 @@ export default function WarehouseInventoryPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Fixed ordered list — only show allowed warehouses
-  const allWarehouses = ALLOWED_WAREHOUSES;
+  // User-adjustable ordered list — only show allowed warehouses
+  const allWarehouses = warehouseOrder;
 
   function toggleWarehouse(wh: string) {
     setSelectedWarehouses((prev) => {
@@ -111,6 +113,28 @@ export default function WarehouseInventoryPage() {
 
   function selectNone() {
     setSelectedWarehouses(new Set([allWarehouses[0]]));
+  }
+
+  function handleDragStart(wh: string) {
+    setDraggingWarehouse(wh);
+  }
+
+  function handleDragEnd() {
+    setDraggingWarehouse(null);
+  }
+
+  function handleDrop(targetWarehouse: string) {
+    if (!draggingWarehouse || draggingWarehouse === targetWarehouse) return;
+    setWarehouseOrder((prev) => {
+      const from = prev.indexOf(draggingWarehouse);
+      const to = prev.indexOf(targetWarehouse);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setDraggingWarehouse(null);
   }
 
   // Group items by warehouse, only selected ones
@@ -191,12 +215,18 @@ export default function WarehouseInventoryPage() {
               {allWarehouses.map((wh) => (
                 <button
                   key={wh}
+                  draggable
+                  onDragStart={() => handleDragStart(wh)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(wh)}
                   onClick={() => toggleWarehouse(wh)}
                   className={`px-3 py-1 rounded-full text-sm border transition-all font-medium ${
                     selectedWarehouses.has(wh)
                       ? headerColor(wh) + " border-transparent shadow-sm"
                       : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/30"
-                  }`}
+                  } ${draggingWarehouse === wh ? "opacity-50" : ""}`}
+                  title="Drag to reorder"
                 >
                   {wh}
                 </button>

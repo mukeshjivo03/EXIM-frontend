@@ -41,3 +41,23 @@ export async function getStockDashboard(): Promise<StockDashboardResponse> {
   const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/");
   return res.data;
 }
+
+export interface DirectorInventoryBucket {
+  liter: number;
+  mts: number;
+}
+
+export interface DirectorInventoryResponse {
+  finished: DirectorInventoryBucket;
+  otw: DirectorInventoryBucket;
+  under_loading: DirectorInventoryBucket;
+  at_refinery: DirectorInventoryBucket;
+  mundra_port: DirectorInventoryBucket;
+  on_the_sea: DirectorInventoryBucket;
+  in_contract: DirectorInventoryBucket;
+}
+
+export async function getDirectorInventory(): Promise<DirectorInventoryResponse> {
+  const res = await api.get<DirectorInventoryResponse>("/director-inventorty/");
+  return res.data;
+}

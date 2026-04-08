@@ -11,6 +11,12 @@ const RESOURCE_ALIASES: Record<string, string[]> = {
   domesticcontracts: ["domesticcontract"],
   domesticreport: ["domesticreports"],
   domesticreports: ["domesticreport"],
+  director_inventory: ["director_inventorty", "directorinventory", "directorinventorty"],
+  director_inventorty: ["director_inventory", "directorinventory", "directorinventorty"],
+  directorinventory: ["director_inventory", "director_inventorty", "directorinventorty"],
+  directorinventorty: ["director_inventory", "director_inventorty", "directorinventory"],
+  director_report: ["directorreport"],
+  directorreport: ["director_report"],
 };
 
 export function useHasPermission() {

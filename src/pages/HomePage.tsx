@@ -12,6 +12,7 @@ import {
   Boxes,
   LayoutDashboard,
   BarChart3,
+  Crown,
   BookOpen,
   FileText,
   TrendingUp,
@@ -59,6 +60,7 @@ const quickLinks: QuickLink[] = [
   // Reports
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & analytics", category: "Reports", modules: ["domesticreports", "stockstatus"] },
   { to: "/stock-dashboard", label: "Stock Dashboard", icon: BarChart3, desc: "Stock across statuses", category: "Reports", modules: ["stockstatus"] },
+  { to: "/reports/director-dashboard", label: "Director Dashboard", icon: Crown, desc: "Stage-wise inventory snapshot", category: "Reports", modules: ["director_report", "director_inventory", "director_inventorty", "domesticreports"] },
   { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse, desc: "Live inventory by warehouse", category: "Reports", modules: ["inventory", "stockstatus"] },
   { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck, desc: "Vehicle-wise stock movement", category: "Reports", modules: ["vehicle_report"] },
 

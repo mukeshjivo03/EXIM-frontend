@@ -81,14 +81,6 @@ const STATUS_CHOICES = [
   "RECIEVED",
 ] as const;
 
-function completedLabel(c: number | undefined) {
-  return c === 1 ? "Completed" : "Pending";
-}
-
-function completedVariant(c: number | undefined): "default" | "secondary" {
-  return c === 1 ? "secondary" : "default";
-}
-
 const emptyContractForm: NewContractPayload = {
   status: "",
   product_code: "",
@@ -160,7 +152,6 @@ export default function DomesticContracts2627Page() {
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterVendor, setFilterVendor] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterCompleted, setFilterCompleted] = useState("all");
   const [filterPoDateFrom, setFilterPoDateFrom] = useState("");
   const [filterPoDateTo, setFilterPoDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -240,7 +231,6 @@ export default function DomesticContracts2627Page() {
     if (filterProduct !== "all") result = result.filter((r) => r.product_code === filterProduct);
     if (filterVendor !== "all") result = result.filter((r) => r.vendor_code === filterVendor);
     if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
-    if (filterCompleted !== "all") result = result.filter((r) => String(r.Completed) === filterCompleted);
     if (filterPoDateFrom) result = result.filter((r) => (r.po_date ?? "") >= filterPoDateFrom);
     if (filterPoDateTo) result = result.filter((r) => (r.po_date ?? "") <= filterPoDateTo);
 
@@ -248,7 +238,7 @@ export default function DomesticContracts2627Page() {
     if (q) result = result.filter((r) => r.searchStr.includes(q));
 
     return result;
-  }, [rowsWithSearch, search, filterProduct, filterVendor, filterStatus, filterCompleted, filterPoDateFrom, filterPoDateTo]);
+  }, [rowsWithSearch, search, filterProduct, filterVendor, filterStatus, filterPoDateFrom, filterPoDateTo]);
 
   const summary = useMemo(() => {
     let totalQty = 0;
@@ -659,23 +649,12 @@ export default function DomesticContracts2627Page() {
               </SelectContent>
             </Select>
 
-            <Select value={filterCompleted} onValueChange={(v) => { setFilterCompleted(v); setPage(1); }}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Completion" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="1">Completed</SelectItem>
-                <SelectItem value="0">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {(filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" || filterCompleted !== "all") && (
+            {(filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
-                onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setFilterCompleted("all"); setPage(1); }}
+                onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear filters
@@ -689,7 +668,7 @@ export default function DomesticContracts2627Page() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {["PO Number", "PO Date", "Product", "Vendor", "Qty (MTS)", "Rate (₹)", "Status", "Completion", "Actions"].map((h) => (
+                    {["PO Number", "PO Date", "Product", "Vendor", "Qty (MTS)", "Rate (₹)", "Status", "Actions"].map((h) => (
                       <TableHead key={h}>{h}</TableHead>
                     ))}
                   </TableRow>
@@ -697,7 +676,7 @@ export default function DomesticContracts2627Page() {
                 <TableBody>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
                       ))}
                     </TableRow>
@@ -717,18 +696,17 @@ export default function DomesticContracts2627Page() {
                     <TableHead>Qty (MTS)</TableHead>
                     <TableHead>Rate (₹)</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Completion</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-16">
+                      <TableCell colSpan={8} className="py-16">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <FileCheck className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No contracts found</p>
-                          <p className="text-xs">{search.trim() || filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" || filterCompleted !== "all" ? "No contracts match your search or filters." : "No contracts available."}</p>
+                          <p className="text-xs">{search.trim() || filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" ? "No contracts match your search or filters." : "No contracts available."}</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -745,11 +723,6 @@ export default function DomesticContracts2627Page() {
                         <TableCell>₹{Number(row.contract_rate).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{row.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={completedVariant(row.Completed)}>
-                            {completedLabel(row.Completed)}
-                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -1475,7 +1448,7 @@ export default function DomesticContracts2627Page() {
                   <div><p className="text-xs text-muted-foreground">PO Date</p><p className="text-sm font-medium">{fmtDate(viewData.po_date)}</p></div>
                   <div>
                     <p className="text-xs text-muted-foreground">Status</p>
-                    <Badge variant={completedVariant(viewData.Completed)} className="mt-0.5">{completedLabel(viewData.Completed)}</Badge>
+                    <Badge variant="outline" className="mt-0.5">{viewData.status || "—"}</Badge>
                   </div>
                   <div><p className="text-xs text-muted-foreground">Product</p><p className="text-sm font-medium">{viewData.product_name || viewData.product_code}</p></div>
                   <div><p className="text-xs text-muted-foreground">Vendor Code</p><p className="text-sm font-medium">{viewData.vendor_code}</p></div>

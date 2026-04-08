@@ -75,10 +75,10 @@ function DeltaBadge({ current, previous }: { current: number; previous: number |
   const isUp = diff > 0;
   return (
     <span className={cn(
-      "inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded ml-1.5",
+      "inline-flex items-center gap-1 text-sm font-bold px-1.5 py-0.5 rounded-md ml-1.5",
       isUp ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
     )}>
-      {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+      {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
       ₹{Math.abs(diff).toFixed(2)}
     </span>
   );
@@ -364,7 +364,7 @@ export default function DailyPricePage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
+            <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
               <TableHeader>
   <TableRow className="bg-[#ff9900] hover:bg-[#ff9900]"> 
     <TableHead className="w-12 text-center border border-black text-black font-bold">S.No</TableHead>
@@ -455,7 +455,7 @@ export default function DailyPricePage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
+            <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12 text-center border border-black">S.No</TableHead>
@@ -648,3 +648,4 @@ export default function DailyPricePage() {
     </Guard>
   );
 }
+

@@ -324,7 +324,7 @@ export default function JivoRatesPage() {
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
             {viewMode === "matrix" ? (
-              <Table>
+              <Table className="text-base">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-black" style={{ backgroundColor: "#93c47d" }}>
@@ -383,7 +383,7 @@ export default function JivoRatesPage() {
                 </TableBody>
               </Table>
             ) : (
-              <Table>
+              <Table className="text-base">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">S.No</TableHead>
@@ -467,7 +467,7 @@ export default function JivoRatesPage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table>
+            <Table className="text-base">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">S.No</TableHead>

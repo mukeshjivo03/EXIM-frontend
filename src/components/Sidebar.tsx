@@ -21,6 +21,7 @@ import {
   TrendingUp,
   LayoutDashboard,
   BarChart3,
+  Crown,
   Scale,
   FileText,
   FileCheck,
@@ -74,6 +75,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     links: [
       { to: "/dashboard",                label: "Dashboard",           icon: LayoutDashboard, modules: ["domesticreports", "stockstatus"] },
       { to: "/stock-dashboard",           label: "Stock Dashboard",     icon: BarChart3,       modules: ["stockstatus"] },
+      { to: "/reports/director-dashboard",label: "Director Dashboard",  icon: Crown,           modules: ["director_report", "director_inventory", "director_inventorty", "domesticreports"] },
       { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse,       modules: ["inventory", "stockstatus"] },
       { to: "/reports/vehicle-report",    label: "Vehicle Report",      icon: Truck,           modules: ["vehicle_report"] },
     ],
