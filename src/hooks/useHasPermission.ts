@@ -6,14 +6,34 @@ type PermissionCheck = {
   action?: string;
 };
 
+const RESOURCE_ALIASES: Record<string, string[]> = {
+  domesticcontract: ["domesticcontracts"],
+  domesticcontracts: ["domesticcontract"],
+  domesticreport: ["domesticreports"],
+  domesticreports: ["domesticreport"],
+};
+
 export function useHasPermission() {
   const { permissions } = useAuth();
 
   const hasPermission = useCallback(
     (resource: string, action = "view"): boolean => {
-      const actions = permissions[resource];
-      if (!actions) return false;
-      return actions.map((a) => a.toLowerCase()).includes(action.toLowerCase());
+      const normalizedAction = action.toLowerCase();
+      const resourcesToCheck = [resource, ...(RESOURCE_ALIASES[resource] ?? [])];
+      const fallbackActionsForView = ["sync", "fetch"];
+
+      return resourcesToCheck.some((key) => {
+        const actions = permissions[key];
+        if (!actions) return false;
+        const normalizedActions = actions.map((a) => a.toLowerCase());
+        if (normalizedActions.includes(normalizedAction)) return true;
+        if (normalizedAction === "view") {
+          return fallbackActionsForView.some((fallbackAction) =>
+            normalizedActions.includes(fallbackAction)
+          );
+        }
+        return false;
+      });
     },
     [permissions]
   );
@@ -32,4 +52,3 @@ export function useHasPermission() {
 
   return { hasPermission, hasAnyPermission, hasAllPermissions };
 }
-

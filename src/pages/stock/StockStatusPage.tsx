@@ -135,7 +135,11 @@ export default function StockStatusPage() {
     try {
       const [data, insights] = await Promise.all([
         getStockStatuses(filters),
-        getStockInsights(filters),
+        getStockInsights({
+          status: filters?.status,
+          vendor: filters?.vendor,
+          item: filters?.item,
+        }),
       ]);
       setRows(
         data

@@ -58,6 +58,11 @@ export interface StockStatusFilters {
   item?: string;
 }
 
+export interface StockInsightsFilters {
+  status?: string;
+  vendor?: string;
+  item?: string;
+}
 
 export interface StockInsightsSummary {
   total_value: number;
@@ -76,7 +81,7 @@ export async function getStockSummary(): Promise<StockInsights> {
   return res.data;
 }
 
-export async function getStockInsights(filters?: StockStatusFilters): Promise<StockInsights> {
+export async function getStockInsights(filters?: StockInsightsFilters): Promise<StockInsights> {
   const params: Record<string, string> = {};
   if (filters?.status) params.status = filters.status;
   if (filters?.vendor) params.vendor = filters.vendor;
