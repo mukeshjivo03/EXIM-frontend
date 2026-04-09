@@ -42,13 +42,27 @@ export async function getStockDashboard(): Promise<StockDashboardResponse> {
   return res.data;
 }
 
+export type DirectorInventoryLiter = number | { total_liter?: number };
+
 export interface DirectorInventoryBucket {
-  liter: number;
+  liter: DirectorInventoryLiter;
   mts: number;
+}
+
+export interface DirectorAtFactoryTotal {
+  total_lts: number;
+  total_mts: number;
+}
+
+export interface DirectorAtFactoryInventory {
+  total: DirectorAtFactoryTotal;
+  in_tank: DirectorInventoryBucket;
+  outside_factory: DirectorInventoryBucket;
 }
 
 export interface DirectorInventoryResponse {
   finished: DirectorInventoryBucket;
+  at_factory: DirectorAtFactoryInventory;
   otw: DirectorInventoryBucket;
   under_loading: DirectorInventoryBucket;
   at_refinery: DirectorInventoryBucket;

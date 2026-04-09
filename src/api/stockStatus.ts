@@ -115,13 +115,17 @@ export async function updateStockStatus(id: number, data: Partial<StockStatusPay
 }
 
 export interface StockLog {
-  id: number;
-  field_name: string;
-  old_value: string;
-  new_value: string;
-  updated_at: string;
-  updated_by: string;
-  stock_id: number;
+  id: string;
+  stock: number;
+  action: "CREATE" | "UPDATE" | "DELETE" | string;
+  changed_by_label: string;
+  note: string;
+  timestamp: string;
+  field_logs: Array<{
+    field_name: string;
+    old_value: unknown;
+    new_value: unknown;
+  }>;
 }
 
 export async function getStockLogs(): Promise<StockLog[]> {

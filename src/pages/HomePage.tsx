@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 /* ── Types & Constants ────────────────────────────────────── */
 
 interface ActivityItem {
-  id: number;
+  id: number | string;
   type: string;
   title: string;
   subtitle: string;
@@ -269,9 +269,9 @@ export default function HomePage() {
             const activities: ActivityItem[] = res.slice(0, 5).map((log) => ({
               id: log.id,
               type: "stock",
-              title: `ID #${log.stock_id} Update`,
-              subtitle: `${log.field_name.replace(/_/g, " ")} changed`,
-              time: log.updated_at,
+              title: `ID #${log.stock} ${log.action}`,
+              subtitle: log.note || `${(log.field_logs?.[0]?.field_name ?? "record").replace(/_/g, " ")} changed`,
+              time: log.timestamp,
               status: "SUCCESS",
             }));
             setRecentActivity(activities);

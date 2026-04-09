@@ -51,63 +51,60 @@ interface GroupedLog {
   stock_id: number;
   updated_by: string;
   updated_at: string;
-  changes: { field_name: string; old_value: string; new_value: string }[];
+  action: string;
+  note: string;
+  changes: { field_name: string; old_value: unknown; new_value: unknown }[];
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
 function groupLogs(logs: StockLog[]): GroupedLog[] {
-  const sorted = [...logs].sort(
-    (a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  );
-
-  const groups: GroupedLog[] = [];
-
-  for (const log of sorted) {
-    const ts = new Date(log.updated_at).getTime();
-    const existing = groups.find(
-      (g) =>
-        g.stock_id === log.stock_id &&
-        g.updated_by === log.updated_by &&
-        Math.abs(new Date(g.updated_at).getTime() - ts) < 2000
-    );
-
-    if (existing) {
-      existing.changes.push({
-        field_name: log.field_name,
-        old_value: log.old_value,
-        new_value: log.new_value,
-      });
-    } else {
-      groups.push({
-        key: `${log.stock_id}-${log.updated_at}`,
-        stock_id: log.stock_id,
-        updated_by: log.updated_by,
-        updated_at: log.updated_at,
-        changes: [
-          {
-            field_name: log.field_name,
-            old_value: log.old_value,
-            new_value: log.new_value,
-          },
-        ],
-      });
-    }
-  }
-
-  return groups;
+  return [...logs]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .map((log) => ({
+      key: log.id,
+      stock_id: log.stock,
+      updated_by: log.changed_by_label,
+      updated_at: log.timestamp,
+      action: log.action,
+      note: log.note ?? "",
+      changes: log.field_logs ?? [],
+    }));
 }
 
 function formatFieldName(name: string): string {
+  if (name === "__create__") return "Created Record";
   return name
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatValue(field: string, value: string): string {
-  if (field === "status") return value.replace(/_/g, " ");
-  return value;
+function stringifyValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "none") return "";
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function formatValue(field: string, value: unknown): string {
+  const text = stringifyValue(value);
+  if (!text) return "";
+  if (field === "status") return text.replace(/_/g, " ");
+  return text;
+}
+
+function actionTone(action: string): string {
+  if (action === "CREATE") return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900";
+  if (action === "UPDATE") return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900";
+  if (action === "DELETE") return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900";
+  return "bg-muted text-foreground border-border";
 }
 
 function startOfDay(d: Date): Date {
@@ -199,11 +196,13 @@ export default function StockUpdationLogsPage() {
         if (
           !String(group.stock_id).includes(q) &&
           !group.updated_by.toLowerCase().includes(q) &&
+          !group.note.toLowerCase().includes(q) &&
+          !group.action.toLowerCase().includes(q) &&
           !group.changes.some(
             (c) =>
               c.field_name.toLowerCase().includes(q) ||
-              c.old_value.toLowerCase().includes(q) ||
-              c.new_value.toLowerCase().includes(q)
+              stringifyValue(c.old_value).toLowerCase().includes(q) ||
+              stringifyValue(c.new_value).toLowerCase().includes(q)
           )
         )
           return false;
@@ -284,16 +283,32 @@ export default function StockUpdationLogsPage() {
   /* ── Excel export ────────────────────────────────────────── */
 
   function handleExport() {
-    const rows = filteredGroups.flatMap((group) =>
-      group.changes.map((change) => ({
+    const rows = filteredGroups.flatMap((group) => {
+      if (group.changes.length === 0) {
+        return [
+          {
+            "Stock ID": group.stock_id,
+            Action: group.action,
+            Note: group.note || "—",
+            "Updated By": group.updated_by,
+            "Updated At": fmtDateTime(group.updated_at),
+            Field: "—",
+            "Old Value": "—",
+            "New Value": "—",
+          },
+        ];
+      }
+      return group.changes.map((change) => ({
         "Stock ID": group.stock_id,
+        Action: group.action,
+        Note: group.note || "—",
         "Updated By": group.updated_by,
         "Updated At": fmtDateTime(group.updated_at),
         Field: formatFieldName(change.field_name),
-        "Old Value": change.old_value,
-        "New Value": change.new_value,
-      }))
-    );
+        "Old Value": formatValue(change.field_name, change.old_value) || "—",
+        "New Value": formatValue(change.field_name, change.new_value) || "—",
+      }));
+    });
     if (rows.length === 0) {
       toast.error("No data to export.");
       return;
@@ -544,7 +559,7 @@ export default function StockUpdationLogsPage() {
                     <TableHead>Stock ID</TableHead>
                     <TableHead>Updated By</TableHead>
                     <TableHead>Updated At</TableHead>
-                    <TableHead>Changes</TableHead>
+                    <TableHead>Activity</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -583,7 +598,7 @@ export default function StockUpdationLogsPage() {
                     <TableHead>Stock ID</TableHead>
                     <TableHead>Updated By</TableHead>
                     <TableHead>Updated At</TableHead>
-                    <TableHead>Changes</TableHead>
+                    <TableHead>Activity</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -621,9 +636,10 @@ export default function StockUpdationLogsPage() {
                       const visibleChanges = isExpanded
                         ? group.changes
                         : group.changes.slice(0, 1);
+                      const changeCount = group.changes.length;
 
                       return (
-                        <TableRow key={group.key}>
+                        <TableRow key={group.key} className="align-top">
                           {/* Expand toggle */}
                           <TableCell className="pr-0">
                             {hasMultiple ? (
@@ -664,33 +680,48 @@ export default function StockUpdationLogsPage() {
                           </TableCell>
 
                           <TableCell>
-                            <div className="flex flex-col gap-1.5">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2 text-xs flex-wrap">
+                                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold tracking-wide ${actionTone(group.action)}`}>
+                                  {group.action}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {group.note || "No note"}
+                                </span>
+                              </div>
                               {visibleChanges.map((change, j) => (
-                                <div
-                                  key={j}
-                                  className="flex items-center gap-2 text-sm flex-wrap"
-                                >
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs font-normal shrink-0"
-                                  >
-                                    {formatFieldName(change.field_name)}
-                                  </Badge>
-                                  <span className="text-red-500/80 line-through">
-                                    {formatValue(
-                                      change.field_name,
-                                      change.old_value
-                                    ) || "—"}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    &rarr;
-                                  </span>
-                                  <span className="text-green-600 dark:text-green-400 font-medium">
-                                    {formatValue(
-                                      change.field_name,
-                                      change.new_value
-                                    ) || "—"}
-                                  </span>
+                                <div key={j} className="rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+                                  <div className="mb-1.5">
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs font-normal shrink-0"
+                                    >
+                                      {formatFieldName(change.field_name)}
+                                    </Badge>
+                                  </div>
+                                  {change.field_name === "__create__" ? (
+                                    <pre className="text-xs whitespace-pre-wrap break-all text-foreground/90 font-mono">
+                                      {JSON.stringify(change.new_value, null, 2)}
+                                    </pre>
+                                  ) : (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-red-500/80 line-through font-mono bg-background rounded px-1.5 py-0.5">
+                                        {formatValue(
+                                          change.field_name,
+                                          change.old_value
+                                        ) || "—"}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        &rarr;
+                                      </span>
+                                      <span className="text-green-600 dark:text-green-400 font-medium font-mono bg-background rounded px-1.5 py-0.5">
+                                        {formatValue(
+                                          change.field_name,
+                                          change.new_value
+                                        ) || "—"}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                               {!isExpanded && hasMultiple && (
@@ -699,9 +730,12 @@ export default function StockUpdationLogsPage() {
                                   className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer"
                                   onClick={() => toggleExpand(group.key)}
                                 >
-                                  +{group.changes.length - 1} more change
-                                  {group.changes.length - 1 > 1 ? "s" : ""}
+                                  +{changeCount - 1} more change
+                                  {changeCount - 1 > 1 ? "s" : ""}
                                 </button>
+                              )}
+                              {changeCount === 0 && (
+                                <span className="text-sm text-muted-foreground">No field-level changes</span>
                               )}
                             </div>
                           </TableCell>

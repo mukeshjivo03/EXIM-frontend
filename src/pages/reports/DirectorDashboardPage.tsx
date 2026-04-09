@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { RefreshCw, BarChart3, Droplets, Scale, PackageCheck, ChevronDown, ChevronRight } from "lucide-react";
 
-import { getDirectorInventory, type DirectorInventoryResponse } from "@/api/dashboard";
+import { getDirectorInventory, type DirectorInventoryLiter, type DirectorInventoryResponse } from "@/api/dashboard";
 import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
@@ -15,14 +15,17 @@ import {
 } from "@/components/ui/card";
 
 type DirectorRow = {
-  key: keyof DirectorInventoryResponse;
+  key: DirectorStageKey | "at_factory";
   label: string;
   liter: number;
   mts: number;
   statusCode?: string;
+  breakdown?: Array<{ label: string; liter: number; mts: number }>;
 };
 
-const ORDER: Array<{ key: keyof DirectorInventoryResponse; label: string; statusCode?: string }> = [
+type DirectorStageKey = Exclude<keyof DirectorInventoryResponse, "at_factory">;
+
+const ORDER: Array<{ key: DirectorStageKey; label: string; statusCode?: string }> = [
   { key: "finished", label: "Finished" },
   { key: "otw", label: "On The Way", statusCode: "ON_THE_WAY" },
   { key: "under_loading", label: "Under Loading", statusCode: "UNDER_LOADING" },
@@ -36,6 +39,12 @@ function fmtNum(n: number) {
   return n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
+function getLiterValue(liter: DirectorInventoryLiter): number {
+  if (typeof liter === "number") return Number(liter);
+  if (liter && typeof liter === "object") return Number(liter.total_liter ?? 0);
+  return 0;
+}
+
 function fmtEta(eta: string | null) {
   if (!eta) return "—";
   const d = new Date(eta);
@@ -46,8 +55,8 @@ function fmtEta(eta: string | null) {
 export default function DirectorDashboardPage() {
   const [data, setData] = useState<DirectorInventoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [vehicleReports, setVehicleReports] = useState<Partial<Record<keyof DirectorInventoryResponse, VehicleReport[]>>>({});
-  const [expanded, setExpanded] = useState<Set<keyof DirectorInventoryResponse>>(new Set());
+  const [vehicleReports, setVehicleReports] = useState<Partial<Record<DirectorStageKey, VehicleReport[]>>>({});
+  const [expanded, setExpanded] = useState<Set<DirectorStageKey | "at_factory">>(new Set());
 
   async function fetchData() {
     setLoading(true);
@@ -62,7 +71,7 @@ export default function DirectorDashboardPage() {
         ),
       ]);
       setData(inventory);
-      setVehicleReports(Object.fromEntries(reports) as Partial<Record<keyof DirectorInventoryResponse, VehicleReport[]>>);
+      setVehicleReports(Object.fromEntries(reports) as Partial<Record<DirectorStageKey, VehicleReport[]>>);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load director inventory"));
     } finally {
@@ -76,13 +85,30 @@ export default function DirectorDashboardPage() {
 
   const rows = useMemo<DirectorRow[]>(() => {
     if (!data) return [];
-    return ORDER.map(({ key, label, statusCode }) => ({
+    const orderedRows = ORDER.map(({ key, label, statusCode }) => ({
       key,
       label,
-      liter: Number(data[key]?.liter ?? 0),
+      liter: getLiterValue(data[key]?.liter),
       mts: Number(data[key]?.mts ?? 0),
       statusCode,
     }));
+    const inTankLiter = getLiterValue(data.at_factory.in_tank?.liter);
+    const outsideFactoryLiter = getLiterValue(data.at_factory.outside_factory?.liter);
+    const atFactoryLiter = Number(data.at_factory.total?.total_lts ?? inTankLiter + outsideFactoryLiter);
+    const atFactoryMts = Number(data.at_factory.total?.total_mts ?? Number(data.at_factory.in_tank?.mts ?? 0) + Number(data.at_factory.outside_factory?.mts ?? 0));
+    const atFactoryRow: DirectorRow = {
+      key: "at_factory",
+      label: "At Factory",
+      liter: atFactoryLiter,
+      mts: atFactoryMts,
+      breakdown: [
+        { label: "In Tank", liter: inTankLiter, mts: Number(data.at_factory.in_tank?.mts ?? 0) },
+        { label: "Outside Factory", liter: outsideFactoryLiter, mts: Number(data.at_factory.outside_factory?.mts ?? 0) },
+      ],
+    };
+    const [first, ...rest] = orderedRows;
+    if (!first) return orderedRows;
+    return [first, atFactoryRow, ...rest];
   }, [data]);
 
   const totals = useMemo(() => {
@@ -96,7 +122,7 @@ export default function DirectorDashboardPage() {
     );
   }, [rows]);
 
-  function toggleExpand(key: keyof DirectorInventoryResponse) {
+  function toggleExpand(key: DirectorStageKey | "at_factory") {
     setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -170,9 +196,9 @@ export default function DirectorDashboardPage() {
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const canExpand = Boolean(row.statusCode);
+                  const canExpand = Boolean(row.statusCode || row.breakdown);
                   const isOpen = expanded.has(row.key);
-                  const reportRows = vehicleReports[row.key] ?? [];
+                  const reportRows = row.statusCode ? vehicleReports[row.key as DirectorStageKey] ?? [] : [];
 
                   return (
                     <Fragment key={row.key}>
@@ -197,7 +223,34 @@ export default function DirectorDashboardPage() {
                         <td className="px-4 py-3 text-base text-right tabular-nums">{loading ? "—" : fmtNum(row.mts)}</td>
                       </tr>
 
-                      {canExpand && isOpen && (
+                      {canExpand && isOpen && row.breakdown && (
+                        <tr className="border-b bg-muted/20">
+                          <td colSpan={3} className="px-4 py-3">
+                            <div className="rounded-md border overflow-x-auto bg-background/70">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-muted/50 border-b">
+                                    <th className="px-3 py-2 text-left font-semibold">Source</th>
+                                    <th className="px-3 py-2 text-right font-semibold">Liter</th>
+                                    <th className="px-3 py-2 text-right font-semibold">MTS</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {row.breakdown.map((b) => (
+                                    <tr key={`${row.key}-${b.label}`} className="border-b last:border-b-0">
+                                      <td className="px-3 py-2">{b.label}</td>
+                                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(b.liter)}</td>
+                                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(b.mts)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {canExpand && isOpen && row.statusCode && (
                         <tr className="border-b bg-muted/20">
                           <td colSpan={3} className="px-4 py-3">
                             <div className="rounded-md border overflow-x-auto bg-background/70">
@@ -240,7 +293,7 @@ export default function DirectorDashboardPage() {
                     </Fragment>
                   );
                 })}
-              </tbody>
+                </tbody>
               <tfoot>
                 <tr className="bg-muted/70 border-t-2">
                   <td className="px-4 py-3 text-base font-extrabold">Grand Total</td>
