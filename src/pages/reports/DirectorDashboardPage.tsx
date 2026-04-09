@@ -1,7 +1,12 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { RefreshCw, BarChart3, Droplets, Scale, PackageCheck, ChevronDown, ChevronRight } from "lucide-react";
 
-import { getDirectorInventory, type DirectorInventoryLiter, type DirectorInventoryResponse } from "@/api/dashboard";
+import {
+  getDirectorInventory,
+  type DirectorFinishedInventory,
+  type DirectorInventoryLiter,
+  type DirectorInventoryResponse,
+} from "@/api/dashboard";
 import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
@@ -45,11 +50,49 @@ function getLiterValue(liter: DirectorInventoryLiter): number {
   return 0;
 }
 
+function isFinishedWithBreakdown(
+  finished: DirectorFinishedInventory
+): finished is { total: { liter: DirectorInventoryLiter; mts: number } } & Record<string, { liter: DirectorInventoryLiter; mts: number }> {
+  return typeof finished === "object" && finished !== null && "total" in finished;
+}
+
+function getFinishedRowData(finished: DirectorFinishedInventory): Pick<DirectorRow, "liter" | "mts" | "breakdown"> {
+  if (!isFinishedWithBreakdown(finished)) {
+    return {
+      liter: getLiterValue(finished.liter),
+      mts: Number(finished.mts ?? 0),
+    };
+  }
+
+  const breakdown = Object.entries(finished)
+    .filter(([warehouse]) => warehouse !== "total")
+    .map(([warehouse, bucket]) => ({
+      label: warehouse,
+      liter: getLiterValue(bucket.liter),
+      mts: Number(bucket.mts ?? 0),
+    }));
+
+  return {
+    liter: getLiterValue(finished.total?.liter),
+    mts: Number(finished.total?.mts ?? 0),
+    breakdown: breakdown.length > 0 ? breakdown : undefined,
+  };
+}
+
 function fmtEta(eta: string | null) {
   if (!eta) return "—";
   const d = new Date(eta);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function isTransportStatus(statusCode?: string) {
+  return statusCode === "ON_THE_WAY" || statusCode === "UNDER_LOADING";
+}
+
+function getVehicleMts(v: VehicleReport): number {
+  const row = v as VehicleReport & { quantity_in_mts?: number; mts?: number };
+  return Number(row.quantity_in_mts ?? row.mts ?? 0);
 }
 
 export default function DirectorDashboardPage() {
@@ -85,13 +128,26 @@ export default function DirectorDashboardPage() {
 
   const rows = useMemo<DirectorRow[]>(() => {
     if (!data) return [];
-    const orderedRows = ORDER.map(({ key, label, statusCode }) => ({
-      key,
-      label,
-      liter: getLiterValue(data[key]?.liter),
-      mts: Number(data[key]?.mts ?? 0),
-      statusCode,
-    }));
+    const orderedRows = ORDER.map(({ key, label, statusCode }) => {
+      if (key === "finished") {
+        const finishedData = getFinishedRowData(data.finished);
+        return {
+          key,
+          label,
+          liter: finishedData.liter,
+          mts: finishedData.mts,
+          breakdown: finishedData.breakdown,
+          statusCode,
+        };
+      }
+      return {
+        key,
+        label,
+        liter: getLiterValue(data[key].liter),
+        mts: Number(data[key].mts ?? 0),
+        statusCode,
+      };
+    });
     const inTankLiter = getLiterValue(data.at_factory.in_tank?.liter);
     const outsideFactoryLiter = getLiterValue(data.at_factory.outside_factory?.liter);
     const atFactoryLiter = Number(data.at_factory.total?.total_lts ?? inTankLiter + outsideFactoryLiter);
@@ -257,30 +313,38 @@ export default function DirectorDashboardPage() {
                               <table className="w-full text-sm">
                                 <thead>
                                   <tr className="bg-muted/50 border-b">
-                                    <th className="px-3 py-2 text-left font-semibold">S.No</th>
-                                    <th className="px-3 py-2 text-left font-semibold">Vehicle No</th>
                                     <th className="px-3 py-2 text-left font-semibold">Item</th>
                                     <th className="px-3 py-2 text-right font-semibold">Qty (LTR)</th>
-                                    <th className="px-3 py-2 text-left font-semibold">ETA</th>
-                                    <th className="px-3 py-2 text-left font-semibold">Refinery</th>
+                                    <th className="px-3 py-2 text-right font-semibold">MTS</th>
+                                    {isTransportStatus(row.statusCode) && (
+                                      <>
+                                        <th className="px-3 py-2 text-left font-semibold">Vehicle No</th>
+                                        <th className="px-3 py-2 text-left font-semibold">ETA</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Refinery</th>
+                                      </>
+                                    )}
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {reportRows.length === 0 ? (
                                     <tr>
-                                      <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
+                                      <td colSpan={isTransportStatus(row.statusCode) ? 6 : 3} className="px-3 py-4 text-center text-muted-foreground">
                                         No vehicle rows for this status
                                       </td>
                                     </tr>
                                   ) : (
                                     reportRows.map((v, idx) => (
                                       <tr key={`${row.key}-${idx}`} className="border-b last:border-b-0">
-                                        <td className="px-3 py-2 tabular-nums">{idx + 1}</td>
-                                        <td className="px-3 py-2">{v.vehicle_number || "—"}</td>
                                         <td className="px-3 py-2">{v.item_name || "—"}</td>
                                         <td className="px-3 py-2 text-right tabular-nums">{fmtNum(Number(v.quantity_in_litre ?? 0))}</td>
-                                        <td className="px-3 py-2">{fmtEta(v.eta ?? null)}</td>
-                                        <td className="px-3 py-2">{v.job_work || "—"}</td>
+                                        <td className="px-3 py-2 text-right tabular-nums">{fmtNum(getVehicleMts(v))}</td>
+                                        {isTransportStatus(row.statusCode) && (
+                                          <>
+                                            <td className="px-3 py-2">{v.vehicle_number || "—"}</td>
+                                            <td className="px-3 py-2">{fmtEta(v.eta ?? null)}</td>
+                                            <td className="px-3 py-2">{v.job_work || "—"}</td>
+                                          </>
+                                        )}
                                       </tr>
                                     ))
                                   )}
@@ -308,3 +372,4 @@ export default function DirectorDashboardPage() {
     </div>
   );
 }
+

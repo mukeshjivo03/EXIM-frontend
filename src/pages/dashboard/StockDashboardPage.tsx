@@ -225,9 +225,16 @@ export default function StockDashboardPage() {
     totalRow["In Factory"] = Number(convertFromLiters(tankInFactoryTotal, unit).toFixed(3));
     totalRow["Outside Factory"] = Number(convertUnit(data.totals.outside_factory, unit).toFixed(3));
     for (const group of statusGroups) {
-      for (const { key, vendor } of group.vendors) {
+      for (const [idx, { key, vendor }] of group.vendors.entries()) {
         const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
-        totalRow[colLabel] = Number(convertUnit(data.totals.status_vendor_totals[key] ?? 0, unit).toFixed(3));
+        const statusTotal = data.totals.status_totals?.[group.status];
+        const fallbackTotal = group.vendors.reduce(
+          (sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0),
+          0
+        );
+        totalRow[colLabel] = idx === 0
+          ? Number(convertUnit(statusTotal ?? fallbackTotal, unit).toFixed(3))
+          : "—";
       }
     }
     totalRow["Total"] = Number(convertUnit(data.totals.grand_total, unit).toFixed(3));
@@ -567,11 +574,19 @@ export default function StockDashboardPage() {
                     <td className="p-0 bg-white dark:bg-white border-x-0" />
                     {statusGroups.map((group, gi) => (
                       <Fragment key={group.status}>
-                        {group.vendors.map(({ key }) => (
-                          <td key={key} className="px-2 py-4 text-center tabular-nums border border-foreground/30">
-                            {fmtNum(data?.totals.status_vendor_totals[key] ?? 0, unit)}
-                          </td>
-                        ))}
+                        <td
+                          colSpan={group.vendors.length}
+                          className="px-2 py-4 text-center tabular-nums border border-foreground/30 font-semibold"
+                        >
+                          {fmtNum(
+                            data?.totals.status_totals?.[group.status] ??
+                            group.vendors.reduce(
+                              (sum, v) => sum + (data?.totals.status_vendor_totals[v.key] ?? 0),
+                              0
+                            ),
+                            unit
+                          )}
+                        </td>
                         {gi < statusGroups.length - 1 && (
                           <td className="p-0 bg-white dark:bg-white border-x-0" />
                         )}

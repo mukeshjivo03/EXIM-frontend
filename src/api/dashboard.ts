@@ -33,6 +33,7 @@ export interface StockDashboardResponse {
     in_factory: number;
     outside_factory: number;
     status_vendor_totals: Record<string, number>;
+    status_totals?: Record<string, number>;
     grand_total: number;
   };
 }
@@ -61,7 +62,7 @@ export interface DirectorAtFactoryInventory {
 }
 
 export interface DirectorInventoryResponse {
-  finished: DirectorInventoryBucket;
+  finished: DirectorFinishedInventory;
   at_factory: DirectorAtFactoryInventory;
   otw: DirectorInventoryBucket;
   under_loading: DirectorInventoryBucket;
@@ -70,6 +71,10 @@ export interface DirectorInventoryResponse {
   on_the_sea: DirectorInventoryBucket;
   in_contract: DirectorInventoryBucket;
 }
+
+export type DirectorFinishedInventory =
+  | DirectorInventoryBucket
+  | ({ total: DirectorInventoryBucket } & Record<string, DirectorInventoryBucket>);
 
 export async function getDirectorInventory(): Promise<DirectorInventoryResponse> {
   const res = await api.get<DirectorInventoryResponse>("/director-inventorty/");

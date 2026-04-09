@@ -240,8 +240,8 @@ function PortScene() {
           0.70-1.00: Move trolley back to ship side (x slides left)
       */}
       <motion.g
-        animate={{ x: [0, 0, 0, 230, 230, 230, 230, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.12, 0.18, 0.45, 0.55, 0.60, 0.70, 1.0] }}
+        animate={{ x: [0, 0, 0, 380, 380, 380, 380, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.10, 0.18, 0.45, 0.60, 0.68, 0.76, 1.0] }}
       >
         {/* Trolley carriage */}
         <rect x="348" y="22" width="30" height="18" rx="3" fill={C.gold} />
@@ -251,8 +251,8 @@ function PortScene() {
 
         {/* Cable + spreader + container */}
         <motion.g
-          animate={{ y: [0, 80, 80, 0, 0, 80, 80, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.12, 0.18, 0.45, 0.45, 0.55, 0.60, 0.70] }}
+          animate={{ y: [0, 24, 24, 0, 0, 46, 46, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.10, 0.18, 0.45, 0.60, 0.68, 0.76, 1.0] }}
         >
           {/* Cable lines (two wires) */}
           <line x1="355" y1="40" x2="355" y2="96" stroke={C.dim} strokeWidth="1.5" />
@@ -421,6 +421,15 @@ function RefineryScene() {
   return (
     <g>
       <rect x="0" y={HORIZON_Y - 2} width="1200" height="40" fill={C.navyLight} />
+      {/* Background factory silhouette */}
+      <g opacity="0.26">
+        <rect x="760" y="110" width="120" height={HORIZON_Y - 110} fill={C.navyLight} />
+        <rect x="840" y="80" width="24" height={HORIZON_Y - 80} fill={C.navyLight} />
+        <rect x="900" y="92" width="96" height={HORIZON_Y - 92} fill={C.navyLight} />
+        <polygon points="900,92 948,62 996,92" fill={C.navyLight} />
+        <rect x="1010" y="70" width="20" height={HORIZON_Y - 70} fill={C.navyLight} />
+        <rect x="1040" y="96" width="86" height={HORIZON_Y - 96} fill={C.navyLight} />
+      </g>
       {/* 3 Main Interconnected Industrial Tanks */}
       {[250, 450, 650].map((cx, i) => (
         <g key={i}>
@@ -505,7 +514,7 @@ function LoadingScene() {
       {/* The Dynamic Flow (Using moving dashed line) */}
       <motion.line 
         x1="483" y1="140" x2="483" y2={HORIZON_Y - 75} 
-        stroke={C.cyan} strokeWidth="6" strokeDasharray="10 5"
+        stroke={C.gold} strokeWidth="6" strokeDasharray="10 5"
         animate={{ strokeDashoffset: [0, -30] }}
         transition={{ duration: 0.2, repeat: Infinity, ease: "linear" }}
         opacity="0.9"
@@ -518,14 +527,14 @@ function LoadingScene() {
 
         {/* Tanker (Box with open top) */}
         <rect x="390" y={HORIZON_Y - 80} width="150" height="60" rx="10" fill={C.steel} />
-        <rect x="390" y={HORIZON_Y - 80} width="150" height="4" fill={C.teal} opacity="0.4" />
+        <rect x="390" y={HORIZON_Y - 80} width="150" height="4" fill={C.gold} opacity="0.55" />
         
         {/* Oil filling up animated mask */}
         <clipPath id="loading-tank-clip">
           <rect x="395" y={HORIZON_Y - 75} width="140" height="50" rx="8" />
         </clipPath>
         <rect x="395" y={HORIZON_Y - 75} width="140" height="50" rx="8" fill={C.navyMid} opacity="0.5" />
-        <motion.rect x="395" width="140" fill={C.teal} opacity="0.8"
+        <motion.rect x="395" width="140" fill={C.gold} opacity="0.85"
           clipPath="url(#loading-tank-clip)"
           animate={{ height: [0, 50], y: [HORIZON_Y - 25, HORIZON_Y - 75] }}
           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -551,7 +560,7 @@ function LoadingScene() {
   );
 }
 
-function TransitScene({ showFactory }: { showFactory?: boolean }) {
+function TransitScene({ showFactory, tanker }: { showFactory?: boolean; tanker?: boolean }) {
   return (
     <g>
       {/* Hills / Parallax Environment */}
@@ -598,13 +607,25 @@ function TransitScene({ showFactory }: { showFactory?: boolean }) {
         {/* Chassis */}
         <line x1="380" y1={HORIZON_Y - 14} x2="620" y2={HORIZON_Y - 14} stroke="#132D4A" strokeWidth="4" />
 
-        {/* Trailer (Box) - New Colors */}
-        <rect x="390" y={HORIZON_Y - 100} width="150" height="80" rx="4" fill="#0F766E" />
-        {/* Ribbing lines */}
-        {[0, 1, 2, 3].map(i => (
-          <line key={i} x1="390" y1={HORIZON_Y - 80 + i * 15} x2="540" y2={HORIZON_Y - 80 + i * 15} stroke="#0D9488" strokeWidth="2" opacity="0.6" />
-        ))}
-        {/* LOGISTICS text removed as instructed */}
+        {tanker ? (
+          <>
+            {/* Tanker body */}
+            <rect x="390" y={HORIZON_Y - 82} width="150" height="58" rx="28" fill="#0F766E" />
+            {/* Tanker end-cap + piping */}
+            <circle cx="396" cy={HORIZON_Y - 53} r="8" fill="#0D9488" opacity="0.85" />
+            <line x1="408" y1={HORIZON_Y - 53} x2="532" y2={HORIZON_Y - 53} stroke="#2DD4BF" strokeWidth="2" opacity="0.65" />
+            <rect x="450" y={HORIZON_Y - 90} width="28" height="7" rx="2" fill="#132D4A" />
+            <line x1="464" y1={HORIZON_Y - 83} x2="464" y2={HORIZON_Y - 70} stroke="#132D4A" strokeWidth="2" />
+          </>
+        ) : (
+          <>
+            {/* Trailer (Box) */}
+            <rect x="390" y={HORIZON_Y - 100} width="150" height="80" rx="4" fill="#0F766E" />
+            {[0, 1, 2, 3].map(i => (
+              <line key={i} x1="390" y1={HORIZON_Y - 80 + i * 15} x2="540" y2={HORIZON_Y - 80 + i * 15} stroke="#0D9488" strokeWidth="2" opacity="0.6" />
+            ))}
+          </>
+        )}
 
         {/* Cab - New Colors */}
         <rect x="550" y={HORIZON_Y - 70} width="50" height="50" rx="6" fill="#132D4A" />
@@ -756,8 +777,8 @@ const SCENE_MAP: Record<string, () => React.JSX.Element> = {
   OTW_TO_REFINERY: () => <TruckScene />,
   AT_REFINERY: () => <RefineryScene />,
   UNDER_LOADING: () => <LoadingScene />,
-  ON_THE_WAY: () => <TransitScene />,
-  OUT_SIDE_FACTORY: () => <TransitScene showFactory />,
+  ON_THE_WAY: () => <TransitScene tanker />,
+  OUT_SIDE_FACTORY: () => <TransitScene showFactory tanker />,
   IN_FACTORY: () => <FactoryScene />,
   KANDLA_STORAGE: () => <StorageScene />,
   IN_TRANSIT: () => <TransitScene />,
