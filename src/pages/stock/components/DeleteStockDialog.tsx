@@ -17,7 +17,7 @@ import {
 interface Props {
   data: StockStatus | null;
   onClose: () => void;
-  onDeleted: () => void;
+  onDeleted: () => Promise<unknown> | void;
 }
 
 export function DeleteStockDialog({ data, onClose, onDeleted }: Props) {
@@ -30,7 +30,7 @@ export function DeleteStockDialog({ data, onClose, onDeleted }: Props) {
       await softDeleteStockStatus(data);
       toast.success("Stock status deleted.");
       onClose();
-      onDeleted();
+      await onDeleted();
     } catch {
       toast.error("Failed to delete stock status.");
     } finally {

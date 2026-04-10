@@ -26,7 +26,6 @@ import {
 import {
   getStockStatuses,
   getStockStatus,
-  getStockSummary,
   getStockInsights,
   arriveBatch,
   moveStock,
@@ -161,7 +160,7 @@ export default function StockStatusPage() {
 
   async function fetchOverallSummary() {
     try {
-      const data = await getStockSummary();
+      const data = await getStockInsights();
       setOverallSummary(data.summary);
     } catch {
       // non-critical
@@ -290,7 +289,7 @@ export default function StockStatusPage() {
         })
       );
       toast.success(`Bulk delete completed for ${count} records.`);
-      await fetchList(currentFilters());
+      await refreshAll();
     } catch (err) {
       toastApiError(err, "Failed to complete bulk delete.");
     } finally {

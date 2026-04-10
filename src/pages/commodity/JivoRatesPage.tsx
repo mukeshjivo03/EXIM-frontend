@@ -84,6 +84,8 @@ export default function JivoRatesPage() {
 
   // View mode for fetched rates
   const [viewMode, setViewMode] = useState<"list" | "matrix">("matrix");
+  // Classic = Excel-like colored mode; default = aesthetic mode
+  const [classicMode, setClassicMode] = useState(false);
 
   useEffect(() => { if (!fetched) handleFetch(); }, []);
 
@@ -318,6 +320,21 @@ export default function JivoRatesPage() {
                   <LayoutList className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {viewMode === "matrix" && (
+                <button
+                  onClick={() => setClassicMode((v) => !v)}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors gap-1.5 flex items-center",
+                    classicMode
+                      ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-400"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                  title={classicMode ? "Switch to aesthetic view" : "Switch to classic Excel view"}
+                >
+                  <Grid3X3 className="h-3 w-3" />
+                  {classicMode ? "Classic" : "Classic"}
+                </button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -327,18 +344,33 @@ export default function JivoRatesPage() {
               <Table className="text-base">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-black" style={{ backgroundColor: "#93c47d" }}>
-                      Jivo Rate
-                    </TableHead>
-                    {matrix.commodities.map((c) => (
-                      <TableHead
-                        key={c}
-                        className="text-center min-w-[110px] font-bold text-foreground border border-black capitalize"
-                        style={{ backgroundColor: "#fff3cc" }}
-                      >
-                        {c}
+                    {classicMode ? (
+                      <TableHead className="min-w-[160px] font-bold text-foreground text-center border border-black" style={{ backgroundColor: "#93c47d" }}>
+                        Jivo Rate
                       </TableHead>
-                    ))}
+                    ) : (
+                      <TableHead className="min-w-[160px] font-bold text-primary text-center bg-primary/10 dark:bg-primary/20 border-b-2 border-primary/30">
+                        Pack Type
+                      </TableHead>
+                    )}
+                    {matrix.commodities.map((c) =>
+                      classicMode ? (
+                        <TableHead
+                          key={c}
+                          className="text-center min-w-[110px] font-bold text-foreground border border-black capitalize"
+                          style={{ backgroundColor: "#fff3cc" }}
+                        >
+                          {c}
+                        </TableHead>
+                      ) : (
+                        <TableHead
+                          key={c}
+                          className="text-center min-w-[120px] font-bold text-foreground bg-muted/60 capitalize border-b-2 border-border/60"
+                        >
+                          {c}
+                        </TableHead>
+                      )
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -357,22 +389,31 @@ export default function JivoRatesPage() {
                   ) : (
                     matrix.packTypes.map((pt) => (
                       <TableRow key={pt} className={cn(justFetched && "animate-in fade-in duration-500", "hover:bg-muted/30 transition-colors")}>
-                        <TableCell className="font-bold text-center border border-black capitalize" style={{ backgroundColor: "#ffe699" }}>
-                          {pt}
-                        </TableCell>
+                        {classicMode ? (
+                          <TableCell className="font-bold text-center border border-black capitalize" style={{ backgroundColor: "#ffe699" }}>
+                            {pt}
+                          </TableCell>
+                        ) : (
+                          <TableCell className="font-semibold text-center capitalize bg-muted/40 border-r border-border/60 text-foreground">
+                            {pt}
+                          </TableCell>
+                        )}
                         {matrix.commodities.map((commodity) => {
                           const rate = matrix.rateMap.get(`${commodity}||${pt}`);
-                          return (
-                            <TableCell
-                              key={commodity}
-                              className="text-center border border-black"
-                            >
+                          return classicMode ? (
+                            <TableCell key={commodity} className="text-center border border-black">
                               {rate != null ? (
-                                <span className="font-bold text-sm tabular-nums">
-                                  ₹ {fmtRate(rate)}
-                                </span>
+                                <span className="font-bold text-sm tabular-nums">₹ {fmtRate(rate)}</span>
                               ) : (
                                 <span className="text-muted-foreground/40">—</span>
+                              )}
+                            </TableCell>
+                          ) : (
+                            <TableCell key={commodity} className="text-center border-r border-border/30 last:border-r-0">
+                              {rate != null ? (
+                                <span className="font-semibold text-sm tabular-nums">₹ {fmtRate(rate)}</span>
+                              ) : (
+                                <span className="text-muted-foreground/30">—</span>
                               )}
                             </TableCell>
                           );

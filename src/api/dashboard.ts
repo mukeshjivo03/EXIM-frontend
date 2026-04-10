@@ -38,8 +38,18 @@ export interface StockDashboardResponse {
   };
 }
 
-export async function getStockDashboard(): Promise<StockDashboardResponse> {
-  const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/");
+export interface StockDashboardFilters {
+  rmcode?: string;
+  vendor?: string;
+  status?: string;
+}
+
+export async function getStockDashboard(filters?: StockDashboardFilters): Promise<StockDashboardResponse> {
+  const params: Record<string, string> = {};
+  if (filters?.rmcode) params.rmcode = filters.rmcode;
+  if (filters?.vendor) params.vendor = filters.vendor;
+  if (filters?.status) params.status = filters.status;
+  const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/", { params });
   return res.data;
 }
 

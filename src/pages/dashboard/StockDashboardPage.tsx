@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
-import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
+import { getStockDashboard, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,10 @@ function fmtLiters(n: number, unit: Unit) {
   });
 }
 
+function formatStatusLabel(status: string) {
+  return status.replace(/_/g, " ");
+}
+
 
 /* ── status colour palette (cycles if >6 groups) ─────────────── */
 
@@ -73,8 +77,10 @@ const STATUS_PALETTE = [
 export default function StockDashboardPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<StockDashboardResponse | null>(null);
+  const [optionsData, setOptionsData] = useState<StockDashboardResponse | null>(null);
   const [tankSummary, setTankSummary] = useState<ItemWiseTankSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<StockDashboardFilters>({ rmcode: "", vendor: "", status: "" });
   
   // UX States
   const [hideZeroRows, setHideZeroRows] = useState(false);
@@ -100,11 +106,11 @@ export default function StockDashboardPage() {
 
   const tankInFactoryTotal = tankSummary?.total_quantity ?? 0;
 
-  async function fetchData() {
+  async function fetchData(activeFilters: StockDashboardFilters = filters) {
     setLoading(true);
     try {
       const [res, tankData] = await Promise.all([
-        getStockDashboard(),
+        getStockDashboard(activeFilters),
         getItemWiseTankSummary(),
       ]);
       setData(res);
@@ -117,20 +123,83 @@ export default function StockDashboardPage() {
   }
 
   useEffect(() => {
-    fetchData();
+    async function initialLoad() {
+      setLoading(true);
+      try {
+        const [res, tankData] = await Promise.all([
+          getStockDashboard(),
+          getItemWiseTankSummary(),
+        ]);
+        setData(res);
+        setOptionsData(res);
+        setTankSummary(tankData);
+      } catch (err) {
+        toast.error(getErrorMessage(err, "Failed to load stock dashboard"));
+      } finally {
+        setLoading(false);
+      }
+    }
+    initialLoad();
   }, []);
+
+  const hasFilters = Boolean(filters.rmcode || filters.vendor || filters.status);
+
+  const availableRmCodes = useMemo(() => {
+    const source = optionsData ?? data;
+    if (!source) return [];
+    return [...new Set(source.items.map((item) => item.item_code))].sort();
+  }, [optionsData, data]);
+
+  const availableStatuses = useMemo(() => {
+    const source = optionsData ?? data;
+    if (!source) return [];
+    return [
+      ...new Set(
+        Object.keys(source.totals.status_vendor_totals)
+          .map((key) => key.split("__")[0])
+          .filter(Boolean)
+      ),
+    ].sort();
+  }, [optionsData, data]);
+
+  const availableVendors = useMemo(() => {
+    const source = optionsData ?? data;
+    if (!source) return [];
+    return [
+      ...new Set(
+        Object.keys(source.totals.status_vendor_totals)
+          .map((key) => key.split("__")[1])
+          .filter(Boolean)
+      ),
+    ].sort();
+  }, [optionsData, data]);
+
+  function updateFilter(patch: Partial<StockDashboardFilters>) {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    fetchData(next);
+  }
+
+  function clearFilters() {
+    const cleared: StockDashboardFilters = { rmcode: "", vendor: "", status: "" };
+    setFilters(cleared);
+    fetchData(cleared);
+  }
 
   /* ── Calculations & Derived Data ── */
 
-  const colKeys = useMemo(
-    () =>
-      data
-        ? Object.keys(data.totals.status_vendor_totals).filter(
-            (key) => !key.startsWith("COMPLETED__") && !key.startsWith("DELIVERED__") && !key.startsWith("completed__")
-          )
-        : [],
-    [data]
-  );
+  const colKeys = useMemo(() => {
+    if (!data) return [];
+    const keys = Object.keys(data.totals.status_vendor_totals);
+    // When filtering by a specific status, show all returned columns as-is.
+    // In the default unfiltered view, hide COMPLETED / DELIVERED to keep the matrix tidy.
+    if (filters.status) return keys;
+    return keys.filter(
+      (key) =>
+        !key.toLowerCase().startsWith("completed__") &&
+        !key.toLowerCase().startsWith("delivered__")
+    );
+  }, [data, filters.status]);
 
   const statusGroups = useMemo(() => {
     const groups: { status: string; vendors: { key: string; vendor: string }[] }[] = [];
@@ -146,6 +215,9 @@ export default function StockDashboardPage() {
     }
     return groups;
   }, [colKeys]);
+
+  // When filtering by status, In Factory and Outside Factory are irrelevant — hide them
+  const showFactoryCols = !filters.status;
 
 
 
@@ -172,6 +244,12 @@ export default function StockDashboardPage() {
   const displayItems = useMemo(() => {
     if (!data) return [];
 
+    // When any filter is active, show exactly what the API returned — no synthetic tank rows
+    if (filters.status || filters.rmcode || filters.vendor) {
+      if (!hideZeroRows) return data.items;
+      return data.items.filter((item) => item.total > 0);
+    }
+
     // Build set of item codes already in the stock table
     const stockItemCodes = new Set(data.items.map((i) => i.item_code));
 
@@ -193,7 +271,7 @@ export default function StockDashboardPage() {
       const tankVal = tankQtyMap.get(item.item_code) ?? 0;
       return tankVal > 0 || item.total > 0;
     });
-  }, [data, hideZeroRows, tankQtyMap, tankSummary]);
+  }, [data, hideZeroRows, tankQtyMap, tankSummary, filters.status, filters.rmcode, filters.vendor]);
 
   /* ── Export to Excel ─────────────────────────────────────── */
 
@@ -205,8 +283,10 @@ export default function StockDashboardPage() {
     for (const item of displayItems) {
       const tankVal = tankQtyMap.get(item.item_code) ?? 0;
       const row: Record<string, string | number> = { "RM Code": item.item_code };
-      row["In Factory"] = unit === "LTR" ? tankVal : Number(convertFromLiters(tankVal, unit).toFixed(3));
-      row["Outside Factory"] = Number(convertUnit(item.outside_factory, unit).toFixed(3));
+      if (showFactoryCols) {
+        row["In Factory"] = unit === "LTR" ? tankVal : Number(convertFromLiters(tankVal, unit).toFixed(3));
+        row["Outside Factory"] = Number(convertUnit(item.outside_factory, unit).toFixed(3));
+      }
 
       for (const group of statusGroups) {
         for (const { key, vendor } of group.vendors) {
@@ -215,17 +295,22 @@ export default function StockDashboardPage() {
         }
       }
 
-      const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0), unit);
+      const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
+      const grandTotal = showFactoryCols
+        ? convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + statusKg, unit)
+        : convertUnit(statusKg, unit);
       row["Total"] = Math.round(grandTotal);
       rows.push(row);
     }
 
     // Grand total row
     const totalRow: Record<string, string | number> = { "RM Code": "GRAND TOTAL" };
-    totalRow["In Factory"] = Number(convertFromLiters(tankInFactoryTotal, unit).toFixed(3));
-    totalRow["Outside Factory"] = Number(convertUnit(data.totals.outside_factory, unit).toFixed(3));
+    if (showFactoryCols) {
+      totalRow["In Factory"] = Number(convertFromLiters(tankInFactoryTotal, unit).toFixed(3));
+      totalRow["Outside Factory"] = Number(convertUnit(data.totals.outside_factory, unit).toFixed(3));
+    }
     for (const group of statusGroups) {
-      for (const [idx, { key, vendor }] of group.vendors.entries()) {
+      for (const [idx, { vendor }] of group.vendors.entries()) {
         const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
         const statusTotal = data.totals.status_totals?.[group.status];
         const fallbackTotal = group.vendors.reduce(
@@ -282,7 +367,7 @@ export default function StockDashboardPage() {
               ))}
             </div>
           </div>
-          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={fetchData} disabled={loading}>
+          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={() => fetchData(filters)} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
@@ -332,6 +417,63 @@ export default function StockDashboardPage() {
         </Card>
       </div>
 
+      {/* ── Filters ── */}
+      <Card className="border shadow-sm">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">RM Code</label>
+              <select
+                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                value={filters.rmcode ?? ""}
+                onChange={(e) => updateFilter({ rmcode: e.target.value })}
+                disabled={loading}
+              >
+                <option value="">All RM Codes</option>
+                {availableRmCodes.map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">Vendor</label>
+              <select
+                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                value={filters.vendor ?? ""}
+                onChange={(e) => updateFilter({ vendor: e.target.value })}
+                disabled={loading}
+              >
+                <option value="">All Vendors</option>
+                {availableVendors.map((vendor) => (
+                  <option key={vendor} value={vendor}>{vendor}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">Status</label>
+              <select
+                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                value={filters.status ?? ""}
+                onChange={(e) => updateFilter({ status: e.target.value })}
+                disabled={loading}
+              >
+                <option value="">All Statuses</option>
+                {availableStatuses.map((status) => (
+                  <option key={status} value={status}>{formatStatusLabel(status)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {hasFilters && (
+            <div className="mt-4">
+              <Button variant="outline" size="sm" onClick={clearFilters} disabled={loading}>
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ── Table Matrix ── */}
       <Card className="border shadow-xl bg-card overflow-hidden">
         <CardHeader className="border-b bg-muted/30">
@@ -360,16 +502,19 @@ export default function StockDashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+            <div
+              className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
+              style={{ scrollSnapType: "x proximity", scrollPaddingLeft: 190 }}
+            >
               <table className="w-full table-fixed text-base" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
                   <col style={{ width: 190 }} />
-                  {/* IN FACTORY + spacer */}
-                  <col style={{ width: 120 }} />
-                  <col style={{ width: 2 }} />
-                  {/* OUTSIDE + spacer */}
-                  <col style={{ width: 120 }} />
-                  <col style={{ width: 2 }} />
+                  {showFactoryCols && <>
+                    <col style={{ width: 120 }} />
+                    <col style={{ width: 2 }} />
+                    <col style={{ width: 120 }} />
+                    <col style={{ width: 2 }} />
+                  </>}
                   {/* status group cols + inter-group spacers */}
                   {statusGroups.map((group, gi) => (
                     <Fragment key={group.status}>
@@ -389,38 +534,41 @@ export default function StockDashboardPage() {
                     <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-foreground/30 text-base" rowSpan={2}>
                       RM CODE
                     </th>
-                    <th
-                      onClick={() => navigate("/stock-dashboard/IN_FACTORY")}
-                      onMouseEnter={() => setHoveredCol("IN_FACTORY")}
-                      onMouseLeave={() => setHoveredCol(null)}
-                      className={cn(
-                        "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
-                        hoveredCol === "IN_FACTORY" ? "bg-green-50/60 dark:bg-green-900/20" : "bg-muted/20"
-                      )}
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-green-600 text-base uppercase tracking-wider font-semibold">In Factory</span>
-                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
-                      </div>
-                    </th>
-                    {/* spacer */}
-                    <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
-                    <th
-                      onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")}
-                      onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
-                      onMouseLeave={() => setHoveredCol(null)}
-                      className={cn(
-                        "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
-                        hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-50/60 dark:bg-amber-900/20" : "bg-muted/20"
-                      )}
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-amber-600 text-base uppercase tracking-wider font-semibold">Outside</span>
-                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
-                      </div>
-                    </th>
-                    {/* spacer */}
-                    <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                    {showFactoryCols && <>
+                      <th
+                        onClick={() => navigate("/stock-dashboard/IN_FACTORY")}
+                        onMouseEnter={() => setHoveredCol("IN_FACTORY")}
+                        onMouseLeave={() => setHoveredCol(null)}
+                        className={cn(
+                          "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
+                          hoveredCol === "IN_FACTORY" ? "bg-green-50/60 dark:bg-green-900/20" : "bg-muted/20"
+                        )}
+                        style={{ scrollSnapAlign: "start" }}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-green-600 text-base uppercase tracking-wider font-semibold">In Factory</span>
+                          <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
+                        </div>
+                      </th>
+                      {/* spacer */}
+                      <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                      <th
+                        onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")}
+                        onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
+                        onMouseLeave={() => setHoveredCol(null)}
+                        className={cn(
+                          "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
+                          hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-50/60 dark:bg-amber-900/20" : "bg-muted/20"
+                        )}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-amber-600 text-base uppercase tracking-wider font-semibold">Outside</span>
+                          <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
+                        </div>
+                      </th>
+                      {/* spacer */}
+                      <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                    </>}
                     {/* status groups */}
                     {statusGroups.map((group, gi) => {
                       const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
@@ -437,6 +585,7 @@ export default function StockDashboardPage() {
                               palette.text,
                               hoveredCol === group.status && "ring-2 ring-inset ring-current/30 z-10 shadow-lg"
                             )}
+                            style={{ scrollSnapAlign: "start" }}
                           >
                             <div className="flex items-center justify-center gap-1">
                               <span className="truncate">{group.status.replace(/_/g, " ")}</span>
@@ -455,8 +604,10 @@ export default function StockDashboardPage() {
                   </tr>
                   {/* Row 2 — Vendor sub-headers */}
                   <tr className="border-b shadow-sm">
-                    <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
-                    <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
+                    {showFactoryCols && <>
+                      <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
+                      <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
+                    </>}
                     {statusGroups.map((group, gi) => {
                       const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
                       return group.vendors.map(({ key, vendor }) => (
@@ -482,10 +633,10 @@ export default function StockDashboardPage() {
                 <tbody>
                   {displayItems.map((item) => {
                     const tankVal = tankQtyMap.get(item.item_code) ?? 0;
-                    const grandTotal = convertFromLiters(tankVal, unit) + convertUnit(
-                      item.outside_factory + colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0),
-                      unit
-                    );
+                    const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
+                    const grandTotal = showFactoryCols
+                      ? convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + statusKg, unit)
+                      : convertUnit(statusKg, unit);
                     return (
                       <tr
                         key={item.item_code}
@@ -503,28 +654,24 @@ export default function StockDashboardPage() {
                         )}>
                           {item.item_code}
                         </td>
-                        {/* IN FACTORY */}
-                        <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border border-foreground/30",
-                          "bg-white"
-                        )}>
-                          {tankVal > 0
-                            ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
-                            : <span className="opacity-20">·</span>}
-                        </td>
-                        {/* spacer */}
-                        <td className="p-0 bg-white dark:bg-white border-x-0" />
-                        {/* OUTSIDE */}
-                        <td className={cn(
-                          "px-2 py-3 text-center tabular-nums transition-all border border-foreground/30",
-                          "bg-white"
-                        )}>
-                          {item.outside_factory > 0
-                            ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
-                            : <span className="opacity-20">·</span>}
-                        </td>
-                        {/* spacer */}
-                        <td className="p-0 bg-white dark:bg-white border-x-0" />
+                        {showFactoryCols && <>
+                          {/* IN FACTORY */}
+                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-white">
+                            {tankVal > 0
+                              ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
+                              : <span className="opacity-20">·</span>}
+                          </td>
+                          {/* spacer */}
+                          <td className="p-0 bg-white dark:bg-white border-x-0" />
+                          {/* OUTSIDE */}
+                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-white">
+                            {item.outside_factory > 0
+                              ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
+                              : <span className="opacity-20">·</span>}
+                          </td>
+                          {/* spacer */}
+                          <td className="p-0 bg-white dark:bg-white border-x-0" />
+                        </>}
                         {/* status groups */}
                         {statusGroups.map((group, gi) => (
                           <Fragment key={group.status}>
@@ -564,14 +711,16 @@ export default function StockDashboardPage() {
                   {/* Grand Total Row */}
                   <tr className="bg-muted/50 text-base border-t-2 border-border font-semibold">
                     <td className="sticky left-0 z-30 bg-muted/60 px-4 py-4 text-center border border-foreground/30 uppercase tracking-wider">Grand Total</td>
-                    <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
-                      {fmtLiters(tankInFactoryTotal, unit)}
-                    </td>
-                    <td className="p-0 bg-white dark:bg-white border-x-0" />
-                    <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
-                      {fmtNum(data?.totals.outside_factory ?? 0, unit)}
-                    </td>
-                    <td className="p-0 bg-white dark:bg-white border-x-0" />
+                    {showFactoryCols && <>
+                      <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
+                        {fmtLiters(tankInFactoryTotal, unit)}
+                      </td>
+                      <td className="p-0 bg-white dark:bg-white border-x-0" />
+                      <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
+                        {fmtNum(data?.totals.outside_factory ?? 0, unit)}
+                      </td>
+                      <td className="p-0 bg-white dark:bg-white border-x-0" />
+                    </>}
                     {statusGroups.map((group, gi) => (
                       <Fragment key={group.status}>
                         <td
@@ -594,12 +743,14 @@ export default function StockDashboardPage() {
                     ))}
                     <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground font-bold border border-foreground/30">
                       {Math.round(
-                        convertFromLiters(tankInFactoryTotal, unit) +
-                        convertUnit(
-                          (data?.totals.outside_factory ?? 0) +
-                          colKeys.reduce((sum, k) => sum + (data?.totals.status_vendor_totals[k] ?? 0), 0),
-                          unit
-                        )
+                        showFactoryCols
+                          ? convertFromLiters(tankInFactoryTotal, unit) +
+                            convertUnit(
+                              (data?.totals.outside_factory ?? 0) +
+                              colKeys.reduce((sum, k) => sum + (data?.totals.status_vendor_totals[k] ?? 0), 0),
+                              unit
+                            )
+                          : convertUnit(data?.totals.grand_total ?? 0, unit)
                       ).toLocaleString("en-IN")}
                     </td>
                   </tr>
