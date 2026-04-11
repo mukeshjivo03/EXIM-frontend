@@ -26,8 +26,9 @@ import {
   type TankSummary,
   type ItemWiseAverage,
 } from "@/api/tank";
+import { createOpeningStock } from "@/api/stockStatus";
 
-import { getErrorMessage } from "@/lib/errors";
+import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,10 +37,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 /* ── helpers ─────────────────────────────────────────────── */
 
@@ -247,6 +250,8 @@ export default function TankMonitoringPage() {
   const [itemSummaryLoading, setItemSummaryLoading] = useState(true);
   const [itemAverages, setItemAverages] = useState<Map<string, ItemWiseAverage>>(new Map());
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
+  const [openingRates, setOpeningRates] = useState<Record<string, string>>({});
+  const [openingSubmitMap, setOpeningSubmitMap] = useState<Record<string, boolean>>({});
 
   // Persist unit
   const [unit, setUnit] = useState<Unit>(() => {
@@ -315,6 +320,46 @@ export default function TankMonitoringPage() {
     await Promise.all([fetchTanks(), fetchTankSummary(), fetchItemSummary()]);
     setTimeout(() => setSplashing(false), 2000);
   }, []);
+
+  const submitOpeningStock = useCallback(async (item: ItemWiseTankSummaryItem) => {
+    const itemCode = item.tank_item_code;
+    const existingAvg = itemAverages.get(itemCode);
+    const hasAvgRate = existingAvg?.["average_rate(IN_TANK)"] != null;
+    const hasAdjustedAvgRate = existingAvg?.["adjusted_average(STO)"] != null;
+    const canAddOpeningStock = !hasAvgRate && !hasAdjustedAvgRate;
+
+    if (!canAddOpeningStock) {
+      toast.error(`Opening stock is only allowed when both average rates are unavailable for ${itemCode}.`);
+      return;
+    }
+
+    const enteredRate = (openingRates[itemCode] ?? "").trim();
+    if (!enteredRate) {
+      toast.error(`Enter opening stock rate for ${itemCode}.`);
+      return;
+    }
+
+    const numericRate = Number(enteredRate);
+    if (!Number.isFinite(numericRate) || numericRate <= 0) {
+      toast.error("Rate must be a valid number greater than 0.");
+      return;
+    }
+
+    setOpeningSubmitMap((prev) => ({ ...prev, [itemCode]: true }));
+    try {
+      await createOpeningStock({
+        item_code: itemCode,
+        rate: numericRate.toFixed(2),
+        quantity: Number(item.quantity_in_liters ?? 0).toFixed(2),
+      });
+      toast.success(`Opening stock saved for ${itemCode}.`);
+      await fetchItemSummary();
+    } catch (err) {
+      toastApiError(err, "Failed to save opening stock.");
+    } finally {
+      setOpeningSubmitMap((prev) => ({ ...prev, [itemCode]: false }));
+    }
+  }, [openingRates, fetchItemSummary, itemAverages]);
 
   useEffect(() => {
     fetchTanks();
@@ -729,6 +774,7 @@ export default function TankMonitoringPage() {
                       <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
+                      <TableHead>Opening Stock</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -742,6 +788,7 @@ export default function TankMonitoringPage() {
                         <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-9 w-44" /></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -765,12 +812,16 @@ export default function TankMonitoringPage() {
                       <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
+                      <TableHead>Opening Stock</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itemSummary.map((item) => {
                       const fillPct = maxItemQty > 0 ? (item.quantity_in_liters / maxItemQty) * 100 : 0;
                       const avg = itemAverages.get(item.tank_item_code);
+                      const hasAvgRate = avg?.["average_rate(IN_TANK)"] != null;
+                      const hasAdjustedAvgRate = avg?.["adjusted_average(STO)"] != null;
+                      const canAddOpeningStock = !hasAvgRate && !hasAdjustedAvgRate;
                       return (
                         <TableRow key={item.tank_item_code}>
                           <TableCell>
@@ -812,6 +863,43 @@ export default function TankMonitoringPage() {
                                 </Badge>
                               ))}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {canAddOpeningStock ? (
+                              <div className="flex items-center gap-2 min-w-[220px]">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Rate"
+                                  value={openingRates[item.tank_item_code] ?? ""}
+                                  onChange={(e) => {
+                                    const nextRate = e.target.value;
+                                    setOpeningRates((prev) => ({
+                                      ...prev,
+                                      [item.tank_item_code]: nextRate,
+                                    }));
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      void submitOpeningStock(item);
+                                    }
+                                  }}
+                                  className="h-8 w-28"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => void submitOpeningStock(item)}
+                                  disabled={openingSubmitMap[item.tank_item_code]}
+                                  className="h-8"
+                                >
+                                  {openingSubmitMap[item.tank_item_code] ? "Saving..." : "Save"}
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Already has avg rate</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

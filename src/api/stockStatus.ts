@@ -221,3 +221,13 @@ export async function softDeleteStockStatus(record: StockStatus): Promise<StockS
   });
   return res.data;
 }
+
+export interface OpeningStockPayload {
+  item_code: string;
+  rate: string;
+  quantity: string;
+}
+
+export async function createOpeningStock(data: OpeningStockPayload): Promise<void> {
+  await api.post("/stock-status/opening-stock/", data);
+}
