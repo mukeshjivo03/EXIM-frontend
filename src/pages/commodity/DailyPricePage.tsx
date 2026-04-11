@@ -130,6 +130,7 @@ export default function DailyPricePage() {
 
   // Classic = original Excel-style view; default = aesthetic
   const [classicMode, setClassicMode] = useState(false);
+  const [savedClassicMode, setSavedClassicMode] = useState(false);
 
   // Previous day prices for delta calculation
   const [prevDayPrices, setPrevDayPrices] = useState<DbDailyPrice[]>([]);
@@ -516,65 +517,137 @@ export default function DailyPricePage() {
                   </SelectContent>
                 </Select>
               )}
+              <button
+                onClick={() => setSavedClassicMode((v) => !v)}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5",
+                  savedClassicMode
+                    ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-400"
+                    : "border-border hover:bg-muted text-muted-foreground"
+                )}
+                title={savedClassicMode ? "Switch to aesthetic view" : "Switch to classic view"}
+              >
+                <BarChart3 className="h-3 w-3" />
+                Classic
+              </button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 text-center border border-black">S.No</TableHead>
-                  <TableHead className="text-center border border-black">Date</TableHead>
-                  <TableHead className="text-center border border-black">Commodity</TableHead>
-                  <TableHead className="text-center border border-black">Factory (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With Packing (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With GST (₹/Kg)</TableHead>
-                  <TableHead className="text-center border border-black">With GST (₹/Ltr)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rangeLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((__, j) => (
-                        <TableCell key={j}><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : filteredRangeData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <PackageOpen className="h-10 w-10 stroke-1" />
-                        <p className="text-sm font-medium">No saved prices</p>
-                        <p className="text-xs">Enter a date range and click Load to view saved prices.</p>
-                      </div>
-                    </TableCell>
+            {savedClassicMode ? (
+              /* ── Classic Excel-style view ── */
+              <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
+                <TableHeader>
+                  <TableRow className="bg-[#ff9900] hover:bg-[#ff9900]">
+                    <TableHead className="w-12 text-center border border-black text-black font-bold">S.No</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">Date</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">Commodity</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">Factory (₹/Kg)</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">With Packing (₹/Kg)</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">With GST (₹/Kg)</TableHead>
+                    <TableHead className="text-center border border-black text-black font-bold">With GST (₹/Ltr)</TableHead>
                   </TableRow>
-                ) : (
-                  filteredRangeData.map((item, idx) => {
-                    const factoryVal = Number(item.factory_price);
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-center border border-black">{idx + 1}</TableCell>
-                        <TableCell className="tabular-nums text-center border border-black text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
-                        <TableCell className="font-medium text-center border border-black">{item.commodity_name}</TableCell>
-                        <TableCell
-                          className="text-center border border-black"
-                          style={{ backgroundColor: heatmapBg(factoryVal, rangeRange.min, rangeRange.max) }}
-                        >
-                          <span className="font-semibold">{fmtPrice(item.factory_price)}</span>
-                        </TableCell>
-                        <TableCell className="text-center border border-black">{fmtPrice(item.packing_cost_kg)}</TableCell>
-                        <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_kg)}</TableCell>
-                        <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {rangeLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((__, j) => (
+                          <TableCell key={j}><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                        ))}
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                    ))
+                  ) : filteredRangeData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <PackageOpen className="h-10 w-10 stroke-1" />
+                          <p className="text-sm font-medium">No saved prices</p>
+                          <p className="text-xs">Enter a date range and click Load to view saved prices.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRangeData.map((item, idx) => {
+                      const factoryVal = Number(item.factory_price);
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium text-center border border-black">{idx + 1}</TableCell>
+                          <TableCell className="tabular-nums text-center border border-black text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
+                          <TableCell className="font-medium text-center border border-black">{item.commodity_name}</TableCell>
+                          <TableCell
+                            className="text-center border border-black"
+                            style={{ backgroundColor: heatmapBg(factoryVal, rangeRange.min, rangeRange.max) }}
+                          >
+                            <span className="font-semibold">{fmtPrice(item.factory_price)}</span>
+                          </TableCell>
+                          <TableCell className="text-center border border-black">{fmtPrice(item.packing_cost_kg)}</TableCell>
+                          <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_kg)}</TableCell>
+                          <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            ) : (
+              /* ── Aesthetic view ── */
+              <Table className="text-base">
+                <TableHeader>
+                  <TableRow className="bg-muted/60 hover:bg-muted/60">
+                    <TableHead className="w-12 text-center font-bold text-foreground">#</TableHead>
+                    <TableHead className="font-bold text-foreground">Date</TableHead>
+                    <TableHead className="font-bold text-foreground">Commodity</TableHead>
+                    <TableHead className="text-right font-bold text-foreground">Factory (₹/Kg)</TableHead>
+                    <TableHead className="text-right font-bold text-foreground">With Packing</TableHead>
+                    <TableHead className="text-right font-bold text-foreground">With GST /Kg</TableHead>
+                    <TableHead className="text-right font-bold text-foreground">With GST /Ltr</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rangeLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((__, j) => (
+                          <TableCell key={j}><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : filteredRangeData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <PackageOpen className="h-10 w-10 stroke-1" />
+                          <p className="text-sm font-medium">No saved prices</p>
+                          <p className="text-xs">Enter a date range and click Load to view saved prices.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRangeData.map((item, idx) => {
+                      const factoryVal = Number(item.factory_price);
+                      return (
+                        <TableRow key={item.id} className="hover:bg-muted/30 transition-colors border-b border-border/50">
+                          <TableCell className="text-center text-muted-foreground text-sm">{idx + 1}</TableCell>
+                          <TableCell className="tabular-nums text-muted-foreground">{format(parseISO(item.date), "d MMMM yyyy")}</TableCell>
+                          <TableCell className="font-semibold">{item.commodity_name}</TableCell>
+                          <TableCell
+                            className="text-right tabular-nums"
+                            style={{ backgroundColor: heatmapBg(factoryVal, rangeRange.min, rangeRange.max) }}
+                          >
+                            <span className="font-bold">{fmtPrice(item.factory_price)}</span>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.packing_cost_kg)}</TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.with_gst_kg)}</TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
