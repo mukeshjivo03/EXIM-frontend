@@ -59,6 +59,7 @@ export default function OpenGrpoPage() {
   const [warehouse, setWarehouse] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("Pending Days");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [blinkEnabled, setBlinkEnabled] = useState(false);
 
   useEffect(() => { if (!fetched) handleFetch(); }, []);
 
@@ -137,10 +138,19 @@ export default function OpenGrpoPage() {
           <h1 className="text-xl sm:text-2xl font-bold">Open GRPOs</h1>
           <p className="text-sm text-muted-foreground">Goods Receipt Purchase Orders pending invoice</p>
         </div>
-        <Button className="btn-press" onClick={handleFetch} disabled={loading}>
-          <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-          {loading ? "Loading..." : "Refresh"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={blinkEnabled ? "default" : "outline"}
+            className="btn-press"
+            onClick={() => setBlinkEnabled((prev) => !prev)}
+          >
+            {blinkEnabled ? "Hide Overdue Highlight" : "Highlight Overdue Outstanding"}
+          </Button>
+          <Button className="btn-press" onClick={handleFetch} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            {loading ? "Loading..." : "Refresh"}
+          </Button>
+        </div>
       </div>
 
       {/* Critical warning banner */}
@@ -259,7 +269,10 @@ export default function OpenGrpoPage() {
                   filtered.map((g, idx) => {
                     const meta = pendingMeta(g["Pending Days"]);
                     return (
-                      <TableRow key={g["GRPO Number"]} className={cn("transition-colors", meta.row, g["Pending Days"] > 6 && "row-blink")}>
+                      <TableRow
+                        key={g["GRPO Number"]}
+                        className={cn("transition-colors", meta.row, g["Pending Days"] > 6 && blinkEnabled && "row-blink")}
+                      >
                         <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
                         <TableCell>{g["GRPO Number"]}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{g["Vendor Ref No"]}</TableCell>

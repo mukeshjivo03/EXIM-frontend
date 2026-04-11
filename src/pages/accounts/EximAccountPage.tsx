@@ -81,6 +81,7 @@ export default function EximAccountPage() {
   // Sort
   const [sortKey, setSortKey] = useState<SortKey>("Balance");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [blinkEnabled, setBlinkEnabled] = useState(false);
 
   useEffect(() => { if (!hasSynced) handleSync(); }, []);
 
@@ -302,6 +303,15 @@ export default function EximAccountPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {synced && entries.length > 0 && (
+            <Button
+              variant={blinkEnabled ? "default" : "outline"}
+              className="btn-press"
+              onClick={() => setBlinkEnabled((prev) => !prev)}
+            >
+              {blinkEnabled ? "Hide Overdue Highlight" : "Highlight Overdue Outstanding"}
+            </Button>
+          )}
           <Button
             className="btn-press"
             onClick={handleSync}
@@ -588,7 +598,7 @@ export default function EximAccountPage() {
                         key={entry.CardCode}
                         className={cn(
                           isTop5 && "bg-amber-50/50 dark:bg-amber-900/10",
-                          isOld && "row-blink"
+                          isOld && blinkEnabled && "row-blink"
                         )}
                       >
                         <TableCell className="font-medium">
@@ -743,7 +753,7 @@ export default function EximAccountPage() {
                         return (
                           <TableRow
                             key={entry.CardCode}
-                            className={cn(isOld && "row-blink")}
+                            className={cn(isOld && blinkEnabled && "row-blink")}
                           >
                             <TableCell className="font-medium">{idx + 1}</TableCell>
                             <TableCell>
