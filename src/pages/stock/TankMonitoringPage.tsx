@@ -29,6 +29,7 @@ import {
 import { createOpeningStock } from "@/api/stockStatus";
 
 import { getErrorMessage, toastApiError } from "@/lib/errors";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -242,6 +243,9 @@ function WaveSvg({ color, className }: { color: string; className?: string }) {
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function TankMonitoringPage() {
+  const { hasPermission } = useHasPermission();
+  const canAddOpeningRate = hasPermission("opening_rate", "add");
+
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankItems, setTankItems] = useState<TankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -322,6 +326,11 @@ export default function TankMonitoringPage() {
   }, []);
 
   const submitOpeningStock = useCallback(async (item: ItemWiseTankSummaryItem) => {
+    if (!canAddOpeningRate) {
+      toast.error("You don't have permission to add opening rate.");
+      return;
+    }
+
     const itemCode = item.tank_item_code;
     const existingAvg = itemAverages.get(itemCode);
     const hasAvgRate = existingAvg?.["average_rate(IN_TANK)"] != null;
@@ -865,7 +874,7 @@ export default function TankMonitoringPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {canAddOpeningStock ? (
+                            {canAddOpeningRate && canAddOpeningStock ? (
                               <div className="flex items-center gap-2 min-w-[220px]">
                                 <Input
                                   type="number"
@@ -898,7 +907,9 @@ export default function TankMonitoringPage() {
                                 </Button>
                               </div>
                             ) : (
-                              <span className="text-xs text-muted-foreground">Already has avg rate</span>
+                              <span className="text-xs text-muted-foreground">
+                                {!canAddOpeningRate ? "—" : "Already has avg rate"}
+                              </span>
                             )}
                           </TableCell>
                         </TableRow>
