@@ -119,6 +119,7 @@ export default function StockStatusPage() {
   const uniqueStatuses = useMemo(() => [...new Set(allRows.map((r) => r.status))].sort(), [allRows]);
   const uniqueVendors = useMemo(() => [...new Set(allRows.map((r) => r.vendor_code))].sort(), [allRows]);
   const uniqueItems = useMemo(() => [...new Set(allRows.map((r) => r.item_code))].sort(), [allRows]);
+  const itemNameMap = useMemo(() => new Map(tankItems.map((t) => [t.tank_item_code, t.tank_item_name])), [tankItems]);
 
   // pagination
   const [page, setPage] = useState(1);
@@ -608,7 +609,7 @@ export default function StockStatusPage() {
                   <TableRow>
                     {canBulk && <TableHead className="w-10"></TableHead>}
                     <TableHead className="w-12">S.No</TableHead>
-                    <TableHead>RM Code</TableHead>
+                    <TableHead>RM Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
@@ -643,7 +644,7 @@ export default function StockStatusPage() {
                       />
                     </TableHead>}
                     <TableHead className="w-12">S.No</TableHead>
-                    <TableHead>RM Code</TableHead>
+                    <TableHead>RM Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
@@ -680,7 +681,7 @@ export default function StockStatusPage() {
                           <TableCell className="text-muted-foreground">
                             {(page - 1) * perPage + idx + 1}
                           </TableCell>
-                          <TableCell className="font-bold">{row.item_code}</TableCell>
+                          <TableCell>{itemNameMap.get(row.item_code) ?? row.item_code}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
                               {formatStatus(row.status).toLowerCase()}

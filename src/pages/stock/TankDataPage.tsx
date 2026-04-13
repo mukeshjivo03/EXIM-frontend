@@ -585,6 +585,7 @@ export default function TankDataPage() {
                     <TableRow>
                       <TableHead>Tank Number</TableHead>
                       <TableHead>Item Code</TableHead>
+                      <TableHead>Item Name</TableHead>
                       <TableHead>Tank Capacity (L)</TableHead>
                       <TableHead>Current Quantity (L)</TableHead>
                       <TableHead>Fill %</TableHead>
@@ -596,6 +597,7 @@ export default function TankDataPage() {
                       <TableRow key={i}>
                         <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
@@ -629,6 +631,7 @@ export default function TankDataPage() {
                   <TableRow>
                     <TableHead>Tank Number</TableHead>
                     <TableHead>Item Code</TableHead>
+                    <TableHead>Item Name</TableHead>
                     <TableHead>Tank Capacity (L)</TableHead>
                     <TableHead>Current Quantity (L)</TableHead>
                     <TableHead>Fill %</TableHead>
@@ -638,7 +641,7 @@ export default function TankDataPage() {
                 <TableBody>
                   {paginatedTanks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-16">
+                      <TableCell colSpan={7} className="py-16">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <Container className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
@@ -688,6 +691,11 @@ export default function TankDataPage() {
                               )}
                               {tank.item_code ?? "—"}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {tank.item_code
+                              ? tankItems.find((ti) => ti.tank_item_code === tank.item_code)?.tank_item_name ?? "—"
+                              : "—"}
                           </TableCell>
                           <TableCell>
                             {Number(tank.tank_capacity).toLocaleString(

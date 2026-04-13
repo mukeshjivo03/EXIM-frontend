@@ -619,7 +619,7 @@ export default function TankMonitoringPage() {
                           {tank.item_code ? (
                             <span className="flex items-center gap-1.5">
                               <span className="inline-block h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: fillHex }} />
-                              {tank.item_code}
+                              {nameMap.get(tank.item_code) ?? tank.item_code}
                             </span>
                           ) : (
                             <span className="italic">No Item Assigned</span>
@@ -742,7 +742,7 @@ export default function TankMonitoringPage() {
                             {tank.item_code ? (
                               <span className="flex items-center gap-1">
                                 <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: fillHex }} />
-                                {tank.item_code}
+                                {nameMap.get(tank.item_code) ?? tank.item_code}
                               </span>
                             ) : <span className="italic">Unassigned</span>}
                           </p>
@@ -777,6 +777,7 @@ export default function TankMonitoringPage() {
                     <TableRow>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
+                      <TableHead>Item Name</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
                       <TableHead>Avg Price</TableHead>
@@ -791,6 +792,7 @@ export default function TankMonitoringPage() {
                       <TableRow key={i}>
                         <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -815,6 +817,7 @@ export default function TankMonitoringPage() {
                     <TableRow>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
+                      <TableHead>Item Name</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
                       <TableHead>Avg Price</TableHead>
@@ -841,6 +844,7 @@ export default function TankMonitoringPage() {
                             />
                           </TableCell>
                           <TableCell className="font-medium">{item.tank_item_code}</TableCell>
+                          <TableCell>{nameMap.get(item.tank_item_code) ?? "—"}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <span className="font-medium">{conv(item.quantity_in_liters, unit)}</span>

@@ -668,7 +668,7 @@ export default function DomesticContracts2627Page() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {["PO Number", "PO Date", "Product", "Vendor", "Qty (MTS)", "Rate (₹)", "Status", "Actions"].map((h) => (
+                    {["PO/GRPO Number", "PO Date", "Product", "Vendor", "Qty/Unload Qty", "Rate (₹)", "Status", "Actions"].map((h) => (
                       <TableHead key={h}>{h}</TableHead>
                     ))}
                   </TableRow>
@@ -689,11 +689,11 @@ export default function DomesticContracts2627Page() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>PO Number</TableHead>
+                    <TableHead>PO/GRPO Number</TableHead>
                     <TableHead>PO Date</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Vendor</TableHead>
-                    <TableHead>Qty (MTS)</TableHead>
+                    <TableHead>Qty/Unload Qty</TableHead>
                     <TableHead>Rate (₹)</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -713,13 +713,19 @@ export default function DomesticContracts2627Page() {
                   ) : (
                     paginated.map((row) => (
                       <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.po_number}</TableCell>
+                        <TableCell className="font-medium">
+                          {row.status === "RECIEVED" && row.grpo_number ? row.grpo_number : row.po_number}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(row.po_date)}</TableCell>
                         <TableCell className="max-w-[150px] truncate" title={row.product_name || row.product_code}>
                           {row.product_name || row.product_code}
                         </TableCell>
                         <TableCell>{row.vendor_code}</TableCell>
-                        <TableCell>{fmtDecimal(row.contract_qty)}</TableCell>
+                        <TableCell>
+                          {row.status === "RECIEVED" && row.unload_qty
+                            ? fmtDecimal(row.unload_qty)
+                            : fmtDecimal(row.contract_qty)}
+                        </TableCell>
                         <TableCell>₹{Number(row.contract_rate).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{row.status}</Badge>

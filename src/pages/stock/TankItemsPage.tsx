@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Droplets,
@@ -140,10 +140,6 @@ export default function TankItemsPage() {
   const [editName, setEditName] = useState("");
   const [editing, setEditing] = useState(false);
 
-  // Inline editing (for table view)
-  const [inlineEditId, setInlineEditId] = useState<number | null>(null);
-  const [inlineEditName, setInlineEditName] = useState("");
-  const inlineInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -185,14 +181,6 @@ export default function TankItemsPage() {
     setPage(1);
     setSelectedIds(new Set());
   }, [search]);
-
-  // Focus inline edit input
-  useEffect(() => {
-    if (inlineEditId !== null) {
-      inlineInputRef.current?.focus();
-      inlineInputRef.current?.select();
-    }
-  }, [inlineEditId]);
 
   function handleDeleteColor(hex: string) {
     const usedByItem = items.some(
@@ -321,32 +309,6 @@ export default function TankItemsPage() {
     } finally {
       setEditing(false);
     }
-  }
-
-  // Inline edit name (table view)
-  function startInlineEdit(item: TankItem) {
-    setInlineEditId(item.id);
-    setInlineEditName(item.tank_item_name);
-  }
-
-  async function saveInlineName(item: TankItem) {
-    const newName = inlineEditName.trim();
-    if (!newName || newName === item.tank_item_name) {
-      setInlineEditId(null);
-      return;
-    }
-    try {
-      await updateTankItem(
-        item.tank_item_code,
-        findPaletteColor(item.color, customColors) || item.color,
-        newName
-      );
-      toast.success(`Renamed to "${newName}".`);
-      await fetchItems();
-    } catch (err) {
-      toastApiError(err, "Failed to rename tank item.");
-    }
-    setInlineEditId(null);
   }
 
   // Inline color change (table view)
@@ -698,38 +660,7 @@ export default function TankItemsPage() {
                           {item.tank_item_code}
                         </TableCell>
                         <TableCell>
-                          {canEdit && inlineEditId === item.id ? (
-                            <Input
-                              ref={inlineInputRef}
-                              value={inlineEditName}
-                              onChange={(e) =>
-                                setInlineEditName(e.target.value)
-                              }
-                              onBlur={() => saveInlineName(item)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveInlineName(item);
-                                if (e.key === "Escape")
-                                  setInlineEditId(null);
-                              }}
-                              className="h-8 w-full max-w-[220px]"
-                            />
-                          ) : (
-                            <span
-                              className={
-                                canEdit
-                                  ? "cursor-pointer hover:underline decoration-dashed underline-offset-4"
-                                  : ""
-                              }
-                              onClick={() =>
-                                canEdit && startInlineEdit(item)
-                              }
-                              title={
-                                canEdit ? "Click to edit name" : undefined
-                              }
-                            >
-                              {item.tank_item_name}
-                            </span>
-                          )}
+                          {item.tank_item_name}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {item.created_by || "—"}

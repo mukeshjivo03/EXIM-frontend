@@ -421,7 +421,7 @@ export default function DailyPricePage() {
                           </TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.packing_kg)}</TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.gst_kg)}</TableCell>
-                          <TableCell className="text-center border border-black">{fmtPrice(item.gst_ltr, 4)}</TableCell>
+                          <TableCell className="text-center border border-black">{fmtPrice(item.gst_ltr, 2)}</TableCell>
                         </TableRow>
                       );
                     })
@@ -473,7 +473,7 @@ export default function DailyPricePage() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.packing_kg)}</TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.gst_kg)}</TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.gst_ltr, 4)}</TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.gst_ltr, 2)}</TableCell>
                         </TableRow>
                       );
                     })
@@ -584,7 +584,7 @@ export default function DailyPricePage() {
                           </TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.packing_cost_kg)}</TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_kg)}</TableCell>
-                          <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                          <TableCell className="text-center border border-black">{fmtPrice(item.with_gst_ltr, 2)}</TableCell>
                         </TableRow>
                       );
                     })
@@ -640,7 +640,7 @@ export default function DailyPricePage() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.packing_cost_kg)}</TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.with_gst_kg)}</TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.with_gst_ltr, 4)}</TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.with_gst_ltr, 2)}</TableCell>
                         </TableRow>
                       );
                     })
