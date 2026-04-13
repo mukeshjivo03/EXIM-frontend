@@ -551,7 +551,7 @@ export default function StockDashboardPage() {
                         </div>
                       </th>
                       {/* spacer */}
-                      <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                      <th className="p-0 bg-background border-x-0" rowSpan={2} />
                       <th
                         onClick={() => navigate("/stock-dashboard/OUT_SIDE_FACTORY")}
                         onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
@@ -567,7 +567,7 @@ export default function StockDashboardPage() {
                         </div>
                       </th>
                       {/* spacer */}
-                      <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                      <th className="p-0 bg-background border-x-0" rowSpan={2} />
                     </>}
                     {/* status groups */}
                     {statusGroups.map((group, gi) => {
@@ -593,7 +593,7 @@ export default function StockDashboardPage() {
                             </div>
                           </th>
                           {gi < statusGroups.length - 1 && (
-                            <th className="p-0 bg-white dark:bg-white border-x-0" rowSpan={2} />
+                            <th className="p-0 bg-background border-x-0" rowSpan={2} />
                           )}
                         </Fragment>
                       );
@@ -656,21 +656,21 @@ export default function StockDashboardPage() {
                         </td>
                         {showFactoryCols && <>
                           {/* IN FACTORY */}
-                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-white">
+                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {tankVal > 0
                               ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
                               : <span className="opacity-20">·</span>}
                           </td>
                           {/* spacer */}
-                          <td className="p-0 bg-white dark:bg-white border-x-0" />
+                          <td className="p-0 bg-background border-x-0" />
                           {/* OUTSIDE */}
-                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-white">
+                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {item.outside_factory > 0
                               ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
                               : <span className="opacity-20">·</span>}
                           </td>
                           {/* spacer */}
-                          <td className="p-0 bg-white dark:bg-white border-x-0" />
+                          <td className="p-0 bg-background border-x-0" />
                         </>}
                         {/* status groups */}
                         {statusGroups.map((group, gi) => (
@@ -697,7 +697,7 @@ export default function StockDashboardPage() {
                               );
                             })}
                             {gi < statusGroups.length - 1 && (
-                              <td className="p-0 bg-white dark:bg-white border-x-0" />
+                              <td className="p-0 bg-background border-x-0" />
                             )}
                           </Fragment>
                         ))}
@@ -715,11 +715,11 @@ export default function StockDashboardPage() {
                       <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
                         {fmtLiters(tankInFactoryTotal, unit)}
                       </td>
-                      <td className="p-0 bg-white dark:bg-white border-x-0" />
+                      <td className="p-0 bg-background border-x-0" />
                       <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
                         {fmtNum(data?.totals.outside_factory ?? 0, unit)}
                       </td>
-                      <td className="p-0 bg-white dark:bg-white border-x-0" />
+                      <td className="p-0 bg-background border-x-0" />
                     </>}
                     {statusGroups.map((group, gi) => (
                       <Fragment key={group.status}>
@@ -737,7 +737,7 @@ export default function StockDashboardPage() {
                           )}
                         </td>
                         {gi < statusGroups.length - 1 && (
-                          <td className="p-0 bg-white dark:bg-white border-x-0" />
+                          <td className="p-0 bg-background border-x-0" />
                         )}
                       </Fragment>
                     ))}

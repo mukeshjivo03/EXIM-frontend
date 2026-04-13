@@ -560,13 +560,13 @@
 .tank-glow {
   animation: tankPulseGlow 3s ease-in-out infinite;
 }
-/* Neon glow for dark mode */
-.dark .tank-glow {
-  animation: tankNeonGlow 3s ease-in-out infinite;
+/* In dark mode use same pulse but slightly higher opacity so glow is visible on dark bg */
+@keyframes tankPulseGlowDark {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.85; }
 }
-@keyframes tankNeonGlow {
-  0%, 100% { opacity: 0.5; filter: brightness(1.3); }
-  50%      { opacity: 0.85; filter: brightness(1.8); }
+.dark .tank-glow {
+  animation: tankPulseGlowDark 3s ease-in-out infinite;
 }
 /* Critical high tank — intense pulsing glow */
 .tank-glow-critical {
