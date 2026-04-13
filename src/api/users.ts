@@ -4,21 +4,18 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "ADM" | "FTR" | "MNG";
 }
 
 export interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  role: "ADM" | "FTR" | "MNG";
 }
 
 export interface UpdateUserRequest {
   name?: string;
   email?: string;
   password?: string;
-  role?: "ADM" | "FTR" | "MNG";
 }
 
 export async function getUsers(): Promise<User[]> {

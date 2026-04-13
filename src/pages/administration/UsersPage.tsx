@@ -21,7 +21,6 @@ import {
   type CreateUserRequest,
 } from "@/api/users";
 import { userCreateSchema, userEditSchema, getZodError } from "@/lib/schemas";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,33 +48,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 /* ── Constants ─────────────────────────────────────────────── */
-
-const ROLE_OPTIONS = [
-  { value: "ADM", label: "ADMIN" },
-  { value: "FTR", label: "FACTORY" },
-  { value: "MNG", label: "MANAGER" },
-] as const;
-
-const ROLE_LABELS: Record<string, string> = {
-  ADM: "ADMIN",
-  FTR: "FACTORY",
-  MNG: "MANAGER",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  ADM: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
-  MNG: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  FTR: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
-};
 
 const AVATAR_COLORS = [
   "bg-red-500", "bg-blue-500", "bg-green-500", "bg-purple-500",
@@ -88,14 +62,12 @@ type FormData = {
   name: string;
   email: string;
   password: string;
-  role: "ADM" | "FTR" | "MNG";
 };
 
-type SortKey = "name" | "email" | "role";
+type SortKey = "name" | "email";
 type SortDir = "asc" | "desc";
-type RoleFilter = "ALL" | "ADM" | "FTR" | "MNG";
 
-const emptyForm: FormData = { name: "", email: "", password: "", role: "FTR" };
+const emptyForm: FormData = { name: "", email: "", password: "" };
 
 /* ── Password strength ─────────────────────────────────────── */
 
@@ -122,9 +94,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Search & filter
+  // Search
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
 
   // Sort
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -166,17 +137,8 @@ export default function UsersPage() {
 
   /* ── Filtered & sorted ───────────────────────────────────── */
 
-  const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = { ADM: 0, MNG: 0, FTR: 0 };
-    for (const u of users) counts[u.role] = (counts[u.role] || 0) + 1;
-    return counts;
-  }, [users]);
-
   const filteredUsers = useMemo(() => {
     let result = [...users];
-
-    // Role filter
-    if (roleFilter !== "ALL") result = result.filter((u) => u.role === roleFilter);
 
     // Search
     if (search.trim()) {
@@ -184,8 +146,7 @@ export default function UsersPage() {
       result = result.filter(
         (u) =>
           u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          (ROLE_LABELS[u.role] ?? u.role).toLowerCase().includes(q)
+          u.email.toLowerCase().includes(q)
       );
     }
 
@@ -200,18 +161,15 @@ export default function UsersPage() {
           case "email":
             cmp = a.email.localeCompare(b.email);
             break;
-          case "role":
-            cmp = (ROLE_LABELS[a.role] ?? a.role).localeCompare(ROLE_LABELS[b.role] ?? b.role);
-            break;
         }
         return sortDir === "asc" ? cmp : -cmp;
       });
     }
 
     return result;
-  }, [users, search, roleFilter, sortKey, sortDir]);
+  }, [users, search, sortKey, sortDir]);
 
-  const hasFilters = search.trim() !== "" || roleFilter !== "ALL";
+  const hasFilters = search.trim() !== "";
 
   /* ── Sort handler ────────────────────────────────────────── */
 
@@ -252,7 +210,7 @@ export default function UsersPage() {
 
   function openEdit(user: User) {
     setEditingUser(user);
-    setForm({ name: user.name, email: user.email, password: "", role: user.role });
+    setForm({ name: user.name, email: user.email, password: "" });
     setFormError("");
     setDialogOpen(true);
   }
@@ -270,7 +228,6 @@ export default function UsersPage() {
         const payload: Partial<CreateUserRequest> = {
           name: form.name,
           email: form.email,
-          role: form.role,
         };
         if (form.password) payload.password = form.password;
         const updated = await updateUser(editingUser.id, payload);
@@ -335,7 +292,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Users</h1>
           <p className="text-sm text-muted-foreground">
-            Manage user accounts and roles
+            Manage user accounts
           </p>
         </div>
         <Button onClick={openCreate} className="btn-press gap-2">
@@ -371,44 +328,18 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* Role filter badges */}
-          <div className="flex items-center gap-2 pt-3 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setRoleFilter("ALL")}
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
-                roleFilter === "ALL"
-                  ? "bg-foreground text-background border-foreground"
-                  : "bg-muted text-muted-foreground border-border hover:bg-accent"
-              }`}
-            >
-              All ({users.length})
-            </button>
-            {ROLE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setRoleFilter(opt.value as RoleFilter)}
-                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
-                  roleFilter === opt.value
-                    ? ROLE_COLORS[opt.value]
-                    : "bg-muted text-muted-foreground border-border hover:bg-accent"
-                }`}
-              >
-                {opt.label} ({roleCounts[opt.value] || 0})
-              </button>
-            ))}
-            {hasFilters && (
+          {hasFilters && (
+            <div className="pt-3">
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
-                onClick={() => { setSearch(""); setRoleFilter("ALL"); }}
+                onClick={() => setSearch("")}
               >
                 Clear filters
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </CardHeader>
 
         <CardContent>
@@ -420,7 +351,6 @@ export default function UsersPage() {
                     <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -435,7 +365,6 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                     </TableRow>
                   ))}
@@ -458,18 +387,13 @@ export default function UsersPage() {
                         Email<SortIcon column="email" />
                       </button>
                     </TableHead>
-                    <TableHead>
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort("role")}>
-                        Role<SortIcon column="role" />
-                      </button>
-                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-16">
+                      <TableCell colSpan={4} className="py-16">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <UsersRound className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
@@ -477,7 +401,7 @@ export default function UsersPage() {
                           </p>
                           <p className="text-sm">
                             {hasFilters
-                              ? "Try adjusting your search or role filter."
+                              ? "Try adjusting your search."
                               : "Create your first user to get started."}
                           </p>
                           {!hasFilters && (
@@ -487,7 +411,7 @@ export default function UsersPage() {
                             </Button>
                           )}
                           {hasFilters && (
-                            <Button size="sm" variant="ghost" onClick={() => { setSearch(""); setRoleFilter("ALL"); }}>
+                            <Button size="sm" variant="ghost" onClick={() => setSearch("")}>
                               Clear filters
                             </Button>
                           )}
@@ -505,11 +429,6 @@ export default function UsersPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-xs ${ROLE_COLORS[user.role] ?? ""}`}>
-                            {ROLE_LABELS[user.role] ?? user.role}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
@@ -613,27 +532,6 @@ export default function UsersPage() {
                   </p>
                 </div>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select
-                value={form.role}
-                onValueChange={(val) =>
-                  setForm({ ...form, role: val as FormData["role"] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             {formError && (

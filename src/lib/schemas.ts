@@ -100,14 +100,12 @@ export const userCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: z.email("Enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
-  role: z.enum(["ADM", "FTR", "MNG"], { error: "Please select a role." }),
 });
 
 export const userEditSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: z.email("Enter a valid email address."),
   password: z.string().optional(),
-  role: z.enum(["ADM", "FTR", "MNG"], { error: "Please select a role." }),
 });
 
 // ── Login ──────────────────────────────────────────────────────
