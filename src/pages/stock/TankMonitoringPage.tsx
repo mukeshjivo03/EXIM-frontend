@@ -615,7 +615,7 @@ export default function TankMonitoringPage() {
                           </div>
                         )}
                         <h3 className="font-bold text-base tracking-wide">{tank.tank_code}</h3>
-                        <p className="text-xs text-muted-foreground font-medium">
+                        <p className="text-sm text-muted-foreground font-medium">
                           {tank.item_code ? (
                             <span className="flex items-center gap-1.5">
                               <span className="inline-block h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: fillHex }} />
@@ -738,7 +738,7 @@ export default function TankMonitoringPage() {
                             </div>
                           )}
                           <h3 className="font-bold text-sm tracking-wide">{tank.tank_code}</h3>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {tank.item_code ? (
                               <span className="flex items-center gap-1">
                                 <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: fillHex }} />
