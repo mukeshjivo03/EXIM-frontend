@@ -130,11 +130,9 @@ const EMPTY_FORM: DFIALicenseHeaderPayload = {
   file_no: "",
   issue_date: "",
   export_validity: "",
-  export_in_mts: "",
   fob_value_inr: "",
   fob_exchange_rate: "",
   import_validity: "",
-  import_in_mts: "",
   cif_value_inr: "",
   cif_exchange_rate: "",
   status: "OPEN",
@@ -300,11 +298,9 @@ export default function DFIALicensePage() {
       file_no: h.file_no,
       issue_date: h.issue_date,
       export_validity: h.export_validity,
-      export_in_mts: h.export_in_mts,
       fob_value_inr: h.fob_value_inr,
       fob_exchange_rate: h.fob_exchange_rate,
       import_validity: h.import_validity,
-      import_in_mts: h.import_in_mts,
       cif_value_inr: h.cif_value_inr,
       cif_exchange_rate: h.cif_exchange_rate,
       status: h.status,
@@ -684,14 +680,6 @@ export default function DFIALicensePage() {
               <DatePicker value={form.import_validity} onChange={(v) => setForm({ ...form, import_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="export_in_mts">Export (MTS)</Label>
-              <Input id="export_in_mts" type="number" step="0.001" value={form.export_in_mts} onChange={(e) => setForm({ ...form, export_in_mts: e.target.value })} placeholder="1500.500" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="import_in_mts">Import (MTS)</Label>
-              <Input id="import_in_mts" type="number" step="0.001" value={form.import_in_mts} onChange={(e) => setForm({ ...form, import_in_mts: e.target.value })} placeholder="1000.000" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="fob_value_inr">FOB Value (INR)</Label>
               <Input id="fob_value_inr" type="number" step="0.001" value={form.fob_value_inr} onChange={(e) => setForm({ ...form, fob_value_inr: e.target.value })} placeholder="1200000.000" />
             </div>
@@ -756,14 +744,6 @@ export default function DFIALicensePage() {
             <div className="space-y-2">
               <Label>Import Validity</Label>
               <DatePicker value={editForm.import_validity} onChange={(v) => setEditForm({ ...editForm, import_validity: v })} className="w-full" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_export_in_mts">Export (MTS)</Label>
-              <Input id="edit_export_in_mts" type="number" step="0.001" value={editForm.export_in_mts} onChange={(e) => setEditForm({ ...editForm, export_in_mts: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_import_in_mts">Import (MTS)</Label>
-              <Input id="edit_import_in_mts" type="number" step="0.001" value={editForm.import_in_mts} onChange={(e) => setEditForm({ ...editForm, import_in_mts: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_fob_value_inr">FOB Value (INR)</Label>

@@ -180,11 +180,9 @@ export interface DFIALicenseHeaderPayload {
   file_no: string;
   issue_date: string;
   export_validity: string;
-  export_in_mts: string;
   fob_value_inr: string;
   fob_exchange_rate: string;
   import_validity: string;
-  import_in_mts: string;
   cif_value_inr: string;
   cif_exchange_rate: string;
   status: string;
