@@ -25,7 +25,7 @@ import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DateInput } from "@/components/ui/date-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -82,7 +82,11 @@ type SortKey =
   | "fob_exchange_rate"
   | "cif_value_inr"
   | "cif_value_usd"
-  | "cif_exchange_rate";
+  | "cif_exchange_rate"
+  | "total_import"
+  | "total_export"
+  | "to_be_imported"
+  | "balance";
 type SortDir = "asc" | "desc";
 
 /* ── Validity helpers ────────────────────────────────────── */
@@ -190,6 +194,10 @@ export default function DFIALicensePage() {
           "cif_value_inr",
           "cif_value_usd",
           "cif_exchange_rate",
+          "total_import",
+          "total_export",
+          "to_be_imported",
+          "balance",
         ].includes(sortKey)
       ) {
         cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
@@ -228,7 +236,7 @@ export default function DFIALicensePage() {
     );
   }
 
-  const skeletonCols = 15;
+  const skeletonCols = 19;
 
   /* ── Fetch ───────────────────────────────────────────────── */
 
@@ -477,6 +485,26 @@ export default function DFIALicensePage() {
                         CIF Rate<SortIcon column="cif_exchange_rate" />
                       </button>
                     </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_import")}>
+                        Total Import<SortIcon column="total_import" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_export")}>
+                        Total Export<SortIcon column="total_export" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("to_be_imported")}>
+                        To Import<SortIcon column="to_be_imported" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("balance")}>
+                        Balance<SortIcon column="balance" />
+                      </button>
+                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -569,6 +597,10 @@ export default function DFIALicensePage() {
                           <TableCell className="text-right">
                             {fmtDecimal(h.cif_exchange_rate)}
                           </TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.total_import)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.total_export)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.to_be_imported)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -640,16 +672,16 @@ export default function DFIALicensePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="issue_date">Issue Date</Label>
-              <DateInput id="issue_date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} />
+              <Label>Issue Date</Label>
+              <DatePicker value={form.issue_date} onChange={(v) => setForm({ ...form, issue_date: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="export_validity">Export Validity</Label>
-              <DateInput id="export_validity" value={form.export_validity} onChange={(e) => setForm({ ...form, export_validity: e.target.value })} />
+              <Label>Export Validity</Label>
+              <DatePicker value={form.export_validity} onChange={(v) => setForm({ ...form, export_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="import_validity">Import Validity</Label>
-              <DateInput id="import_validity" value={form.import_validity} onChange={(e) => setForm({ ...form, import_validity: e.target.value })} />
+              <Label>Import Validity</Label>
+              <DatePicker value={form.import_validity} onChange={(v) => setForm({ ...form, import_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="export_in_mts">Export (MTS)</Label>
@@ -714,16 +746,16 @@ export default function DFIALicensePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_issue_date">Issue Date</Label>
-              <DateInput id="edit_issue_date" value={editForm.issue_date} onChange={(e) => setEditForm({ ...editForm, issue_date: e.target.value })} />
+              <Label>Issue Date</Label>
+              <DatePicker value={editForm.issue_date} onChange={(v) => setEditForm({ ...editForm, issue_date: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_export_validity">Export Validity</Label>
-              <DateInput id="edit_export_validity" value={editForm.export_validity} onChange={(e) => setEditForm({ ...editForm, export_validity: e.target.value })} />
+              <Label>Export Validity</Label>
+              <DatePicker value={editForm.export_validity} onChange={(v) => setEditForm({ ...editForm, export_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_import_validity">Import Validity</Label>
-              <DateInput id="edit_import_validity" value={editForm.import_validity} onChange={(e) => setEditForm({ ...editForm, import_validity: e.target.value })} />
+              <Label>Import Validity</Label>
+              <DatePicker value={editForm.import_validity} onChange={(v) => setEditForm({ ...editForm, import_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_export_in_mts">Export (MTS)</Label>

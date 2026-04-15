@@ -122,9 +122,42 @@ export async function deleteLicenseHeader(licenseNo: string): Promise<void> {
 
 /* ── DFIA License ─────────────────────────────────────────── */
 
+export interface DFIAImportLine {
+  id: number;
+  boe_no: string;
+  boe_value_usd: string;
+  boe_date: string;
+  import_in_mts: string;
+  license_no: string;
+}
+
+export interface DFIAExportLine {
+  id: number;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+  license_no: string;
+}
+
+export interface DFIAImportLinePayload {
+  license_no: string;
+  boe_no: string;
+  boe_value_usd: string;
+  boe_date: string;
+  import_in_mts: string;
+}
+
+export interface DFIAExportLinePayload {
+  license_no: string;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+}
+
 export interface DFIALicenseHeader {
   file_no: string;
-  dfia_license_lines: DFIALicenseLine[];
+  dfia_import_lines: DFIAImportLine[];
+  dfia_export_lines: DFIAExportLine[];
   issue_date: string;
   export_validity: string;
   export_in_mts: string;
@@ -137,6 +170,10 @@ export interface DFIALicenseHeader {
   cif_value_usd: string;
   cif_exchange_rate: string;
   status: string;
+  total_import: string;
+  total_export: string;
+  to_be_imported: string;
+  balance: string;
 }
 
 export interface DFIALicenseHeaderPayload {
@@ -177,47 +214,30 @@ export async function getDFIALicenseHeader(fileNo: string): Promise<DFIALicenseH
   return res.data;
 }
 
-export interface DFIALicenseLine {
-  id: number;
-  boe_no: string;
-  shipping_bill_no: string;
-  date: string;
-  to_be_imported_in_mts: string;
-  exported_in_mts: string;
-  balance: string;
-  sb_value_inr: string;
-  license_no: string;
-}
-
-export interface DFIALicenseLinePayload {
-  license_no: string;
-  boe_no: string;
-  shipping_bill_no: string;
-  date: string;
-  to_be_imported_in_mts: string;
-  exported_in_mts: string;
-  balance: string;
-  sb_value_inr: string;
-}
-
-export interface DFIALicenseLineInsight {
-  total_balance: number;
-  total_to_be_imported: number;
-  total_exported_in_mts: number;
-  total_sb_value_inr: number;
-}
-
-export async function getDFIALicenseLineInsight(fileNo: string): Promise<DFIALicenseLineInsight> {
-  const res = await api.get<DFIALicenseLineInsight>(`/license/dfia-license-lines/insight/${fileNo}/`);
+export async function createDFIAImportLine(data: DFIAImportLinePayload): Promise<DFIAImportLine> {
+  const res = await api.post<DFIAImportLine>("/license/dfia-license-import-lines/create/", data);
   return res.data;
 }
 
-export async function createDFIALicenseLine(data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {
-  const res = await api.post<DFIALicenseLine>("/license/dfia-license-lines/create/", data);
+export async function updateDFIAImportLine(id: number, data: DFIAImportLinePayload): Promise<DFIAImportLine> {
+  const res = await api.put<DFIAImportLine>(`/license/dfia-license-import-lines/${id}/`, data);
   return res.data;
 }
 
-export async function updateDFIALicenseLine(id: number, data: DFIALicenseLinePayload): Promise<DFIALicenseLine> {
-  const res = await api.put<DFIALicenseLine>(`/license/dfia-license-lines/${id}/`, data);
+export async function deleteDFIAImportLine(id: number): Promise<void> {
+  await api.delete(`/license/dfia-license-import-lines/${id}/`);
+}
+
+export async function createDFIAExportLine(data: DFIAExportLinePayload): Promise<DFIAExportLine> {
+  const res = await api.post<DFIAExportLine>("/license/dfia-license-export-lines/create/", data);
   return res.data;
+}
+
+export async function updateDFIAExportLine(id: number, data: DFIAExportLinePayload): Promise<DFIAExportLine> {
+  const res = await api.put<DFIAExportLine>(`/license/dfia-license-export-lines/${id}/`, data);
+  return res.data;
+}
+
+export async function deleteDFIAExportLine(id: number): Promise<void> {
+  await api.delete(`/license/dfia-license-export-lines/${id}/`);
 }
