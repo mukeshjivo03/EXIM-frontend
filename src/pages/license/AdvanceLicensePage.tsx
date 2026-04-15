@@ -18,7 +18,7 @@ import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DateInput } from "@/components/ui/date-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -59,14 +59,16 @@ type SortKey =
   | "issue_date"
   | "import_validity"
   | "export_validity"
-  | "import_in_mts"
-  | "export_in_mts"
   | "cif_value_inr"
   | "cif_value_usd"
   | "cif_exchange_rate"
   | "fob_value_inr"
   | "fob_value_usd"
-  | "fob_exhange_rate";
+  | "fob_exhange_rate"
+  | "total_import"
+  | "total_export"
+  | "to_be_exported"
+  | "balance";
 type SortDir = "asc" | "desc";
 
 /* ── validity helpers ────────────────────────────────────── */
@@ -103,10 +105,8 @@ export default function AdvanceLicensePage() {
     issue_date: "",
     import_validity: "",
     export_validity: "",
-    import_in_mts: "",
     cif_value_inr: "",
     cif_exchange_rate: "",
-    export_in_mts: "",
     fob_value_inr: "",
     fob_exhange_rate: "",
     status: "OPEN",
@@ -118,9 +118,9 @@ export default function AdvanceLicensePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LicenseHeader | null>(null);
   const [editForm, setEditForm] = useState<LicenseHeaderPayload>({
-    license_no: "", issue_date: "", import_validity: "", export_validity: "", import_in_mts: "",
+    license_no: "", issue_date: "", import_validity: "", export_validity: "",
     cif_value_inr: "", cif_exchange_rate: "",
-    export_in_mts: "", fob_value_inr: "", fob_exhange_rate: "", status: "OPEN",
+    fob_value_inr: "", fob_exhange_rate: "", status: "OPEN",
   });
   const [editFormError, setEditFormError] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -144,7 +144,7 @@ export default function AdvanceLicensePage() {
       let cmp = 0;
       const aVal = a[sortKey as keyof LicenseHeader] ?? "";
       const bVal = b[sortKey as keyof LicenseHeader] ?? "";
-      if (["import_in_mts", "export_in_mts", "cif_value_inr", "cif_value_usd", "cif_exchange_rate", "fob_value_inr", "fob_value_usd", "fob_exhange_rate"].includes(sortKey)) {
+      if (["cif_value_inr", "cif_value_usd", "cif_exchange_rate", "fob_value_inr", "fob_value_usd", "fob_exhange_rate", "total_import", "total_export", "to_be_exported", "balance"].includes(sortKey)) {
         cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
       } else {
         cmp = String(aVal).localeCompare(String(bVal));
@@ -194,10 +194,8 @@ export default function AdvanceLicensePage() {
       issue_date: "",
       import_validity: "",
       export_validity: "",
-      import_in_mts: "",
       cif_value_inr: "",
       cif_exchange_rate: "",
-      export_in_mts: "",
       fob_value_inr: "",
       fob_exhange_rate: "",
       status: "OPEN",
@@ -236,8 +234,8 @@ export default function AdvanceLicensePage() {
     setEditTarget(h);
     setEditForm({
       license_no: h.license_no, issue_date: h.issue_date, import_validity: h.import_validity, export_validity: h.export_validity,
-      import_in_mts: h.import_in_mts, cif_value_inr: h.cif_value_inr,
-      cif_exchange_rate: h.cif_exchange_rate, export_in_mts: h.export_in_mts, fob_value_inr: h.fob_value_inr,
+      cif_value_inr: h.cif_value_inr,
+      cif_exchange_rate: h.cif_exchange_rate, fob_value_inr: h.fob_value_inr,
       fob_exhange_rate: h.fob_exhange_rate, status: h.status,
     });
     setEditFormError("");
@@ -287,7 +285,7 @@ export default function AdvanceLicensePage() {
     }
   }
 
-  const skeletonCols = 15;
+  const skeletonCols = 17;
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
@@ -368,16 +366,6 @@ export default function AdvanceLicensePage() {
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("import_in_mts")}>
-                        Import (MTS)<SortIcon column="import_in_mts" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("export_in_mts")}>
-                        Export (MTS)<SortIcon column="export_in_mts" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_inr")}>
                         CIF (INR)<SortIcon column="cif_value_inr" />
                       </button>
@@ -405,6 +393,26 @@ export default function AdvanceLicensePage() {
                     <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_exhange_rate")}>
                         FOB Rate<SortIcon column="fob_exhange_rate" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_import")}>
+                        Total Import<SortIcon column="total_import" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_export")}>
+                        Total Export<SortIcon column="total_export" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("to_be_exported")}>
+                        To Export<SortIcon column="to_be_exported" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("balance")}>
+                        Balance<SortIcon column="balance" />
                       </button>
                     </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -458,14 +466,16 @@ export default function AdvanceLicensePage() {
                               {!isClosed && validityBadge(h.export_validity)}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.import_in_mts)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.export_in_mts)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.cif_value_inr)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.cif_value_usd)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.cif_exchange_rate)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.fob_value_inr)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.fob_value_usd)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.fob_exhange_rate)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.total_import)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.total_export)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.to_be_exported)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -529,24 +539,16 @@ export default function AdvanceLicensePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="issue_date">Issue Date</Label>
-              <DateInput id="issue_date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} />
+              <Label>Issue Date</Label>
+              <DatePicker value={form.issue_date} onChange={(v) => setForm({ ...form, issue_date: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="import_validity">Import Validity</Label>
-              <DateInput id="import_validity" value={form.import_validity} onChange={(e) => setForm({ ...form, import_validity: e.target.value })} />
+              <Label>Import Validity</Label>
+              <DatePicker value={form.import_validity} onChange={(v) => setForm({ ...form, import_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="export_validity">Export Validity</Label>
-              <DateInput id="export_validity" value={form.export_validity} onChange={(e) => setForm({ ...form, export_validity: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="import_in_mts">Import (MTS)</Label>
-              <Input id="import_in_mts" type="number" step="0.001" value={form.import_in_mts} onChange={(e) => setForm({ ...form, import_in_mts: e.target.value })} placeholder="500.000" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="export_in_mts">Export (MTS)</Label>
-              <Input id="export_in_mts" type="number" step="0.001" value={form.export_in_mts} onChange={(e) => setForm({ ...form, export_in_mts: e.target.value })} placeholder="450.000" />
+              <Label>Export Validity</Label>
+              <DatePicker value={form.export_validity} onChange={(v) => setForm({ ...form, export_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="cif_value_inr">CIF Value (INR)</Label>
@@ -615,24 +617,16 @@ export default function AdvanceLicensePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_issue_date">Issue Date</Label>
-              <DateInput id="edit_issue_date" value={editForm.issue_date} onChange={(e) => setEditForm({ ...editForm, issue_date: e.target.value })} />
+              <Label>Issue Date</Label>
+              <DatePicker value={editForm.issue_date} onChange={(v) => setEditForm({ ...editForm, issue_date: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_import_validity">Import Validity</Label>
-              <DateInput id="edit_import_validity" value={editForm.import_validity} onChange={(e) => setEditForm({ ...editForm, import_validity: e.target.value })} />
+              <Label>Import Validity</Label>
+              <DatePicker value={editForm.import_validity} onChange={(v) => setEditForm({ ...editForm, import_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_export_validity">Export Validity</Label>
-              <DateInput id="edit_export_validity" value={editForm.export_validity} onChange={(e) => setEditForm({ ...editForm, export_validity: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_import_in_mts">Import (MTS)</Label>
-              <Input id="edit_import_in_mts" type="number" step="0.001" value={editForm.import_in_mts} onChange={(e) => setEditForm({ ...editForm, import_in_mts: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_export_in_mts">Export (MTS)</Label>
-              <Input id="edit_export_in_mts" type="number" step="0.001" value={editForm.export_in_mts} onChange={(e) => setEditForm({ ...editForm, export_in_mts: e.target.value })} />
+              <Label>Export Validity</Label>
+              <DatePicker value={editForm.export_validity} onChange={(v) => setEditForm({ ...editForm, export_validity: v })} className="w-full" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_cif_value_inr">CIF Value (INR)</Label>

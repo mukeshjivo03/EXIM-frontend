@@ -1,24 +1,30 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { ArrowLeft, Plus, FileText, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Pencil, Trash2 } from "lucide-react";
 
 import {
   getLicenseHeader,
-  getLicenseLineInsight,
-  createLicenseLine,
-  updateLicenseLine,
+  createImportLine,
+  updateImportLine,
+  deleteImportLine,
+  createExportLine,
+  updateExportLine,
+  deleteExportLine,
   type LicenseHeader,
-  type LicenseLine,
-  type LicenseLinePayload,
-  type LicenseLineInsight,
+  type ImportLine,
+  type ExportLine,
+  type ImportLinePayload,
+  type ExportLinePayload,
 } from "@/api/license";
 import { fmtDate, fmtDecimal } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
@@ -37,61 +43,64 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type LineForm = Omit<LicenseLinePayload, "license_no">;
-
-const emptyForm: LineForm = {
-  boe_No: "",
-  boe_value_usd: "",
-  shipping_bill_no: "",
-  date: "",
-  sb_value_usd: "",
-  import_in_mts: "",
-  export_in_mts: "",
-  balance: "",
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  OPEN: "default",
+  CLOSE: "secondary",
 };
 
-const FIELDS: { key: keyof LineForm; label: string; type: string }[] = [
-  { key: "boe_No", label: "BOE No", type: "text" },
-  { key: "boe_value_usd", label: "BOE Value (USD)", type: "number" },
-  { key: "shipping_bill_no", label: "Shipping Bill No", type: "text" },
-  { key: "date", label: "Date", type: "date" },
-  { key: "sb_value_usd", label: "SB Value (USD)", type: "number" },
-  { key: "import_in_mts", label: "Import (MTS)", type: "number" },
-  { key: "export_in_mts", label: "Export (MTS)", type: "number" },
-  { key: "balance", label: "Balance", type: "number" },
-];
+type ImportForm = Omit<ImportLinePayload, "license_no">;
+type ExportForm = Omit<ExportLinePayload, "license_no">;
+
+const emptyImportForm: ImportForm = { boe_No: "", boe_value_usd: "", boe_date: "", import_in_mts: "" };
+const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", export_in_mts: "" };
 
 export default function AdvanceLicenseDetailPage() {
   const { licenseNo } = useParams<{ licenseNo: string }>();
   const navigate = useNavigate();
   const [header, setHeader] = useState<LicenseHeader | null>(null);
-  const [insight, setInsight] = useState<LicenseLineInsight | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Create dialog state
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<LineForm>(emptyForm);
-  const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
+  // Import line – create
+  const [importOpen, setImportOpen] = useState(false);
+  const [importForm, setImportForm] = useState<ImportForm>(emptyImportForm);
+  const [importError, setImportError] = useState("");
+  const [savingImport, setSavingImport] = useState(false);
 
-  // Edit dialog state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LicenseLine | null>(null);
-  const [editForm, setEditForm] = useState<LineForm>(emptyForm);
-  const [editFormError, setEditFormError] = useState("");
-  const [updating, setUpdating] = useState(false);
+  // Import line – edit
+  const [editImportOpen, setEditImportOpen] = useState(false);
+  const [editImportTarget, setEditImportTarget] = useState<ImportLine | null>(null);
+  const [editImportForm, setEditImportForm] = useState<ImportForm>(emptyImportForm);
+  const [editImportError, setEditImportError] = useState("");
+  const [updatingImport, setUpdatingImport] = useState(false);
+
+  // Import line – delete
+  const [deleteImportTarget, setDeleteImportTarget] = useState<ImportLine | null>(null);
+  const [deletingImport, setDeletingImport] = useState(false);
+
+  // Export line – create
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportForm, setExportForm] = useState<ExportForm>(emptyExportForm);
+  const [exportError, setExportError] = useState("");
+  const [savingExport, setSavingExport] = useState(false);
+
+  // Export line – edit
+  const [editExportOpen, setEditExportOpen] = useState(false);
+  const [editExportTarget, setEditExportTarget] = useState<ExportLine | null>(null);
+  const [editExportForm, setEditExportForm] = useState<ExportForm>(emptyExportForm);
+  const [editExportError, setEditExportError] = useState("");
+  const [updatingExport, setUpdatingExport] = useState(false);
+
+  // Export line – delete
+  const [deleteExportTarget, setDeleteExportTarget] = useState<ExportLine | null>(null);
+  const [deletingExport, setDeletingExport] = useState(false);
 
   async function fetchData() {
     setLoading(true);
     setError("");
     try {
-      const [data, insightData] = await Promise.all([
-        getLicenseHeader(licenseNo!),
-        getLicenseLineInsight(licenseNo!),
-      ]);
+      const data = await getLicenseHeader(licenseNo!);
       setHeader(data);
-      setInsight(insightData);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load license details"));
     } finally {
@@ -99,101 +108,137 @@ export default function AdvanceLicenseDetailPage() {
     }
   }
 
-  useEffect(() => {
-    fetchData();
-  }, [licenseNo]);
+  useEffect(() => { fetchData(); }, [licenseNo]);
 
-  function openCreate() {
-    setForm(emptyForm);
-    setFormError("");
-    setDialogOpen(true);
+  function parseAxiosError(err: unknown): string {
+    if (err instanceof AxiosError) {
+      const data = err.response?.data;
+      if (typeof data === "object" && data !== null) {
+        return Object.entries(data)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+          .join("; ");
+      }
+      return typeof data === "string" ? data : err.message;
+    }
+    return "Something went wrong";
   }
 
-  async function handleSave() {
-    setSaving(true);
-    setFormError("");
+  /* ── Import CRUD ─────────────────────────────────────────── */
+
+  async function handleSaveImport() {
+    setSavingImport(true);
+    setImportError("");
     try {
-      const payload: LicenseLinePayload = {
-        ...form,
-        license_no: licenseNo!,
-      };
-      await createLicenseLine(payload);
-      setDialogOpen(false);
+      await createImportLine({ ...importForm, license_no: licenseNo! });
+      setImportOpen(false);
+      setImportForm(emptyImportForm);
       fetchData();
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const data = err.response?.data;
-        if (typeof data === "object" && data !== null) {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          setFormError(messages);
-        } else {
-          setFormError(typeof data === "string" ? data : err.message);
-        }
-      } else {
-        setFormError("Something went wrong");
-      }
+      setImportError(parseAxiosError(err));
     } finally {
-      setSaving(false);
+      setSavingImport(false);
     }
   }
 
-  function openEdit(line: LicenseLine) {
-    setEditTarget(line);
-    setEditForm({
-      boe_No: line.boe_No,
-      boe_value_usd: line.boe_value_usd,
-      shipping_bill_no: line.shipping_bill_no,
-      date: line.date,
-      sb_value_usd: line.sb_value_usd,
-      import_in_mts: line.import_in_mts,
-      export_in_mts: line.export_in_mts,
-      balance: line.balance,
-    });
-    setEditFormError("");
-    setEditOpen(true);
+  function openEditImport(line: ImportLine) {
+    setEditImportTarget(line);
+    setEditImportForm({ boe_No: line.boe_No, boe_value_usd: line.boe_value_usd, boe_date: line.boe_date, import_in_mts: line.import_in_mts });
+    setEditImportError("");
+    setEditImportOpen(true);
   }
 
-  async function handleUpdate() {
-    if (!editTarget) return;
-    setUpdating(true);
-    setEditFormError("");
+  async function handleUpdateImport() {
+    if (!editImportTarget) return;
+    setUpdatingImport(true);
+    setEditImportError("");
     try {
-      const payload: LicenseLinePayload = {
-        ...editForm,
-        license_no: licenseNo!,
-      };
-      await updateLicenseLine(editTarget.id, payload);
-      setEditOpen(false);
-      setEditTarget(null);
+      await updateImportLine(editImportTarget.id, { ...editImportForm, license_no: licenseNo! });
+      setEditImportOpen(false);
+      setEditImportTarget(null);
       fetchData();
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const data = err.response?.data;
-        if (typeof data === "object" && data !== null) {
-          const messages = Object.entries(data)
-            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-            .join("; ");
-          setEditFormError(messages);
-        } else {
-          setEditFormError(typeof data === "string" ? data : err.message);
-        }
-      } else {
-        setEditFormError("Something went wrong");
-      }
+      setEditImportError(parseAxiosError(err));
     } finally {
-      setUpdating(false);
+      setUpdatingImport(false);
     }
   }
 
-  const lines: LicenseLine[] = header?.lincense_lines ?? [];
+  async function handleDeleteImport() {
+    if (!deleteImportTarget) return;
+    setDeletingImport(true);
+    try {
+      await deleteImportLine(deleteImportTarget.id);
+      setDeleteImportTarget(null);
+      fetchData();
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to delete import line"));
+      setDeleteImportTarget(null);
+    } finally {
+      setDeletingImport(false);
+    }
+  }
 
-  const lineColumns = ["S.No", "BOE No", "BOE Value (USD)", "Shipping Bill No", "Date", "SB Value (USD)", "Import (MTS)", "Export (MTS)", "Balance", "Actions"];
+  /* ── Export CRUD ─────────────────────────────────────────── */
+
+  async function handleSaveExport() {
+    setSavingExport(true);
+    setExportError("");
+    try {
+      await createExportLine({ ...exportForm, license_no: licenseNo! });
+      setExportOpen(false);
+      setExportForm(emptyExportForm);
+      fetchData();
+    } catch (err) {
+      setExportError(parseAxiosError(err));
+    } finally {
+      setSavingExport(false);
+    }
+  }
+
+  function openEditExport(line: ExportLine) {
+    setEditExportTarget(line);
+    setEditExportForm({ shipping_bill_no: line.shipping_bill_no, sb_value_usd: line.sb_value_usd, export_in_mts: line.export_in_mts });
+    setEditExportError("");
+    setEditExportOpen(true);
+  }
+
+  async function handleUpdateExport() {
+    if (!editExportTarget) return;
+    setUpdatingExport(true);
+    setEditExportError("");
+    try {
+      await updateExportLine(editExportTarget.id, { ...editExportForm, license_no: licenseNo! });
+      setEditExportOpen(false);
+      setEditExportTarget(null);
+      fetchData();
+    } catch (err) {
+      setEditExportError(parseAxiosError(err));
+    } finally {
+      setUpdatingExport(false);
+    }
+  }
+
+  async function handleDeleteExport() {
+    if (!deleteExportTarget) return;
+    setDeletingExport(true);
+    try {
+      await deleteExportLine(deleteExportTarget.id);
+      setDeleteExportTarget(null);
+      fetchData();
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to delete export line"));
+      setDeleteExportTarget(null);
+    } finally {
+      setDeletingExport(false);
+    }
+  }
+
+  const importLines = header?.import_lines ?? [];
+  const exportLines = header?.export_lines ?? [];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-      {/* Header */}
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => navigate("/license/advance-license")}>
@@ -201,16 +246,31 @@ export default function AdvanceLicenseDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{licenseNo}</h1>
-            <p className="text-sm text-muted-foreground">License line details</p>
+            <p className="text-sm text-muted-foreground">Advance license details</p>
           </div>
         </div>
+        {header && (
+          <Badge variant={STATUS_VARIANT[header.status] ?? "outline"} className="text-sm px-3 py-1">
+            {header.status}
+          </Badge>
+        )}
       </div>
 
-      {/* Error */}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {/* Summary Cards */}
-      {header && (
+      {/* Summary cards */}
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-5 w-20 mt-1" />
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      ) : header && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
@@ -232,217 +292,355 @@ export default function AdvanceLicenseDetailPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Status</CardDescription>
-              <CardTitle className="text-lg">{header.status}</CardTitle>
+              <CardDescription>CIF Value (INR / USD)</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.cif_value_inr)} / ${fmtDecimal(header.cif_value_usd)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>FOB Value (INR / USD)</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.fob_value_inr)} / ${fmtDecimal(header.fob_value_usd)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Import (MTS)</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.total_import)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total Export (MTS)</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.total_export)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>To Be Exported / Balance</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.to_be_exported)} / {fmtDecimal(header.balance)}</CardTitle>
             </CardHeader>
           </Card>
         </div>
       )}
 
-      {/* Line Insight Cards */}
-      {insight && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Import</CardDescription>
-              <CardTitle className="text-lg">{fmtDecimal(insight.total_import_in_mts)} MTS</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Export</CardDescription>
-              <CardTitle className="text-lg">{fmtDecimal(insight.total_export_in_mts)} MTS</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total BOE Value</CardDescription>
-              <CardTitle className="text-lg">$ {fmtDecimal(insight.total_boe_value_usd)}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total SB Value</CardDescription>
-              <CardTitle className="text-lg">$ {fmtDecimal(insight.total_sb_value_usd)}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Balance</CardDescription>
-              <CardTitle className="text-lg">{fmtDecimal(insight.total_balance)}</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      )}
+      {/* Side-by-side import and export tables */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
-      {/* Add Line Button */}
-      <div className="flex justify-end">
-        <Button onClick={openCreate} className="btn-press gap-2">
-          <Plus className="h-4 w-4" /> Add Line
-        </Button>
-      </div>
-
-      {/* Lines Table */}
-      <Card className="card-hover shimmer-hover">
-        <CardHeader>
-          <CardTitle>License Lines</CardTitle>
-          <CardDescription>{lines.length} line{lines.length !== 1 ? "s" : ""} recorded</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {lineColumns.map((col) => (
-                      <TableHead key={col}>{col}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {lineColumns.map((col) => (
-                        <TableCell key={col}><Skeleton className="h-4 w-20" /></TableCell>
+        {/* ── Import Lines ─────────────────────────────────── */}
+        <Card className="card-hover shimmer-hover">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle>Import Lines</CardTitle>
+              <CardDescription>{importLines.length} line{importLines.length !== 1 ? "s" : ""}</CardDescription>
+            </div>
+            <Button size="sm" className="btn-press gap-1.5" onClick={() => { setImportForm(emptyImportForm); setImportError(""); setImportOpen(true); }}>
+              <Plus className="h-3.5 w-3.5" /> Add Import
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {["S.No", "BOE No", "BOE Value (USD)", "BOE Date", "Import (MTS)", "Actions"].map((col) => (
+                        <TableHead key={col}><Skeleton className="h-4 w-16" /></TableHead>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {lineColumns.map((col) => (
-                      <TableHead key={col} className={col.includes("USD") || col.includes("MTS") || col === "Balance" ? "text-right" : ""}>
-                        {col}
-                      </TableHead>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 6 }).map((_, j) => (
+                          <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lines.length === 0 ? (
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={lineColumns.length} className="py-16">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <FileText className="h-10 w-10 stroke-1" />
-                          <p className="text-sm font-medium">No lines found</p>
-                          <p className="text-xs">Click "Add Line" to create one.</p>
-                        </div>
-                      </TableCell>
+                      <TableHead>S.No</TableHead>
+                      <TableHead>BOE No</TableHead>
+                      <TableHead className="text-right">BOE Value (USD)</TableHead>
+                      <TableHead>BOE Date</TableHead>
+                      <TableHead className="text-right">Import (MTS)</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    lines.map((line, i) => (
-                      <TableRow key={line.id}>
-                        <TableCell className="font-medium">{i + 1}</TableCell>
-                        <TableCell>{line.boe_No}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(line.boe_value_usd)}</TableCell>
-                        <TableCell>{line.shipping_bill_no}</TableCell>
-                        <TableCell>{fmtDate(line.date)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(line.sb_value_usd)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(line.import_in_mts)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(line.export_in_mts)}</TableCell>
-                        <TableCell className="text-right">{fmtDecimal(line.balance)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            onClick={() => openEdit(line)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                  </TableHeader>
+                  <TableBody>
+                    {importLines.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <FileText className="h-8 w-8 stroke-1" />
+                            <p className="text-sm font-medium">No import lines</p>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Create Line Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add License Line</DialogTitle>
-            <DialogDescription>
-              Add a new line entry for {licenseNo}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-4 py-2">
-            {FIELDS.map((f) => (
-              <div key={f.key} className="space-y-2">
-                <Label htmlFor={f.key}>{f.label}</Label>
-                <Input
-                  id={f.key}
-                  type={f.type}
-                  step={f.type === "number" ? "0.001" : undefined}
-                  value={form[f.key]}
-                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                  placeholder={f.label}
-                />
+                    ) : (
+                      importLines.map((line, i) => (
+                        <TableRow key={line.id}>
+                          <TableCell className="font-medium">{i + 1}</TableCell>
+                          <TableCell>{line.boe_No}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(line.boe_value_usd)}</TableCell>
+                          <TableCell>{fmtDate(line.boe_date)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(line.import_in_mts)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => openEditImport(line)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteImportTarget(line)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-            ))}
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── Export Lines ─────────────────────────────────── */}
+        <Card className="card-hover shimmer-hover">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle>Export Lines</CardTitle>
+              <CardDescription>{exportLines.length} line{exportLines.length !== 1 ? "s" : ""}</CardDescription>
+            </div>
+            <Button size="sm" className="btn-press gap-1.5" onClick={() => { setExportForm(emptyExportForm); setExportError(""); setExportOpen(true); }}>
+              <Plus className="h-3.5 w-3.5" /> Add Export
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {["S.No", "Shipping Bill No", "SB Value (USD)", "Export (MTS)", "Actions"].map((col) => (
+                        <TableHead key={col}><Skeleton className="h-4 w-16" /></TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>S.No</TableHead>
+                      <TableHead>Shipping Bill No</TableHead>
+                      <TableHead className="text-right">SB Value (USD)</TableHead>
+                      <TableHead className="text-right">Export (MTS)</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {exportLines.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <FileText className="h-8 w-8 stroke-1" />
+                            <p className="text-sm font-medium">No export lines</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      exportLines.map((line, i) => (
+                        <TableRow key={line.id}>
+                          <TableCell className="font-medium">{i + 1}</TableCell>
+                          <TableCell>{line.shipping_bill_no}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(line.sb_value_usd)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(line.export_in_mts)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => openEditExport(line)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteExportTarget(line)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Add Import Line Dialog ────────────────────────────── */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Import Line</DialogTitle>
+            <DialogDescription>Add a new BOE import entry for {licenseNo}.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="imp_boe_No">BOE No</Label>
+              <Input id="imp_boe_No" value={importForm.boe_No} onChange={(e) => setImportForm({ ...importForm, boe_No: e.target.value })} placeholder="BOE-2024-00123" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="imp_boe_value_usd">BOE Value (USD)</Label>
+              <Input id="imp_boe_value_usd" type="number" step="0.001" value={importForm.boe_value_usd} onChange={(e) => setImportForm({ ...importForm, boe_value_usd: e.target.value })} placeholder="12500.000" />
+            </div>
+            <div className="space-y-2">
+              <Label>BOE Date</Label>
+              <DatePicker value={importForm.boe_date} onChange={(v) => setImportForm({ ...importForm, boe_date: v })} className="w-full" />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="imp_import_in_mts">Import (MTS)</Label>
+              <Input id="imp_import_in_mts" type="number" step="0.001" value={importForm.import_in_mts} onChange={(e) => setImportForm({ ...importForm, import_in_mts: e.target.value })} placeholder="150.000" />
+            </div>
           </div>
-
-          {formError && (
-            <p className="text-sm text-destructive">{formError}</p>
-          )}
-
+          {importError && <p className="text-sm text-destructive">{importError}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Add Line"}
-            </Button>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveImport} disabled={savingImport}>{savingImport ? "Saving..." : "Add Import"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Line Dialog */}
-      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditTarget(null); } }}>
-        <DialogContent className="sm:max-w-lg">
+      {/* ── Edit Import Line Dialog ───────────────────────────── */}
+      <Dialog open={editImportOpen} onOpenChange={(open) => { if (!open) { setEditImportOpen(false); setEditImportTarget(null); } }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit License Line</DialogTitle>
+            <DialogTitle>Edit Import Line</DialogTitle>
+            <DialogDescription>Editing import line #{editImportTarget?.id} for {licenseNo}.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="edit_imp_boe_No">BOE No</Label>
+              <Input id="edit_imp_boe_No" value={editImportForm.boe_No} onChange={(e) => setEditImportForm({ ...editImportForm, boe_No: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_imp_boe_value_usd">BOE Value (USD)</Label>
+              <Input id="edit_imp_boe_value_usd" type="number" step="0.001" value={editImportForm.boe_value_usd} onChange={(e) => setEditImportForm({ ...editImportForm, boe_value_usd: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>BOE Date</Label>
+              <DatePicker value={editImportForm.boe_date} onChange={(v) => setEditImportForm({ ...editImportForm, boe_date: v })} className="w-full" />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="edit_imp_import_in_mts">Import (MTS)</Label>
+              <Input id="edit_imp_import_in_mts" type="number" step="0.001" value={editImportForm.import_in_mts} onChange={(e) => setEditImportForm({ ...editImportForm, import_in_mts: e.target.value })} />
+            </div>
+          </div>
+          {editImportError && <p className="text-sm text-destructive">{editImportError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditImportOpen(false); setEditImportTarget(null); }}>Cancel</Button>
+            <Button onClick={handleUpdateImport} disabled={updatingImport}>{updatingImport ? "Saving..." : "Save Changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Import Line Dialog ─────────────────────────── */}
+      <Dialog open={!!deleteImportTarget} onOpenChange={() => setDeleteImportTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Import Line</DialogTitle>
             <DialogDescription>
-              Editing line #{editTarget?.id} for {licenseNo}.
+              Are you sure you want to delete import line <strong>{deleteImportTarget?.boe_No}</strong>? This cannot be undone.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-4 py-2">
-            {FIELDS.map((f) => (
-              <div key={f.key} className="space-y-2">
-                <Label htmlFor={`edit_${f.key}`}>{f.label}</Label>
-                <Input
-                  id={`edit_${f.key}`}
-                  type={f.type}
-                  step={f.type === "number" ? "0.001" : undefined}
-                  value={editForm[f.key]}
-                  onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
-                  placeholder={f.label}
-                />
-              </div>
-            ))}
-          </div>
-
-          {editFormError && (
-            <p className="text-sm text-destructive">{editFormError}</p>
-          )}
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setEditOpen(false); setEditTarget(null); }}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={updating}>
-              {updating ? "Saving..." : "Save Changes"}
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteImportTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteImport} disabled={deletingImport}>{deletingImport ? "Deleting..." : "Delete"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Export Line Dialog ────────────────────────────── */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Export Line</DialogTitle>
+            <DialogDescription>Add a new shipping bill export entry for {licenseNo}.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="exp_shipping_bill_no">Shipping Bill No</Label>
+              <Input id="exp_shipping_bill_no" value={exportForm.shipping_bill_no} onChange={(e) => setExportForm({ ...exportForm, shipping_bill_no: e.target.value })} placeholder="SB-2024-00456" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exp_sb_value_usd">SB Value (USD)</Label>
+              <Input id="exp_sb_value_usd" type="number" step="0.001" value={exportForm.sb_value_usd} onChange={(e) => setExportForm({ ...exportForm, sb_value_usd: e.target.value })} placeholder="11000.000" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exp_export_in_mts">Export (MTS)</Label>
+              <Input id="exp_export_in_mts" type="number" step="0.001" value={exportForm.export_in_mts} onChange={(e) => setExportForm({ ...exportForm, export_in_mts: e.target.value })} placeholder="120.000" />
+            </div>
+          </div>
+          {exportError && <p className="text-sm text-destructive">{exportError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveExport} disabled={savingExport}>{savingExport ? "Saving..." : "Add Export"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Export Line Dialog ───────────────────────────── */}
+      <Dialog open={editExportOpen} onOpenChange={(open) => { if (!open) { setEditExportOpen(false); setEditExportTarget(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Export Line</DialogTitle>
+            <DialogDescription>Editing export line #{editExportTarget?.id} for {licenseNo}.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="edit_exp_shipping_bill_no">Shipping Bill No</Label>
+              <Input id="edit_exp_shipping_bill_no" value={editExportForm.shipping_bill_no} onChange={(e) => setEditExportForm({ ...editExportForm, shipping_bill_no: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_exp_sb_value_usd">SB Value (USD)</Label>
+              <Input id="edit_exp_sb_value_usd" type="number" step="0.001" value={editExportForm.sb_value_usd} onChange={(e) => setEditExportForm({ ...editExportForm, sb_value_usd: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_exp_export_in_mts">Export (MTS)</Label>
+              <Input id="edit_exp_export_in_mts" type="number" step="0.001" value={editExportForm.export_in_mts} onChange={(e) => setEditExportForm({ ...editExportForm, export_in_mts: e.target.value })} />
+            </div>
+          </div>
+          {editExportError && <p className="text-sm text-destructive">{editExportError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditExportOpen(false); setEditExportTarget(null); }}>Cancel</Button>
+            <Button onClick={handleUpdateExport} disabled={updatingExport}>{updatingExport ? "Saving..." : "Save Changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Export Line Dialog ─────────────────────────── */}
+      <Dialog open={!!deleteExportTarget} onOpenChange={() => setDeleteExportTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Export Line</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete export line <strong>{deleteExportTarget?.shipping_bill_no}</strong>? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteExportTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteExport} disabled={deletingExport}>{deletingExport ? "Deleting..." : "Delete"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

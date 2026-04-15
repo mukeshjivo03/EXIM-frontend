@@ -1,43 +1,97 @@
 import api from "./client";
 
-export interface LicenseLine {
+/* ── Advance License – Import / Export Lines ─────────────── */
+
+export interface ImportLine {
   id: number;
   boe_No: string;
   boe_value_usd: string;
-  shipping_bill_no: string;
-  date: string;
-  sb_value_usd: string;
+  boe_date: string;
   import_in_mts: string;
-  export_in_mts: string;
-  balance: string;
   license_no: string;
 }
 
-export interface LicenseLinePayload {
+export interface ExportLine {
+  id: number;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+  license_no: string;
+}
+
+export interface ImportLinePayload {
   license_no: string;
   boe_No: string;
   boe_value_usd: string;
-  shipping_bill_no: string;
-  date: string;
-  sb_value_usd: string;
+  boe_date: string;
   import_in_mts: string;
-  export_in_mts: string;
-  balance: string;
 }
+
+export interface ExportLinePayload {
+  license_no: string;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+}
+
+export async function createImportLine(data: ImportLinePayload): Promise<ImportLine> {
+  const res = await api.post<ImportLine>("/license/advance-license-import-lines/", data);
+  return res.data;
+}
+
+export async function updateImportLine(id: number, data: ImportLinePayload): Promise<ImportLine> {
+  const res = await api.put<ImportLine>(`/license/advance-license-import-lines/${id}/`, data);
+  return res.data;
+}
+
+export async function deleteImportLine(id: number): Promise<void> {
+  await api.delete(`/license/advance-license-import-lines/${id}/`);
+}
+
+export async function createExportLine(data: ExportLinePayload): Promise<ExportLine> {
+  const res = await api.post<ExportLine>("/license/advance-license-export-lines/", data);
+  return res.data;
+}
+
+export async function updateExportLine(id: number, data: ExportLinePayload): Promise<ExportLine> {
+  const res = await api.put<ExportLine>(`/license/advance-license-export-lines/${id}/`, data);
+  return res.data;
+}
+
+export async function deleteExportLine(id: number): Promise<void> {
+  await api.delete(`/license/advance-license-export-lines/${id}/`);
+}
+
+/* ── Advance License Header ──────────────────────────────── */
 
 export interface LicenseHeader {
   license_no: string;
-  lincense_lines: LicenseLine[];
+  import_lines: ImportLine[];
+  export_lines: ExportLine[];
   issue_date: string;
   import_validity: string;
   export_validity: string;
-  import_in_mts: string;
   cif_value_inr: string;
   cif_value_usd: string;
   cif_exchange_rate: string;
-  export_in_mts: string;
   fob_value_inr: string;
   fob_value_usd: string;
+  fob_exhange_rate: string;
+  status: string;
+  total_import: string;
+  total_export: string;
+  to_be_exported: string;
+  balance: string;
+}
+
+export interface LicenseHeaderPayload {
+  license_no: string;
+  issue_date: string;
+  import_validity: string;
+  export_validity: string;
+  cif_value_inr: string;
+  cif_exchange_rate: string;
+  fob_value_inr: string;
   fob_exhange_rate: string;
   status: string;
 }
@@ -52,20 +106,6 @@ export async function getLicenseHeader(licenseNo: string): Promise<LicenseHeader
   return res.data;
 }
 
-export interface LicenseHeaderPayload {
-  license_no: string;
-  issue_date: string;
-  import_validity: string;
-  export_validity: string;
-  import_in_mts: string;
-  cif_value_inr: string;
-  cif_exchange_rate: string;
-  export_in_mts: string;
-  fob_value_inr: string;
-  fob_exhange_rate: string;
-  status: string;
-}
-
 export async function createLicenseHeader(data: LicenseHeaderPayload): Promise<LicenseHeader> {
   const res = await api.post<LicenseHeader>("/license/advance-license-headers/", data);
   return res.data;
@@ -78,29 +118,6 @@ export async function updateLicenseHeader(licenseNo: string, data: LicenseHeader
 
 export async function deleteLicenseHeader(licenseNo: string): Promise<void> {
   await api.delete(`/license/advance-license-header/${licenseNo}/`);
-}
-
-export interface LicenseLineInsight {
-  total_boe_value_usd: number;
-  total_sb_value_usd: number;
-  total_balance: number;
-  total_import_in_mts: number;
-  total_export_in_mts: number;
-}
-
-export async function getLicenseLineInsight(licenseNo: string): Promise<LicenseLineInsight> {
-  const res = await api.get<LicenseLineInsight>(`/license/advance-license-lines/insight/${licenseNo}/`);
-  return res.data;
-}
-
-export async function createLicenseLine(data: LicenseLinePayload): Promise<LicenseLine> {
-  const res = await api.post<LicenseLine>("/license/advance-license-lines/", data);
-  return res.data;
-}
-
-export async function updateLicenseLine(id: number, data: LicenseLinePayload): Promise<LicenseLine> {
-  const res = await api.put<LicenseLine>(`/license/advance-license-lines/${id}/`, data);
-  return res.data;
 }
 
 /* ── DFIA License ─────────────────────────────────────────── */
