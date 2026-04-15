@@ -415,7 +415,7 @@ export default function AdvanceLicenseDetailPage() {
               <CardTitle>Export Lines</CardTitle>
               <CardDescription>{exportLines.length} line{exportLines.length !== 1 ? "s" : ""}</CardDescription>
             </div>
-            <Button size="sm" className="btn-press gap-1.5" disabled={Number(header?.balance ?? 1) <= 0} onClick={() => { setExportForm(emptyExportForm); setExportError(""); setExportOpen(true); }}>
+            <Button size="sm" className="btn-press gap-1.5" onClick={() => { setExportForm(emptyExportForm); setExportError(""); setExportOpen(true); }}>
               <Plus className="h-3.5 w-3.5" /> Add Export
             </Button>
           </CardHeader>
