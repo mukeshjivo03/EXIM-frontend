@@ -29,6 +29,7 @@ import {
   Receipt,
   Globe,
   Warehouse,
+  Activity,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Stock",
     links: [
       { to: "/stock/stock-status",   label: "Stock Status",    icon: ClipboardList, modules: ["stockstatus"] },
+      { to: "/stock/variance",       label: "Stock Variance",  icon: Activity,      modules: ["stockstatus"] },
       { to: "/stock/tank-items",     label: "Tank Items",      icon: Droplets,      modules: ["tankitem"] },
       { to: "/stock/tank-monitoring",label: "Tank Monitoring",  icon: Gauge,         modules: ["tankdata", "tanklayer"] },
       { to: "/stock/tank-data",      label: "Tank Data",       icon: Container,     modules: ["tankdata"] },
