@@ -241,7 +241,7 @@ export default function OpenGrpoPage() {
                     <span className="flex items-center">Warehouse <SortIcon col="Warehouse" sortKey={sortKey} sortDir={sortDir} /></span>
                   </TableHead>
                   <TableHead onClick={() => handleSort("Pending Days")} className={cn(thClass("Pending Days"), "text-center")}>
-                    <span className="flex items-center justify-center">Pending Days <SortIcon col="Pending Days" sortKey={sortKey} sortDir={sortDir} /></span>
+                    <span className="flex items-center justify-center">Days Open <SortIcon col="Pending Days" sortKey={sortKey} sortDir={sortDir} /></span>
                   </TableHead>
                 </TableRow>
               </TableHeader>

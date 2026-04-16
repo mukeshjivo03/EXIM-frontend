@@ -429,7 +429,7 @@ export default function EximAccountPage() {
           <TabsTrigger value="outstanding">Outstanding Balances</TabsTrigger>
           <TabsTrigger value="days-pending" className="gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            Days Pending
+            Days Outstanding
           </TabsTrigger>
         </TabsList>
 
@@ -554,7 +554,7 @@ export default function EximAccountPage() {
                       <SortIcon column="LastAmount" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-right">Days Pending</TableHead>
+                  <TableHead className="text-right">Days Outstanding</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -710,7 +710,7 @@ export default function EximAccountPage() {
         <TabsContent value="days-pending">
           <Card className="card-hover shimmer-hover">
             <CardHeader>
-              <CardTitle>Days Pending</CardTitle>
+              <CardTitle>Days Outstanding</CardTitle>
               <CardDescription>
                 Entries sorted by days since last transaction — oldest first
               </CardDescription>
@@ -732,7 +732,7 @@ export default function EximAccountPage() {
                       <TableHead>Card Name</TableHead>
                       <TableHead className="text-right">Balance (₹)</TableHead>
                       <TableHead className="text-right">Last Trans. Date</TableHead>
-                      <TableHead className="text-right">Days Pending</TableHead>
+                      <TableHead className="text-right">Days Outstanding</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
