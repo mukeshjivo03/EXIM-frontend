@@ -45,15 +45,24 @@ export function DatePicker({ value, onChange, placeholder = "dd/mm/yyyy", classN
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value;
-    setInputText(raw);
 
-    if (raw === "") {
+    // Strip non-digits and limit to 8 digits (ddmmyyyy)
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+
+    // Auto-format with slashes: dd/mm/yyyy
+    let formatted = digits;
+    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (digits.length > 4) formatted = formatted.slice(0, 5) + "/" + formatted.slice(5);
+
+    setInputText(formatted);
+
+    if (formatted === "") {
       onChange("");
       return;
     }
 
-    if (raw.length === 10) {
-      const parsed = parse(raw, "dd/MM/yyyy", new Date());
+    if (digits.length === 8) {
+      const parsed = parse(formatted, "dd/MM/yyyy", new Date());
       if (isValid(parsed)) {
         onChange(format(parsed, "yyyy-MM-dd"));
       }
@@ -77,7 +86,6 @@ export function DatePicker({ value, onChange, placeholder = "dd/mm/yyyy", classN
         value={inputText}
         onChange={handleInputChange}
         placeholder={placeholder}
-        maxLength={10}
         className="flex-1 min-w-0"
       />
       <Popover open={open} onOpenChange={setOpen}>
