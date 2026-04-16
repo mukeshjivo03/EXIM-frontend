@@ -47,8 +47,8 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey | 
 
 /* ── Insight card ─────────────────────────────────────────────── */
 
-function InsightCard({ insight, loading }: { insight: DebitInsight | undefined; loading: boolean; }) {
-  const isGain = insight?.type === "GAIN";
+function InsightCard({ type, insight, loading }: { type: "GAIN" | "LOSS"; insight: DebitInsight | undefined; loading: boolean; }) {
+  const isGain = type === "GAIN";
   const Icon = isGain ? TrendingUp : TrendingDown;
 
   return (
@@ -62,7 +62,7 @@ function InsightCard({ insight, loading }: { insight: DebitInsight | undefined; 
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {loading || !insight ? (
+        {loading ? (
           <>
             <Skeleton className="h-6 w-24" />
             <Skeleton className="h-4 w-32" />
@@ -71,13 +71,13 @@ function InsightCard({ insight, loading }: { insight: DebitInsight | undefined; 
         ) : (
           <>
             <p className={cn("text-2xl font-bold", isGain ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-              {fmtDecimal(Math.abs(insight.total_qty))} MTS
+              {fmtDecimal(Math.abs(insight?.total_qty ?? 0))} MTS
             </p>
             <p className="text-sm text-muted-foreground">
-              Value: ₹ {fmtDecimal(Math.abs(insight.total_value))}
+              Value: ₹ {fmtDecimal(Math.abs(insight?.total_value ?? 0))}
             </p>
             <p className="text-xs text-muted-foreground">
-              {insight.total_records} record{insight.total_records !== 1 ? "s" : ""}
+              {insight?.total_records ?? 0} record{(insight?.total_records ?? 0) !== 1 ? "s" : ""}
             </p>
           </>
         )}
@@ -182,8 +182,8 @@ export default function StockVariancePage() {
 
       {/* Insight Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <InsightCard insight={gainInsight} loading={insightsLoading} />
-        <InsightCard insight={lossInsight} loading={insightsLoading} />
+        <InsightCard type="GAIN" insight={gainInsight} loading={insightsLoading} />
+        <InsightCard type="LOSS" insight={lossInsight} loading={insightsLoading} />
       </div>
 
       {/* Table Card */}
