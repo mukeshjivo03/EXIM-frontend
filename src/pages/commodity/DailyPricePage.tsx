@@ -71,7 +71,13 @@ function fmtPrice(v: number | string, decimals = 2): string {
 function DeltaBadge({ current, previous }: { current: number; previous: number | null }) {
   if (previous === null || previous === 0) return null;
   const diff = current - previous;
-  if (Math.abs(diff) < 0.001) return null;
+  if (Math.abs(diff) < 0.001) {
+    return (
+      <span className="inline-flex items-center gap-1 text-sm font-bold px-1.5 py-0.5 rounded-md ml-1.5 bg-muted text-muted-foreground">
+        ₹0.00
+      </span>
+    );
+  }
   const isUp = diff > 0;
   return (
     <span className={cn(
