@@ -11,6 +11,7 @@ import {
   TrendingDown,
   ArrowUpRight,
   ArrowDownRight,
+  Minus,
   Search,
   AlertCircle,
   BarChart3,
@@ -69,19 +70,19 @@ function fmtPrice(v: number | string, decimals = 2): string {
 /* ── Delta badge component ───────────────────────────────── */
 
 function DeltaBadge({ current, previous }: { current: number; previous: number | null }) {
-  if (previous === null || previous === 0) return null;
+  if (previous === null) return null;
   const diff = current - previous;
   if (Math.abs(diff) < 0.001) {
     return (
-      <span className="inline-flex items-center gap-1 text-sm font-bold px-1.5 py-0.5 rounded-md ml-1.5 bg-muted text-muted-foreground">
-        ₹0.00
+      <span className="inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+        <Minus className="h-3.5 w-3.5" />₹0.00
       </span>
     );
   }
   const isUp = diff > 0;
   return (
     <span className={cn(
-      "inline-flex items-center gap-1 text-sm font-bold px-1.5 py-0.5 rounded-md ml-1.5",
+      "inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-md",
       isUp ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
     )}>
       {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
@@ -422,8 +423,10 @@ export default function DailyPricePage() {
                           <TableCell className="font-medium text-center border border-black">{idx + 1}</TableCell>
                           <TableCell className="font-medium text-center border border-black">{item.commodity_name}</TableCell>
                           <TableCell className="text-center border border-black" style={{ backgroundColor: heatmapBg(factoryVal, priceRange.min, priceRange.max) }}>
-                            <span className="font-semibold">{fmtPrice(item.factory_kg)}</span>
-                            <DeltaBadge current={factoryVal} previous={prevVal} />
+                            <div className="flex items-center justify-center gap-1.5 flex-nowrap">
+                              <span className="font-semibold">{fmtPrice(item.factory_kg)}</span>
+                              <DeltaBadge current={factoryVal} previous={prevVal} />
+                            </div>
                           </TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.packing_kg)}</TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.gst_kg)}</TableCell>
@@ -474,8 +477,10 @@ export default function DailyPricePage() {
                             className="text-right tabular-nums"
                             style={{ backgroundColor: heatmapBg(factoryVal, priceRange.min, priceRange.max) }}
                           >
-                            <span className="font-bold">{fmtPrice(item.factory_kg)}</span>
-                            <DeltaBadge current={factoryVal} previous={prevVal} />
+                            <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                              <span className="font-bold">{fmtPrice(item.factory_kg)}</span>
+                              <DeltaBadge current={factoryVal} previous={prevVal} />
+                            </div>
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.packing_kg)}</TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.gst_kg)}</TableCell>
