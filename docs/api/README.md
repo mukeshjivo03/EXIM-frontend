@@ -51,11 +51,15 @@ Refresh is skipped for `/account/login/` and `/account/login/refresh/` endpoints
 | `auth.ts` | Authentication | Login, logout |
 | `users.ts` | User management | CRUD users |
 | `dashboard.ts` | Dashboard data | Capacity insights, stock dashboard |
-| `stockStatus.ts` | Stock tracking | Stock CRUD, filters, insights, logs |
+| `stockStatus.ts` | Stock tracking | Stock CRUD, filters, insights, logs, variance/debit entries |
 | `tank.ts` | Tank management | Tank items, tanks, summaries, rates |
-| `dailyPrice.ts` | Commodity prices | Fetch, save, trends |
-| `license.ts` | Licenses | Advance + DFIA license headers & lines |
+| `dailyPrice.ts` | Commodity prices | Fetch, save, range, trends |
+| `license.ts` | Licenses | Advance + DFIA license headers & import/export lines |
 | `sapSync.ts` | SAP integration | Item sync, vendor sync, POs, balance, logs |
+| `openGrpo.ts` | Open GRPOs | Open purchase order data |
+| `jivoRate.ts` | Jivo rates | Jivo commodity rate data |
+| `customRates.ts` | Exchange rates | Custom exchange rate management |
+| `domesticContracts26.ts` | Contracts | Domestic contract data FY 2026-27 |
 
 ---
 
@@ -177,6 +181,7 @@ interface StockDashboardResponse {
 
 ```typescript
 const STATUS_CHOICES = [
+  "COMPLETED", "IN_TANK",
   "OUT_SIDE_FACTORY", "ON_THE_WAY", "UNDER_LOADING",
   "AT_REFINERY", "OTW_TO_REFINERY", "KANDLA_STORAGE",
   "MUNDRA_PORT", "ON_THE_SEA", "IN_CONTRACT",
@@ -199,43 +204,27 @@ interface StockStatus {
   vehicle_number?: string;
   location?: string;
   eta?: string;
+  arrival_date?: string;
   transporter_name?: string;
+  job_work_vendor?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;       // soft-delete flag
 }
 
-interface StockStatusPayload {
-  item_code: string;
-  status: StockStatusChoice;
-  vendor_code: string;
-  rate: string;
-  quantity: string;
-  created_by: string;
-  vehicle_number?: string;
-  location?: string;
-  eta?: string;
-  transporter_name?: string;
-}
-
 interface StockEntryByRM {
   id: number;
   vendor_code: string;
+  vendor_code__card_name: string;
   rate: number;
   quantity: number;
-  quantity_in_litre: number;   // backend-calculated liters
+  quantity_in_litre: number;
   total: number;
   vehicle_number: string | null;
   transporter: string | null;
   location: string | null;
   eta: string | null;
   created_at: string;
-}
-
-interface StockStatusFilters {
-  status?: string;
-  vendor?: string;
-  item?: string;
 }
 
 interface StockInsights {
@@ -249,13 +238,45 @@ interface StockInsights {
 }
 
 interface StockLog {
+  id: string;
+  stock: number;
+  action: "CREATE" | "UPDATE" | "DELETE" | string;
+  changed_by_label: string;
+  note: string;
+  timestamp: string;
+  field_logs: Array<{ field_name: string; old_value: unknown; new_value: unknown }>;
+}
+
+interface VehicleReport {
+  vehicle_number: string;
+  quantity_in_litre: number;
+  eta: string | null;
+  status: string;
+  job_work: string | null;
+  item_name: string;
+}
+
+// Stock Variance
+interface DebitEntry {
   id: number;
-  field_name: string;
-  old_value: string;
-  new_value: string;
-  updated_at: string;
-  updated_by: string;
-  stock_id: number;
+  type: "GAIN" | "LOSS";
+  quantity: string;         // negative for GAIN, positive for LOSS
+  rate: string;
+  total: string;            // negative for GAIN, positive for LOSS
+  vehicle_number: string;
+  responsible_transporter: string | null;
+  reason: string;
+  created_at: string;
+  created_by: string;
+  stock: number;            // FK to stock entry
+  responsible_party: string; // vendor card_code
+}
+
+interface DebitInsight {
+  type: "GAIN" | "LOSS";
+  total_qty: number;
+  total_records: number;
+  total_value: number;
 }
 ```
 
@@ -263,18 +284,28 @@ interface StockLog {
 
 | Function | Method | Endpoint | Description |
 |----------|--------|----------|-------------|
-| `getStockStatuses(filters?)` | GET | `/stock-status/` | List stocks (filterable) |
+| `getStockStatuses(filters?)` | GET | `/stock-status/` | List stocks (filterable by status/vendor/item) |
 | `getStockStatus(id)` | GET | `/stock-status/{id}/` | Get single stock record |
 | `createStockStatus(data)` | POST | `/stock-status/` | Create stock entry |
 | `updateStockStatus(id, data)` | PUT | `/stock-status/{id}/` | Update stock entry |
-| `softDeleteStockStatus(record)` | PATCH | `/stock-status/{id}/` | Soft-delete (sends only `{ deleted: true }`) |
+| `softDeleteStockStatus(record)` | PATCH | `/stock-status/{id}/` | Soft-delete (sends `{ deleted: true }`) |
 | `getUniqueRMCodes()` | GET | `/stock-status/get-unique-rm/` | List unique RM item codes |
-| `getStockEntriesByRM(itemCode)` | GET | `/stock-status/get-stock-entry-by-rm/` | Stock entries for an item code |
+| `getStockEntriesByRM(itemCode)` | GET | `/stock-status/get-stock-entry-by-rm/` | Stock entries for an item |
 | `getStockSummary()` | GET | `/stock-status/stock-summary/` | Overall stock summary |
 | `getStockInsights(filters?)` | GET | `/stock-status/stock-insights/` | Filtered stock insights |
-| `getStockLogs()` | GET | `/stock-status/stock-logs/` | Audit log of stock changes |
+| `getStockLogs()` | GET | `/stock-status/stock-logs/` | Audit log of all stock changes |
+| `getOutOfFactoryStockStatuses()` | GET | `/stock-status/out/` | Stocks currently outside factory |
+| `moveStock(data)` | POST | `/stock-status/move/` | Move stock to new status/quantity |
+| `dispatchStock(data)` | POST | `/stock-status/dispatch/` | Dispatch stock to destination |
+| `arriveBatch(data)` | POST | `/stock-status/arrive-batch/` | Record batch arrival with weighed qty |
+| `getVehicleReport(status)` | GET | `/stock-status/vehicle-report/` | Vehicle report filtered by status |
+| `createOpeningStock(data)` | POST | `/stock-status/opening-stock/` | Create opening stock entry |
+| `getDebitEntries()` | GET | `/stock-status/debit-entries/` | All variance (gain/loss) entries |
+| `getDebitInsights()` | GET | `/stock-status/debit-insights/` | Aggregated gain/loss summary |
 
-**Note:** Soft delete uses PATCH to send only `{ deleted: true }`. There is no hard DELETE endpoint for stock entries.
+**Notes:**
+- Soft delete uses PATCH to send only `{ deleted: true }`. There is no hard DELETE for stock entries.
+- GAIN entries have negative `quantity` and `total`; LOSS entries are positive. Display as `Math.abs()` with color coding.
 
 ---
 
@@ -311,67 +342,15 @@ interface TankSummary {
   item_count: number;
 }
 
-interface ItemWiseTankSummaryItem {
-  color: string;
-  tank_item_code: string;
-  tank_item_name: string;
-  quantity_in_liters: number;
-  total_capacity: number;
-  tank_count: number;
-  tank_numbers: string[];
-}
-
-interface ItemWiseTankSummary {
-  total_quantity: number;
-  items: ItemWiseTankSummaryItem[];
-}
-
 interface TankLog {
   id: number;
   tank_code: string;
   log_type: "INWARD" | "OUTWARD";
   quantity: string;
-  stock_status_id?: number;
-  tank_layer_id?: number;
   remarks: string;
   created_at: string;
   created_by: string;
   consumptions: TankLogConsumption[];
-}
-
-interface TankLogConsumption {
-  id: number;
-  layer_id: number;
-  stock_status_id: number;
-  vendor_name: string;
-  quantity_consumed: string;
-  rate: string;
-  created_at: string;
-}
-
-interface TankInwardPayload {
-  tank_code: string;
-  stock_status_id: string;
-  quantity: string;
-  user: string;
-}
-
-interface TankOutwardPayload {
-  tank_code: string;
-  quantity: string;
-  remarks: string;
-  user: string;
-}
-
-interface TankRateBreakdown {
-  tank_code: string;
-  item_code: string;
-  item_name: string;
-  color: string;
-  tank_capacity: number;
-  current_capacity: number;
-  rate_breakdown: RateBreakdownEntry[];
-  weighted_avg_rate: number;
 }
 ```
 
@@ -392,7 +371,7 @@ interface TankRateBreakdown {
 | `updateTank(code, data)` | PUT | `/tank/update-capacity/{code}/` | Update tank capacity + item |
 | **Summaries** | | | |
 | `getTankSummary()` | GET | `/tank/tank-summary/` | Overall tank summary |
-| `getItemWiseTankSummary()` | GET | `/tank/item-wise-summary/` | Per-item tank summary (returns `{ total_quantity, items[] }`) |
+| `getItemWiseTankSummary()` | GET | `/tank/item-wise-summary/` | Per-item tank summary |
 | `getTankLayers(code)` | GET | `/tank/layers/{code}/` | Rate breakdown layers for a tank |
 | **Operations** | | | |
 | `tankInward(data)` | POST | `/tank/inward/` | Add stock to tank |
@@ -439,105 +418,169 @@ interface PriceTrendsResponse {
 |----------|--------|----------|-------------|
 | `fetchDailyPrices()` | GET | `/daily-price/fetch/` | Preview today's prices (not saved) |
 | `saveDailyPrices()` | POST | `/daily-price/fetch/` | Save fetched prices to database |
-| `getDailyPricesByDate(date)` | GET | `/daily-price/db-list/?date=YYYY-MM-DD` | Get saved prices for a date |
+| `getDailyPricesByDate(date)` | GET | `/daily-price/db-list/?date=YYYY-MM-DD` | Prices for a specific date |
+| `getDailyPricesByRange(from, to)` | GET | `/daily-price/range/?from_date=&to_date=` | Prices across a date range |
 | `getPriceTrends()` | GET | `/daily-price/trends/` | Historical trend data for charts |
+
+**Note:** `getPriceTrends()` returns `{ labels: [], datasets: [] }` when no data is saved. At least 2 days of saved prices are needed to produce a meaningful chart.
 
 ---
 
 ## Licenses (`src/api/license.ts`)
 
-### Advance License Types
+### Advance License
+
+Advance Licenses have a header (metadata) and separate import lines + export lines.
+
+#### Types
 
 ```typescript
+interface ImportLine {
+  id: number;
+  boe_No: string;           // NOTE: camelCase "No" from backend
+  boe_value_usd: string;
+  boe_date: string;
+  import_in_mts: string;
+  license_no: string;
+}
+
+interface ExportLine {
+  id: number;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+  license_no: string;
+}
+
 interface LicenseHeader {
-  license_no: string;                    // primary key
-  lincense_lines: LicenseLine[];         // NOTE: "lincense" is a backend typo
+  license_no: string;
+  import_lines: ImportLine[];
+  export_lines: ExportLine[];
   issue_date: string;
   import_validity: string;
   export_validity: string;
-  import_in_mts: string;
   cif_value_inr: string;
-  cif_value_usd: string;
+  cif_value_usd: string;         // computed by backend
   cif_exchange_rate: string;
-  export_in_mts: string;
   fob_value_inr: string;
-  fob_value_usd: string;
-  fob_exhange_rate: string;             // NOTE: "exhange" is a backend typo
-  status: string;                        // "OPEN" | "CLOSE"
+  fob_value_usd: string;         // computed by backend
+  fob_exhange_rate: string;      // NOTE: "exhange" is a backend typo
+  status: string;                // "OPEN" | "CLOSE"
+  total_import: string;          // sum of import lines
+  total_export: string;          // sum of export lines
+  to_be_exported: string;        // computed
+  balance: string;               // computed remaining balance
 }
 
-interface LicenseLine {
-  id: number;
-  boe_No: string;                        // NOTE: camelCase "No" from backend
-  boe_value_usd: string;
-  shipping_bill_no: string;
-  date: string;
-  sb_value_usd: string;
-  import_in_mts: string;
-  export_in_mts: string;
-  balance: string;
+interface LicenseHeaderPayload {
   license_no: string;
+  issue_date: string;
+  import_validity: string;
+  export_validity: string;
+  cif_value_inr: string;
+  cif_exchange_rate: string;
+  fob_value_inr: string;
+  fob_exhange_rate: string;
+  status: string;
 }
 ```
 
-### Advance License Endpoints
+#### Endpoints
 
 | Function | Method | Endpoint | Description |
 |----------|--------|----------|-------------|
 | `getLicenseHeaders()` | GET | `/license/advance-license-headers/` | List all headers |
-| `getLicenseHeader(no)` | GET | `/license/advance-license-header/{no}/` | Get header + lines |
+| `getLicenseHeader(no)` | GET | `/license/advance-license-header/{no}/` | Get header + nested lines |
 | `createLicenseHeader(data)` | POST | `/license/advance-license-headers/` | Create header |
 | `updateLicenseHeader(no, data)` | PUT | `/license/advance-license-header/{no}/` | Update header |
 | `deleteLicenseHeader(no)` | DELETE | `/license/advance-license-header/{no}/` | Delete header |
-| `createLicenseLine(data)` | POST | `/license/advance-license-lines/` | Create line |
-| `updateLicenseLine(id, data)` | PUT | `/license/advance-license-lines/{id}/` | Update line |
+| `createImportLine(data)` | POST | `/license/advance-license-import-lines/` | Create import line |
+| `updateImportLine(id, data)` | PUT | `/license/advance-license-import-lines/{id}/` | Update import line |
+| `deleteImportLine(id)` | DELETE | `/license/advance-license-import-lines/{id}/` | Delete import line |
+| `createExportLine(data)` | POST | `/license/advance-license-export-lines/` | Create export line |
+| `updateExportLine(id, data)` | PUT | `/license/advance-license-export-lines/{id}/` | Update export line |
+| `deleteExportLine(id)` | DELETE | `/license/advance-license-export-lines/{id}/` | Delete export line |
 
-### DFIA License Types
+---
+
+### DFIA License
+
+DFIA (Duty Free Import Authorization) also has a header plus separate import and export lines.
+
+#### Types
 
 ```typescript
-interface DFIALicenseHeader {
-  file_no: string;                       // primary key
-  dfia_license_lines: DFIALicenseLine[];
-  issue_date: string;
-  export_validity: string;
-  export_in_mts: string;
-  fob_value_inr: string;
-  fob_value_usd: string;
-  fob_exchange_rate: string;
-  import_validity: string;
-  import_in_mts: string;
-  cif_value_inr: string;
-  cif_value_usd: string;
-  cif_exchange_rate: string;
-  status: string;                        // "OPEN" | "CLOSE"
-}
-
-interface DFIALicenseLine {
+interface DFIAImportLine {
   id: number;
   boe_no: string;
-  shipping_bill_no: string;
-  date: string;
-  to_be_imported_in_mts: string;
-  exported_in_mts: string;
-  balance: string;
-  sb_value_inr: string;
+  boe_value_usd: string;
+  boe_date: string;
+  import_in_mts: string;
   license_no: string;
+}
+
+interface DFIAExportLine {
+  id: number;
+  shipping_bill_no: string;
+  sb_value_usd: string;
+  export_in_mts: string;
+  license_no: string;
+}
+
+interface DFIALicenseHeader {
+  file_no: string;                   // primary key
+  dfia_import_lines: DFIAImportLine[];
+  dfia_export_lines: DFIAExportLine[];
+  issue_date: string;
+  export_validity: string;
+  export_in_mts: string;             // read-only from backend
+  fob_value_inr: string;
+  fob_value_usd: string;             // computed
+  fob_exchange_rate: string;
+  import_validity: string;
+  import_in_mts: string;             // read-only from backend
+  cif_value_inr: string;
+  cif_value_usd: string;             // computed
+  cif_exchange_rate: string;
+  status: string;                    // "OPEN" | "CLOSE" | "Active"
+  total_import: string;
+  total_export: string;
+  to_be_imported: string;
+  balance: string;
+}
+
+interface DFIALicenseHeaderPayload {
+  file_no: string;
+  issue_date: string;
+  export_validity: string;
+  fob_value_inr: string;
+  fob_exchange_rate: string;
+  import_validity: string;
+  cif_value_inr: string;
+  cif_exchange_rate: string;
+  status: string;
+  // NOTE: export_in_mts and import_in_mts are NOT sent in the payload —
+  // they are computed by the backend from the lines
 }
 ```
 
-### DFIA License Endpoints
+#### Endpoints
 
 | Function | Method | Endpoint | Description |
 |----------|--------|----------|-------------|
 | `getDFIALicenseHeaders()` | GET | `/license/dfia-license-header/list/` | List all headers |
-| `getDFIALicenseHeader(no)` | GET | `/license/dfia-license-header/{no}/` | Get header + lines |
+| `getDFIALicenseHeader(no)` | GET | `/license/dfia-license-header/{no}/` | Get header + nested lines |
 | `createDFIALicenseHeader(data)` | POST | `/license/dfia-license-header/create/` | Create header |
 | `updateDFIALicenseHeader(no, data)` | PUT | `/license/dfia-license-header/{no}/` | Update header |
 | `deleteDFIALicenseHeader(no)` | DELETE | `/license/dfia-license-header/{no}/` | Delete header |
-| `createDFIALicenseLine(data)` | POST | `/license/dfia-license-lines/create/` | Create line |
-| `updateDFIALicenseLine(id, data)` | PUT | `/license/dfia-license-lines/{id}/` | Update line |
+| `createDFIAImportLine(data)` | POST | `/license/dfia-license-import-lines/create/` | Create import line |
+| `updateDFIAImportLine(id, data)` | PUT | `/license/dfia-license-import-lines/{id}/` | Update import line |
+| `deleteDFIAImportLine(id)` | DELETE | `/license/dfia-license-import-lines/{id}/` | Delete import line |
+| `createDFIAExportLine(data)` | POST | `/license/dfia-license-export-lines/create/` | Create export line |
+| `updateDFIAExportLine(id, data)` | PUT | `/license/dfia-license-export-lines/{id}/` | Update export line |
+| `deleteDFIAExportLine(id)` | DELETE | `/license/dfia-license-export-lines/{id}/` | Delete export line |
 
-**Note:** DFIA endpoint patterns differ from Advance License (e.g., `/list/` suffix, `/create/` suffix). This is a backend inconsistency to be aware of.
+**Note:** DFIA endpoint URL patterns differ from Advance License (e.g., `/list/` and `/create/` suffixes). This is a backend inconsistency.
 
 ---
 
@@ -546,26 +589,6 @@ interface DFIALicenseLine {
 ### Types
 
 ```typescript
-interface SapItem {
-  id: number;
-  item_code: string;
-  item_name: string;
-  category: string;
-  sal_factor2: string;
-  u_tax_rate: number;
-  deleted: string;
-  u_variety: string;
-  sal_pack_un: string;
-  u_brand: string;
-  u_unit: string;
-  u_sub_group: string;
-  total_trans_value: string;
-  total_in_qty: string;
-  total_out_qty: string;
-  total_qty: string;
-  rate: string;
-}
-
 interface Vendor {
   id: number;
   card_code: string;
@@ -573,32 +596,6 @@ interface Vendor {
   state: string;
   u_main_group: string;
   country: string;
-}
-
-interface PO {
-  id: number;
-  po_number: string;
-  po_date: string | null;
-  status: string;
-  product_code: string;
-  product_name: string;
-  vendor: string;
-  contract_qty: string | null;
-  contract_rate: string | null;
-  contract_value: string | null;
-  load_qty: string | null;
-  unload_qty: string | null;
-  allowance: string | null;
-  transporter: string | null;
-  vehicle_no: string | null;
-  bilty_no: string | null;
-  bilty_date: string | null;
-  grpo_no: string;
-  grpo_date: string | null;
-  invoice_no: string;
-  basic_amount: string | null;
-  landed_cost: string | null;
-  net_amount: string | null;
 }
 
 interface BalanceEntry {
@@ -628,7 +625,7 @@ interface SyncLog {
 | Function | Method | Endpoint | Description |
 |----------|--------|----------|-------------|
 | **Raw Materials** | | | |
-| `getRmItems(varieties?)` | GET | `/items/rm/` | List RM items (filterable by variety) |
+| `getRmItems(varieties?)` | GET | `/items/rm/` | List RM items |
 | `getRmItem(code)` | GET | `/item/rm/{code}/` | Get single RM item |
 | `deleteRmItem(code)` | DELETE | `/item/rm/{code}/` | Delete RM item |
 | `syncRmItems()` | GET | `/sap_sync/rm/items/` | Sync all RM items from SAP |
@@ -642,7 +639,7 @@ interface SyncLog {
 | `syncFgItems()` | GET | `/sap_sync/fg/items/` | Sync all FG items from SAP |
 | `syncSingleFgItem(code)` | GET | `/sap_sync/fg/item/{code}/` | Sync single FG item |
 | **Vendors** | | | |
-| `getVendors()` | GET | `/parties/` | List all vendors |
+| `getVendors()` | GET | `/parties/` | List all vendors (returns `{ count, parties[] }`) |
 | `getVendor(code)` | GET | `/party/{code}/` | Get single vendor |
 | `deleteVendor(code)` | DELETE | `/party/{code}/` | Delete vendor |
 | `syncVendor(code)` | GET | `/sap_sync/party/{code}/` | Sync vendor from SAP |
@@ -667,10 +664,9 @@ These are field naming issues from the backend that the frontend works around:
 
 | Issue | Location | Details |
 |-------|----------|---------|
-| `lincense_lines` | `LicenseHeader` | Misspelled "license" |
 | `fob_exhange_rate` | `LicenseHeader` | Misspelled "exchange" |
-| `boe_No` | `LicenseLine` | Inconsistent casing (camelCase `No`) |
+| `boe_No` | `ImportLine` | Inconsistent casing (camelCase `No`) |
 | `Last Transanction Amount` | `BalanceEntry` | Misspelled "Transaction" |
 | `records_procesed` | `SyncLog` | Misspelled "processed" |
 | `/sap_sync/` vs `/sap-sync/` | SAP endpoints | Inconsistent URL prefixes |
-| `/dfia-license-header/list/` | DFIA endpoints | Different URL pattern from Advance License |
+| `/dfia-license-header/list/` | DFIA endpoints | `/list/` and `/create/` suffixes differ from Advance License pattern |

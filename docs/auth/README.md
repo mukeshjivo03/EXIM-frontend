@@ -2,7 +2,7 @@
 
 ## Overview
 
-The app uses **JWT (JSON Web Token)** authentication with access/refresh token pairs. The backend is a Django REST Framework server using `djangorestframework-simplejwt` (or similar).
+The app uses **JWT (JSON Web Token)** authentication with access/refresh token pairs. The backend is a Django REST Framework server using `djangorestframework-simplejwt`.
 
 ---
 
@@ -57,7 +57,7 @@ The Axios response interceptor in `src/api/client.ts` handles automatic token re
 
 2. The `_retry` flag prevents infinite loops on the same request
 
-3. Multiple concurrent 401s are handled by queuing - only one refresh call is made
+3. Multiple concurrent 401s are handled by queuing — only one refresh call is made
 
 ---
 
@@ -85,7 +85,6 @@ import { useAuth } from "@/context/AuthContext";
 
 function MyComponent() {
   const { role, name, isLoggedIn, clearAuth } = useAuth();
-  // ...
 }
 ```
 
@@ -117,36 +116,33 @@ On mount, `AuthProvider` reads from `localStorage`:
 ```typescript
 interface Props {
   children: React.ReactNode;
-  allowedRoles?: string[];    // e.g., ["ADM", "MNG"]
+  requiredModules?: string[];   // e.g., ["stockstatus", "tankitem"]
 }
 ```
 
 ### Behavior
 
-1. If `!isLoggedIn` -> redirect to `/login`
-2. If `allowedRoles` is provided and user's role is not in the list -> redirect to `/`
-3. Otherwise -> render `children`
+1. If `!isLoggedIn` → redirect to `/login`
+2. If `requiredModules` is provided, user must have at least one of the listed modules → otherwise redirect to `/`
+3. Otherwise → render `children`
 
 ### Usage in Routes (`src/App.tsx`)
 
 ```tsx
-// Wraps the entire layout - requires login
+// Wraps the entire layout — requires login
 <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
 
-  // No role restriction - all logged-in users
-  <Route path="/stock/tank-items" element={<TankItemsPage />} />
-
-  // ADM + MNG only
-  <Route path="/dashboard" element={
-    <ProtectedRoute allowedRoles={["ADM", "MNG"]}>
-      <DashboardPage />
+  // Module-guarded route
+  <Route path="/stock/stock-status" element={
+    <ProtectedRoute requiredModules={["stockstatus"]}>
+      <StockStatusPage />
     </ProtectedRoute>
   } />
 
-  // ADM only
-  <Route path="/admin/users" element={
-    <ProtectedRoute allowedRoles={["ADM"]}>
-      <UsersPage />
+  // Multiple modules — user needs at least one
+  <Route path="/stock/variance" element={
+    <ProtectedRoute requiredModules={["stockstatus"]}>
+      <StockVariancePage />
     </ProtectedRoute>
   } />
 </Route>
@@ -162,14 +158,25 @@ interface Props {
 | `/stock/tank-items` | Yes | Yes | Yes |
 | `/stock/tank-monitoring` | Yes | Yes | Yes |
 | `/stock/tank-data` | Yes | Yes | Yes |
+| `/stock/tank-logs` | Yes | Yes | Yes |
 | `/dashboard` | Yes | Yes | No |
 | `/stock-dashboard` | Yes | Yes | No |
 | `/stock/stock-status` | Yes | Yes | No |
+| `/stock/variance` | Yes | Yes | No |
+| `/stock/warehouse-inventory` | Yes | Yes | No |
+| `/reports/vehicle-report` | Yes | Yes | No |
+| `/reports/director-dashboard` | Yes | Yes | No |
 | `/domestic-contracts` | Yes | Yes | No |
+| `/contracts/domestic-2627` | Yes | Yes | No |
+| `/contracts/open-grpos` | Yes | Yes | No |
 | `/exim-account` | Yes | Yes | No |
+| `/exim-rates` | Yes | Yes | No |
 | `/commodity/daily-price` | Yes | Yes | No |
+| `/commodity/jivo-rates` | Yes | Yes | No |
 | `/license/advance-license` | Yes | Yes | No |
+| `/license/advance-license/:licenseNo` | Yes | Yes | No |
 | `/license/dfia-license` | Yes | Yes | No |
+| `/license/dfia-license/:fileNo` | Yes | Yes | No |
 | `/admin/stock-updation-logs` | Yes | Yes | No |
 | `/admin/users` | Yes | No | No |
 | `/admin/sync-raw-material-data` | Yes | No | No |
@@ -181,28 +188,26 @@ interface Props {
 
 ## Sidebar Role Filtering
 
-The sidebar (`src/components/Sidebar.tsx`) also filters navigation links by role, so users only see links they have access to. This is a UI-level filter on top of the route-level protection.
+The sidebar (`src/components/Sidebar.tsx`) filters navigation links by module permissions. Each link declares a `modules` array — the user must have at least one matching module to see the link.
 
-### Sidebar Sections by Role
+### Sidebar Sections
 
-| Section | ADM | MNG | FTR |
-|---------|-----|-----|-----|
-| Home | Yes | Yes | Yes |
-| Dashboard | Yes | Yes | No |
-| Stock (tanks only) | Yes | Yes | Yes |
-| Stock Status | Yes | Yes | No |
-| Commodity Price | Yes | Yes | No |
-| Accounts | Yes | Yes | No |
-| Contracts | Yes | Yes | No |
-| License | Yes | Yes | No |
-| Admin (stock logs) | Yes | Yes | No |
-| Admin (users, sync) | Yes | No | No |
+| Section | Links |
+|---------|-------|
+| Reports | Dashboard, Stock Dashboard, Director Dashboard, Warehouse Inventory, Vehicle Report |
+| Stock | Stock Status, **Stock Variance**, Tank Items, Tank Monitoring, Tank Data, Tank Logs |
+| Domestic Contracts | FY 2025-2026, FY 2026-2027 |
+| Accounts | Dr/Cr Outstanding, Open GRPOs |
+| Commodity Price | Daily Price, Jivo Rates |
+| Custom Exchange Rates | Exchange Rates |
+| License | Advance License, DFIA License |
+| Administration | Users, Sync (RM/FG/Vendor), Sync Logs, Stock Updation Logs |
 
 ---
 
 ## Security Notes
 
 - Tokens are stored in `localStorage` (not httpOnly cookies). This is a common SPA pattern but means tokens are accessible via JavaScript.
-- The backend should validate tokens on every request regardless of frontend checks.
-- Role checks happen on both frontend (UI visibility) and backend (API authorization).
+- The backend validates tokens on every request regardless of frontend checks.
+- Module checks happen on both frontend (UI visibility) and backend (API authorization).
 - When a refresh token fails, ALL stored auth data is cleared to prevent stale state.

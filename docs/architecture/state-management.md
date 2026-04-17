@@ -81,6 +81,18 @@ The DailyPricePage checks `fetched` before calling the API. If already fetched, 
 
 ---
 
+### 4. JivoRateContext (`src/context/JivoRateContext.tsx`)
+
+**Purpose:** Caches Jivo commodity rate data shared across components.
+
+---
+
+### 5. OpenGrpoContext (`src/context/OpenGrpoContext.tsx`)
+
+**Purpose:** Caches open GRPO data to avoid re-fetching when navigating between pages.
+
+---
+
 ## Data Flow Patterns
 
 ### Pattern 1: Page-Level Fetch
