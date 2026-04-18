@@ -16,6 +16,7 @@ import {
 import { getStockDashboard, type StockDashboardResponse } from "@/api/dashboard";
 import { getStockStatuses, type StockStatus } from "@/api/stockStatus";
 import { getVendors } from "@/api/sapSync";
+import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,6 +37,19 @@ function convertUnit(kg: number, unit: Unit): number {
 function fmtNum(n: number, unit: Unit = "KG") {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+function convertFromLiters(liters: number, unit: Unit): number {
+  if (unit === "KG") return liters / 1.0989;
+  if (unit === "MTS") return liters / 1.0989 / 1000;
+  return liters;
+}
+
+function fmtLiters(n: number, unit: Unit) {
+  return convertFromLiters(n, unit).toLocaleString("en-IN", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -82,6 +96,7 @@ export default function StockDashboardDetailPage() {
 
   const [data, setData] = useState<StockDashboardResponse | null>(null);
   const [records, setRecords] = useState<StockStatus[]>([]);
+  const [tankSummary, setTankSummary] = useState<ItemWiseTankSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit>("MTS");
   const [vendorMap, setVendorMap] = useState<Map<string, string>>(new Map());
@@ -89,16 +104,20 @@ export default function StockDashboardDetailPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [res, recs, vendors] = await Promise.all([
-        getStockDashboard(),
-        getStockStatuses({ status: status ?? "" }),
-        getVendors(),
-      ]);
-      setData(res);
-      setRecords((recs ?? []).filter((r) => !r.deleted));
-      const map = new Map<string, string>();
-      for (const v of vendors.parties) map.set(v.card_code, v.card_name);
-      setVendorMap(map);
+      if (status === "IN_FACTORY") {
+        const [res, ts] = await Promise.all([getStockDashboard(), getItemWiseTankSummary()]);
+        setData(res);
+        setTankSummary(ts);
+      } else {
+        const [[res, recs, vendors]] = await Promise.all([
+          Promise.all([getStockDashboard(), getStockStatuses({ status: status ?? "" }), getVendors()]),
+        ]);
+        setData(res);
+        setRecords((recs ?? []).filter((r) => !r.deleted));
+        const map = new Map<string, string>();
+        for (const v of vendors.parties) map.set(v.card_code, v.card_name);
+        setVendorMap(map);
+      }
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load stock data"));
     } finally {
@@ -179,8 +198,8 @@ export default function StockDashboardDetailPage() {
       <StatusHeroBanner
         activeStatus={status ?? ""}
         label={meta.label}
-        itemCount={rows.length}
-        totalVolume={fmtNum(grandTotal, unit)}
+        itemCount={status === "IN_FACTORY" ? (tankSummary?.items.length ?? 0) : rows.length}
+        totalVolume={status === "IN_FACTORY" ? fmtLiters(tankSummary?.total_quantity ?? 0, unit) : fmtNum(grandTotal, unit)}
         unit={UNIT_LABELS[unit]}
       />
 
@@ -230,26 +249,48 @@ export default function StockDashboardDetailPage() {
         <div className={cn("rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none", meta.headerBg)}>
           <p className={cn("text-xs font-normal uppercase tracking-[0.2em]", meta.textColor)}>Active Items</p>
           <div className="flex items-end justify-between mt-2">
-            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>{rows.length}</h3>
+            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>
+              {status === "IN_FACTORY" ? (tankSummary?.items.length ?? 0) : rows.length}
+            </h3>
             <LayoutGrid className={cn("h-8 w-8 opacity-20", meta.textColor)} />
           </div>
         </div>
         <div className={cn("rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none", meta.headerBg)}>
           <p className={cn("text-xs font-normal uppercase tracking-[0.2em]", meta.textColor)}>Total Volume</p>
           <div className="flex items-end justify-between mt-2">
-            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>{fmtNum(grandTotal, unit)}</h3>
-            <p className={cn("text-sm font-normal uppercase", meta.textColor)}>{UNIT_LABELS[unit]}</p>
-          </div>
-        </div>
-        <div className="rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none bg-indigo-50 dark:bg-indigo-950/20">
-          <p className="text-xs font-normal uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Status Type</p>
-          <div className="flex items-end justify-between mt-2">
-            <h3 className="text-2xl font-normal tracking-tight text-indigo-800 dark:text-indigo-200">
-              {isSimpleStatus ? "Single Category" : "Vendor Breakdown"}
+            <h3 className={cn("text-4xl font-normal tracking-tight", meta.textColor)}>
+              {status === "IN_FACTORY"
+                ? (tankSummary ? (tankSummary.total_quantity / 1.0989).toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "—")
+                : fmtNum(grandTotal, unit)}
             </h3>
-            <ChevronRight className="h-8 w-8 text-indigo-500 opacity-20" />
+            <p className={cn("text-sm font-normal uppercase", meta.textColor)}>
+              {status === "IN_FACTORY" ? "KG" : UNIT_LABELS[unit]}
+            </p>
           </div>
         </div>
+        {status === "IN_FACTORY" && tankSummary ? (
+          <div className="rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none bg-indigo-50 dark:bg-indigo-950/20">
+            <p className="text-xs font-normal uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Tank Utilization</p>
+            <div className="flex items-end justify-between mt-2">
+              <h3 className="text-4xl font-normal tracking-tight text-indigo-800 dark:text-indigo-200">
+                {tankSummary.total_quantity > 0
+                  ? `${((tankSummary.total_quantity / tankSummary.items.reduce((s, i) => s + i.total_capacity, 0)) * 100).toFixed(1)}%`
+                  : "0%"}
+              </h3>
+              <ChevronRight className="h-8 w-8 text-indigo-500 opacity-20" />
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-3xl p-6 flex flex-col justify-between shadow-xl border-none bg-indigo-50 dark:bg-indigo-950/20">
+            <p className="text-xs font-normal uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Status Type</p>
+            <div className="flex items-end justify-between mt-2">
+              <h3 className="text-2xl font-normal tracking-tight text-indigo-800 dark:text-indigo-200">
+                {isSimpleStatus ? "Single Category" : "Vendor Breakdown"}
+              </h3>
+              <ChevronRight className="h-8 w-8 text-indigo-500 opacity-20" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -262,6 +303,48 @@ export default function StockDashboardDetailPage() {
                   <Skeleton key={i} className="h-12 w-full rounded-xl" />
                 ))}
               </div>
+            ) : status === "IN_FACTORY" ? (
+              !tankSummary || tankSummary.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+                  <Inbox className="h-12 w-12 opacity-10" />
+                  <p className="font-bold uppercase tracking-widest text-sm">No tank data available</p>
+                </div>
+              ) : (
+                /* ── Tank item-wise summary for IN_FACTORY ── */
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className={cn("border-b-2", meta.headerBg)}>
+                        <th className="sticky left-0 z-10 px-8 py-5 text-left font-medium uppercase tracking-[0.2em] border-r bg-muted/20 backdrop-blur-md text-sm">Item Code</th>
+                        <th className={cn("px-8 py-5 text-right font-medium uppercase tracking-[0.2em] text-sm", meta.textColor)}>Quantity (KG)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tankSummary.items.map((item, idx) => (
+                        <tr key={item.tank_item_code} className={cn("border-b transition-all hover:bg-primary/5", idx % 2 === 0 ? "bg-card" : "bg-muted/10")}>
+                          <td className="sticky left-0 z-10 px-8 py-5 border-r bg-inherit">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                              <span className="font-medium text-base">{item.tank_item_code}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5 text-right tabular-nums text-base font-medium">
+                            {(item.quantity_in_liters / 1.0989).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/80 border-t-2 border-primary/20">
+                        <td className="sticky left-0 z-10 px-8 py-5 uppercase tracking-widest bg-inherit text-sm font-medium">Grand Total</td>
+                        <td className="px-8 py-5 text-right tabular-nums text-primary text-base font-medium">
+                          {(tankSummary.total_quantity / 1.0989).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )
             ) : (!data || (MATRIX_STATUSES.has(status ?? "") ? rows.length === 0 : records.length === 0)) ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
                 <Inbox className="h-12 w-12 opacity-10" />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ClipboardList,
@@ -24,6 +24,12 @@ import {
   ArrowRight,
   Globe,
   Warehouse,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Zap,
+  MapPin,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -95,6 +101,19 @@ const CATEGORY_STYLES = {
   Commercials: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white",
   Administration: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white",
 };
+
+/* ── Weather badge helpers ───────────────────────────────── */
+interface WeatherData { temp: number; condition: string; city: string; Icon: React.ElementType; color: string; }
+
+function weatherMeta(code: number): Omit<WeatherData, "temp" | "city"> {
+  if (code === 0)        return { condition: "Clear",       Icon: Sun,       color: "#fde047" };
+  if (code <= 3)         return { condition: "Cloudy",      Icon: Cloud,     color: "#94a3b8" };
+  if (code <= 48)        return { condition: "Foggy",       Icon: Cloud,     color: "#94a3b8" };
+  if (code <= 65)        return { condition: "Rainy",       Icon: CloudRain, color: "#7dd3fc" };
+  if (code <= 77)        return { condition: "Snowy",       Icon: CloudSnow, color: "#e0f2fe" };
+  if (code <= 82)        return { condition: "Showers",     Icon: CloudRain, color: "#7dd3fc" };
+  return                        { condition: "Thunderstorm",Icon: Zap,       color: "#fde047" };
+}
 
 /* ── Cargo Ship SVG (matches login page) ─────────────────── */
 function CargoShip() {
@@ -234,6 +253,27 @@ export default function HomePage() {
   const [stockStats, setStockStats] = useState({ count: 0, val: 0 });
   const [tankStats, setTankStats] = useState({ count: 0, util: 0 });
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords: { latitude: lat, longitude: lon } }) => {
+        try {
+          const [wRes, gRes] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`),
+            fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`),
+          ]);
+          const wJson = await wRes.json();
+          const gJson = await gRes.json();
+          const meta = weatherMeta(wJson.current.weather_code);
+          setWeather({ temp: Math.round(wJson.current.temperature_2m), city: gJson.city || gJson.locality || "", ...meta });
+        } catch { /* non-critical */ }
+      },
+      () => { /* permission denied */ },
+      { timeout: 10_000 },
+    );
+  }, []);
 
   useEffect(() => {
     async function loadStats() {
@@ -338,15 +378,31 @@ export default function HomePage() {
             <div className="banner-haze banner-haze-2" />
 
             {/* Functional Stats Overlay */}
-            <div className="absolute top-6 right-6 z-20 flex gap-3">
-              <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-500">
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Shipments</p>
-                <p className="text-lg font-black">{stockStats.count}</p>
+            <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
+              <div className="flex gap-3">
+                <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-500">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Shipments</p>
+                  <p className="text-lg font-black">{stockStats.count}</p>
+                </div>
+                <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-700">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Utilisation</p>
+                  <p className="text-lg font-black">{tankStats.util.toFixed(1)}%</p>
+                </div>
               </div>
-              <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-700">
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Utilisation</p>
-                <p className="text-lg font-black">{tankStats.util.toFixed(1)}%</p>
-              </div>
+              {weather && (
+                <div className="glass-morphism px-3 py-1.5 rounded-2xl border border-white/20 text-white flex items-center gap-2 animate-in zoom-in duration-700">
+                  <weather.Icon className="h-3.5 w-3.5 shrink-0" style={{ color: weather.color }} />
+                  <span className="text-sm font-black">{weather.temp}°C</span>
+                  <span className="text-[10px] font-semibold opacity-70">{weather.condition}</span>
+                  {weather.city && (
+                    <>
+                      <div className="w-px h-3 bg-white/20" />
+                      <MapPin className="h-3 w-3 opacity-50 shrink-0" />
+                      <span className="text-[10px] opacity-60 max-w-[80px] truncate">{weather.city}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Welcome text */}

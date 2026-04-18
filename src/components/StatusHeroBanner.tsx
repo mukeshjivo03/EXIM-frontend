@@ -155,6 +155,8 @@ function PortScene() {
   const HY = HORIZON_Y;
   return (
     <g>
+      {/* Flip: ship on right, trucks depart left (factory is leftward in timeline) */}
+      <g transform="translate(1200,0) scale(-1,1)">
       {/* Quay ground */}
       <rect x="0" y={HY - 2} width="1200" height="82" fill="#2A1F14" />
       <rect x="0" y={HY - 4} width="1200" height="6" fill="#5A4A35" />
@@ -340,6 +342,7 @@ function PortScene() {
           </g>
         ))}
       </g>
+      </g>{/* end flip */}
     </g>
   );
 }
@@ -347,6 +350,8 @@ function PortScene() {
 function TruckScene() {
   return (
     <g>
+      {/* Flip: truck heads left toward factory */}
+      <g transform="translate(1200,0) scale(-1,1)">
       {/* Hills / Parallax Environment - Refinery Silhouette slowly moving */}
       <motion.g animate={{ x: [0, -100] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>
         <g opacity="0.35">
@@ -410,6 +415,7 @@ function TruckScene() {
           </g>
         ))}
       </motion.g>
+      </g>{/* end flip */}
     </g>
   );
 }
@@ -491,6 +497,8 @@ function RefineryScene() {
 function LoadingScene() {
   return (
     <g>
+      {/* Flip: loading bay on right, truck cab faces left toward factory */}
+      <g transform="translate(1200,0) scale(-1,1)">
       {/* Environment */}
       <rect x="0" y={HORIZON_Y - 4} width="1200" height="4" fill={C.teal} opacity="0.4" />
       
@@ -556,26 +564,40 @@ function LoadingScene() {
           </g>
         ))}
       </g>
+      </g>{/* end flip */}
     </g>
   );
 }
 
-function TransitScene({ showFactory, tanker }: { showFactory?: boolean; tanker?: boolean }) {
+function TransitScene({ showFactory, tanker, parked }: { showFactory?: boolean; tanker?: boolean; parked?: boolean }) {
   return (
     <g>
-      {/* Hills / Parallax Environment */}
-      <motion.g animate={{ x: [0, -100] }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}>
+      {/* Flip: truck heads left toward factory */}
+      <g transform="translate(1200,0) scale(-1,1)">
+      {/* Hills / Parallax Environment — static when parked */}
+      <motion.g
+        animate={parked ? { x: 0 } : { x: [0, -100] }}
+        transition={parked ? {} : { duration: 15, repeat: Infinity, ease: "linear" }}
+      >
         <ellipse cx="200" cy={HORIZON_Y} rx="250" ry="55" fill="#0F766E" opacity="0.3" />
         <ellipse cx="800" cy={HORIZON_Y} rx="280" ry="50" fill="#0F766E" opacity="0.2" />
-        
-        {/* Factory Silhouette for Outside Factory state */}
+
+        {/* Factory Silhouette — more prominent when parked outside */}
         {showFactory && (
-          <g opacity="0.4">
+          <g opacity={parked ? 0.75 : 0.4}>
             <rect x="300" y="100" width="120" height={HORIZON_Y - 100} fill="#1B3F5E" />
             <rect x="330" y="60" width="15" height="40" fill="#1B3F5E" />
             <rect x="380" y="40" width="15" height="60" fill="#1B3F5E" />
             <polygon points="420,100 480,100 450,60" fill="#1B3F5E" />
             <rect x="420" y="100" width="60" height={HORIZON_Y - 100} fill="#1B3F5E" />
+            {parked && (
+              <>
+                <rect x="250" y="130" width="40" height={HORIZON_Y - 130} fill="#1B3F5E" opacity="0.6" />
+                <rect x="460" y="80" width="30" height={HORIZON_Y - 80} fill="#1B3F5E" opacity="0.5" />
+                <motion.circle cx="345" cy="52" r="3" fill="#06B6D4"
+                  animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
+              </>
+            )}
           </g>
         )}
 
@@ -591,66 +613,99 @@ function TransitScene({ showFactory, tanker }: { showFactory?: boolean; tanker?:
       <rect x="0" y={HORIZON_Y - 4} width="1200" height="50" fill="#0B1D33" opacity="0.8" />
       <rect x="0" y={HORIZON_Y - 6} width="1200" height="4" fill="#2DD4BF" opacity="0.4" />
 
-      {/* Speed Lines */}
-      <motion.g animate={{ x: [1200, -200] }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-        <rect x="100" y={HORIZON_Y - 50} width="150" height="2" fill="#fff" opacity="0.3" />
-        <rect x="500" y={HORIZON_Y - 20} width="80" height="2" fill="#2DD4BF" opacity="0.5" />
-        <rect x="800" y={HORIZON_Y - 80} width="200" height="2" fill="#fff" opacity="0.2" />
-        <rect x="1200" y={HORIZON_Y - 40} width="100" height="2" fill="#2DD4BF" opacity="0.4" />
-      </motion.g>
+      {/* Speed Lines — only when moving */}
+      {!parked && (
+        <motion.g animate={{ x: [1200, -200] }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+          <rect x="100" y={HORIZON_Y - 50} width="150" height="2" fill="#fff" opacity="0.3" />
+          <rect x="500" y={HORIZON_Y - 20} width="80" height="2" fill="#2DD4BF" opacity="0.5" />
+          <rect x="800" y={HORIZON_Y - 80} width="200" height="2" fill="#fff" opacity="0.2" />
+          <rect x="1200" y={HORIZON_Y - 40} width="100" height="2" fill="#2DD4BF" opacity="0.4" />
+        </motion.g>
+      )}
 
-      {/* Truck with Y-axis Vibration */}
-      <motion.g
-        animate={{ y: [0, -1, 0, 1, 0] }}
-        transition={{ duration: 0.1, repeat: Infinity, ease: "linear" }}
-      >
-        {/* Chassis */}
-        <line x1="380" y1={HORIZON_Y - 14} x2="620" y2={HORIZON_Y - 14} stroke="#132D4A" strokeWidth="4" />
-
-        {tanker ? (
-          <>
-            {/* Tanker body */}
-            <rect x="390" y={HORIZON_Y - 82} width="150" height="58" rx="28" fill="#0F766E" />
-            {/* Tanker end-cap + piping */}
-            <circle cx="396" cy={HORIZON_Y - 53} r="8" fill="#0D9488" opacity="0.85" />
-            <line x1="408" y1={HORIZON_Y - 53} x2="532" y2={HORIZON_Y - 53} stroke="#2DD4BF" strokeWidth="2" opacity="0.65" />
-            <rect x="450" y={HORIZON_Y - 90} width="28" height="7" rx="2" fill="#132D4A" />
-            <line x1="464" y1={HORIZON_Y - 83} x2="464" y2={HORIZON_Y - 70} stroke="#132D4A" strokeWidth="2" />
-          </>
-        ) : (
-          <>
-            {/* Trailer (Box) */}
-            <rect x="390" y={HORIZON_Y - 100} width="150" height="80" rx="4" fill="#0F766E" />
-            {[0, 1, 2, 3].map(i => (
-              <line key={i} x1="390" y1={HORIZON_Y - 80 + i * 15} x2="540" y2={HORIZON_Y - 80 + i * 15} stroke="#0D9488" strokeWidth="2" opacity="0.6" />
-            ))}
-          </>
-        )}
-
-        {/* Cab - New Colors */}
-        <rect x="550" y={HORIZON_Y - 70} width="50" height="50" rx="6" fill="#132D4A" />
-        <rect x="560" y={HORIZON_Y - 65} width="35" height="20" rx="4" fill="#2DD4BF" opacity="0.3" />
-        {/* Exhaust */}
-        <rect x="590" y={HORIZON_Y - 95} width="4" height="25" rx="1" fill="#132D4A" /> 
-        <motion.circle cx="592" cy={HORIZON_Y - 100} r="4" fill="#94A3B8" opacity="0.5" animate={{ y: [0, -10], opacity: [0.5, 0], scale: [1, 2] }} transition={{ duration: 0.5, repeat: Infinity }} />
-
-        {/* Wheels */}
-        {[410, 450, 560, 590].map(cx => (
-          <g key={cx}>
-            <circle cx={cx} cy={HORIZON_Y - 10} r="14" fill="#0B1D33" />
-            {/* Spinning Hubcap */}
-            <motion.g
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
-              style={{ transformOrigin: `${cx}px ${HORIZON_Y - 10}px` }}
-            >
+      {/* Truck — vibrating when moving, static when parked */}
+      {parked ? (
+        <g>
+          {/* Chassis */}
+          <line x1="380" y1={HORIZON_Y - 14} x2="620" y2={HORIZON_Y - 14} stroke="#132D4A" strokeWidth="4" />
+          {tanker ? (
+            <>
+              <rect x="390" y={HORIZON_Y - 82} width="150" height="58" rx="28" fill="#0F766E" />
+              <circle cx="396" cy={HORIZON_Y - 53} r="8" fill="#0D9488" opacity="0.85" />
+              <line x1="408" y1={HORIZON_Y - 53} x2="532" y2={HORIZON_Y - 53} stroke="#2DD4BF" strokeWidth="2" opacity="0.65" />
+              <rect x="450" y={HORIZON_Y - 90} width="28" height="7" rx="2" fill="#132D4A" />
+              <line x1="464" y1={HORIZON_Y - 83} x2="464" y2={HORIZON_Y - 70} stroke="#132D4A" strokeWidth="2" />
+            </>
+          ) : (
+            <>
+              <rect x="390" y={HORIZON_Y - 100} width="150" height="80" rx="4" fill="#0F766E" />
+              {[0, 1, 2, 3].map(i => (
+                <line key={i} x1="390" y1={HORIZON_Y - 80 + i * 15} x2="540" y2={HORIZON_Y - 80 + i * 15} stroke="#0D9488" strokeWidth="2" opacity="0.6" />
+              ))}
+            </>
+          )}
+          {/* Cab */}
+          <rect x="550" y={HORIZON_Y - 70} width="50" height="50" rx="6" fill="#132D4A" />
+          <rect x="560" y={HORIZON_Y - 65} width="35" height="20" rx="4" fill="#2DD4BF" opacity="0.3" />
+          <rect x="590" y={HORIZON_Y - 95} width="4" height="25" rx="1" fill="#132D4A" />
+          {/* Static wheels — no spinning */}
+          {[410, 450, 560, 590].map(cx => (
+            <g key={cx}>
+              <circle cx={cx} cy={HORIZON_Y - 10} r="14" fill="#0B1D33" />
               <circle cx={cx} cy={HORIZON_Y - 10} r="6" fill="#5A7A96" />
-              <line x1={cx - 6} y1={HORIZON_Y - 10} x2={cx + 6} y2={HORIZON_Y - 10} stroke="#fff" strokeWidth="2" opacity="0.8" />
-              <line x1={cx} y1={HORIZON_Y - 16} x2={cx} y2={HORIZON_Y - 4} stroke="#fff" strokeWidth="2" opacity="0.8" />
-            </motion.g>
-          </g>
-        ))}
-      </motion.g>
+              <line x1={cx - 6} y1={HORIZON_Y - 10} x2={cx + 6} y2={HORIZON_Y - 10} stroke="#fff" strokeWidth="2" opacity="0.5" />
+              <line x1={cx} y1={HORIZON_Y - 16} x2={cx} y2={HORIZON_Y - 4} stroke="#fff" strokeWidth="2" opacity="0.5" />
+            </g>
+          ))}
+        </g>
+      ) : (
+        <motion.g
+          animate={{ y: [0, -1, 0, 1, 0] }}
+          transition={{ duration: 0.1, repeat: Infinity, ease: "linear" }}
+        >
+          {/* Chassis */}
+          <line x1="380" y1={HORIZON_Y - 14} x2="620" y2={HORIZON_Y - 14} stroke="#132D4A" strokeWidth="4" />
+          {tanker ? (
+            <>
+              <rect x="390" y={HORIZON_Y - 82} width="150" height="58" rx="28" fill="#0F766E" />
+              <circle cx="396" cy={HORIZON_Y - 53} r="8" fill="#0D9488" opacity="0.85" />
+              <line x1="408" y1={HORIZON_Y - 53} x2="532" y2={HORIZON_Y - 53} stroke="#2DD4BF" strokeWidth="2" opacity="0.65" />
+              <rect x="450" y={HORIZON_Y - 90} width="28" height="7" rx="2" fill="#132D4A" />
+              <line x1="464" y1={HORIZON_Y - 83} x2="464" y2={HORIZON_Y - 70} stroke="#132D4A" strokeWidth="2" />
+            </>
+          ) : (
+            <>
+              <rect x="390" y={HORIZON_Y - 100} width="150" height="80" rx="4" fill="#0F766E" />
+              {[0, 1, 2, 3].map(i => (
+                <line key={i} x1="390" y1={HORIZON_Y - 80 + i * 15} x2="540" y2={HORIZON_Y - 80 + i * 15} stroke="#0D9488" strokeWidth="2" opacity="0.6" />
+              ))}
+            </>
+          )}
+          {/* Cab */}
+          <rect x="550" y={HORIZON_Y - 70} width="50" height="50" rx="6" fill="#132D4A" />
+          <rect x="560" y={HORIZON_Y - 65} width="35" height="20" rx="4" fill="#2DD4BF" opacity="0.3" />
+          <rect x="590" y={HORIZON_Y - 95} width="4" height="25" rx="1" fill="#132D4A" />
+          <motion.circle cx="592" cy={HORIZON_Y - 100} r="4" fill="#94A3B8" opacity="0.5"
+            animate={{ y: [0, -10], opacity: [0.5, 0], scale: [1, 2] }}
+            transition={{ duration: 0.5, repeat: Infinity }} />
+          {/* Spinning wheels */}
+          {[410, 450, 560, 590].map(cx => (
+            <g key={cx}>
+              <circle cx={cx} cy={HORIZON_Y - 10} r="14" fill="#0B1D33" />
+              <motion.g
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
+                style={{ transformOrigin: `${cx}px ${HORIZON_Y - 10}px` }}
+              >
+                <circle cx={cx} cy={HORIZON_Y - 10} r="6" fill="#5A7A96" />
+                <line x1={cx - 6} y1={HORIZON_Y - 10} x2={cx + 6} y2={HORIZON_Y - 10} stroke="#fff" strokeWidth="2" opacity="0.8" />
+                <line x1={cx} y1={HORIZON_Y - 16} x2={cx} y2={HORIZON_Y - 4} stroke="#fff" strokeWidth="2" opacity="0.8" />
+              </motion.g>
+            </g>
+          ))}
+        </motion.g>
+      )}
+      </g>{/* end flip */}
     </g>
   );
 }
@@ -778,7 +833,7 @@ const SCENE_MAP: Record<string, () => React.JSX.Element> = {
   AT_REFINERY: () => <RefineryScene />,
   UNDER_LOADING: () => <LoadingScene />,
   ON_THE_WAY: () => <TransitScene tanker />,
-  OUT_SIDE_FACTORY: () => <TransitScene showFactory tanker />,
+  OUT_SIDE_FACTORY: () => <TransitScene showFactory tanker parked />,
   IN_FACTORY: () => <FactoryScene />,
   KANDLA_STORAGE: () => <StorageScene />,
   IN_TRANSIT: () => <TransitScene />,

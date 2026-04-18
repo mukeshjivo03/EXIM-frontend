@@ -10,6 +10,7 @@ export interface DomesticContract26 {
   contract_qty: string;
   contract_rate: string;
   product_name?: string;
+  vendor_name?: string;
   contract_total: string;
   // loading fields
   load_qty?: string;

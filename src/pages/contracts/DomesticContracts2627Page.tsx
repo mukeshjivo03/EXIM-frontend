@@ -191,7 +191,7 @@ export default function DomesticContracts2627Page() {
     setLoadingList(true);
     try {
       const data = await getContracts26(2026);
-      setRows(data.filter((r) => r.deleted === 0).sort((a, b) => b.id - a.id));
+      setRows(data.filter((r) => r.deleted === 0));
     } catch (err) {
       toastApiError(err, "Failed to load contracts list");
     } finally {
@@ -208,6 +208,7 @@ export default function DomesticContracts2627Page() {
         r.product_code,
         r.product_name,
         r.vendor_code,
+        r.vendor_name,
         r.transporter_name,
         r.vehicle_number,
         r.invoice_number,
@@ -222,8 +223,18 @@ export default function DomesticContracts2627Page() {
     });
   }, [rows]);
 
-  const productOptions = useMemo(() => [...new Set(rows.map((r) => r.product_code).filter(Boolean))].sort(), [rows]);
-  const vendorOptions = useMemo(() => [...new Set(rows.map((r) => r.vendor_code).filter(Boolean))].sort(), [rows]);
+  const productOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return rows
+      .filter((r) => r.product_code && !seen.has(r.product_code) && seen.add(r.product_code))
+      .map((r) => ({ code: r.product_code, name: r.product_name || r.product_code }));
+  }, [rows]);
+  const vendorOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return rows
+      .filter((r) => r.vendor_code && !seen.has(r.vendor_code) && seen.add(r.vendor_code))
+      .map((r) => ({ code: r.vendor_code, name: r.vendor_name || r.vendor_code }));
+  }, [rows]);
 
   const filteredRows = useMemo(() => {
     let result = rowsWithSearch;
@@ -620,7 +631,7 @@ export default function DomesticContracts2627Page() {
               <SelectContent>
                 <SelectItem value="all">All Products</SelectItem>
                 {productOptions.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                  <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -632,7 +643,7 @@ export default function DomesticContracts2627Page() {
               <SelectContent>
                 <SelectItem value="all">All Vendors</SelectItem>
                 {vendorOptions.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v.code} value={v.code}>{v.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -720,7 +731,9 @@ export default function DomesticContracts2627Page() {
                         <TableCell className="max-w-[150px] truncate" title={row.product_name || row.product_code}>
                           {row.product_name || row.product_code}
                         </TableCell>
-                        <TableCell>{row.vendor_code}</TableCell>
+                        <TableCell className="max-w-[150px] truncate" title={row.vendor_name || row.vendor_code}>
+                          {row.vendor_name || row.vendor_code}
+                        </TableCell>
                         <TableCell>
                           {row.status === "RECIEVED" && row.unload_qty
                             ? fmtDecimal(row.unload_qty)
