@@ -67,7 +67,7 @@ export interface FreightPayload {
   transporter_name: string;
   bility_number: string;
   bility_date: string | null;
-  freight_rate: number;
+  frieght_rate: number;
   brokerage_amount: number;
   vehicle_number: string;
   invoice_number: string;
@@ -120,7 +120,7 @@ export interface EditContractPayload {
   vehicle_number?: string;
   bility_number?: string;
   bility_date?: string | null;
-  freight_rate?: number;
+  frieght_rate?: number;
   brokerage_amount?: number;
   invoice_number?: string;
   grpo_number?: string;

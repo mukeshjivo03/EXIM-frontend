@@ -425,7 +425,7 @@ export default function DomesticContracts2627Page() {
         vehicle_number: vehicleNumber,
         bility_number: biltyNumber,
         bility_date: biltyDate || null,
-        freight_rate: freightRate ? Number(freightRate) : 0,
+        frieght_rate: freightRate ? Number(freightRate) : 0,
         brokerage_amount: Number(brokerageAmount) || 0,
         invoice_number: invoiceNumber,
         grpo_number: grpoNumber,
@@ -459,7 +459,7 @@ export default function DomesticContracts2627Page() {
       vehicle_number: row.vehicle_number || "",
       bility_number: row.bility_number || "",
       bility_date: row.bility_date || null,
-      freight_rate: row.frieght_rate ? Number(row.frieght_rate) : 0,
+      frieght_rate: row.frieght_rate ? Number(row.frieght_rate) : 0,
       brokerage_amount: row.brokerage_amount ? Number(row.brokerage_amount) : 0,
       invoice_number: row.invoice_number || "",
       grpo_number: row.grpo_number || "",
@@ -1639,7 +1639,7 @@ export default function DomesticContracts2627Page() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Freight Rate (₹)</Label>
-                  <Input type="number" value={editForm.freight_rate ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, freight_rate: Number(e.target.value) }))} />
+                  <Input type="number" value={editForm.frieght_rate ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, frieght_rate: Number(e.target.value) }))} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Brokerage Amount</Label>
