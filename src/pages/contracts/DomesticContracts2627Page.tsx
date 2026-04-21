@@ -1525,7 +1525,6 @@ export default function DomesticContracts2627Page() {
                 <div className="grid grid-cols-2 gap-x-8 gap-y-3 pl-6">
                   <div><p className="text-xs text-muted-foreground">GRPO Number</p><p className="text-sm font-medium">{viewData.grpo_number || "—"}</p></div>
                   <div><p className="text-xs text-muted-foreground">GRPO Date</p><p className="text-sm font-medium">{fmtDate(viewData.grpo_date || null)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Brokerage Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.brokerage_rate || 0)}</p></div>
                   <div><p className="text-xs text-muted-foreground">Brokerage Amount</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.brokerage_amount || 0)}</p></div>
                 </div>
               </div>

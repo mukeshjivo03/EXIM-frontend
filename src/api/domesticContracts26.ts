@@ -29,7 +29,6 @@ export interface DomesticContract26 {
   freight_amount?: string;
   grpo_date?: string;
   grpo_number?: string;
-  brokerage_rate?: string;
   brokerage_amount?: string;
   vehicle_number?: string;
   invoice_number?: string;
