@@ -15,6 +15,7 @@ export interface ExportLine {
   id: number;
   shipping_bill_no: string;
   sb_value_usd: string;
+  sb_date?: string;
   export_in_mts: string;
   license_no: string;
 }
@@ -31,6 +32,7 @@ export interface ExportLinePayload {
   license_no: string;
   shipping_bill_no: string;
   sb_value_usd: string;
+  sb_date?: string | null;
   export_in_mts: string;
 }
 
@@ -135,6 +137,7 @@ export interface DFIAExportLine {
   id: number;
   shipping_bill_no: string;
   sb_value_usd: string;
+  sb_date?: string;
   export_in_mts: string;
   license_no: string;
 }
@@ -151,6 +154,7 @@ export interface DFIAExportLinePayload {
   license_no: string;
   shipping_bill_no: string;
   sb_value_usd: string;
+  sb_date?: string | null;
   export_in_mts: string;
 }
 

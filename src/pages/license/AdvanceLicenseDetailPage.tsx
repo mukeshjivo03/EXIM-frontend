@@ -52,7 +52,7 @@ type ImportForm = Omit<ImportLinePayload, "license_no">;
 type ExportForm = Omit<ExportLinePayload, "license_no">;
 
 const emptyImportForm: ImportForm = { boe_No: "", boe_value_usd: "", boe_date: "", import_in_mts: "" };
-const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", export_in_mts: "" };
+const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", sb_date: "", export_in_mts: "" };
 
 export default function AdvanceLicenseDetailPage() {
   const { licenseNo } = useParams<{ licenseNo: string }>();
@@ -197,7 +197,7 @@ export default function AdvanceLicenseDetailPage() {
 
   function openEditExport(line: ExportLine) {
     setEditExportTarget(line);
-    setEditExportForm({ shipping_bill_no: line.shipping_bill_no, sb_value_usd: line.sb_value_usd, export_in_mts: line.export_in_mts });
+    setEditExportForm({ shipping_bill_no: line.shipping_bill_no, sb_value_usd: line.sb_value_usd, sb_date: line.sb_date ?? "", export_in_mts: line.export_in_mts });
     setEditExportError("");
     setEditExportOpen(true);
   }
@@ -448,6 +448,7 @@ export default function AdvanceLicenseDetailPage() {
                     <TableRow>
                       <TableHead>S.No</TableHead>
                       <TableHead>Shipping Bill No</TableHead>
+                      <TableHead>SB Date</TableHead>
                       <TableHead className="text-right">SB Value (USD)</TableHead>
                       <TableHead className="text-right">Export (MTS)</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -456,7 +457,7 @@ export default function AdvanceLicenseDetailPage() {
                   <TableBody>
                     {exportLines.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10">
+                        <TableCell colSpan={6} className="py-10">
                           <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <FileText className="h-8 w-8 stroke-1" />
                             <p className="text-sm font-medium">No export lines</p>
@@ -468,6 +469,7 @@ export default function AdvanceLicenseDetailPage() {
                         <TableRow key={line.id}>
                           <TableCell className="font-medium">{i + 1}</TableCell>
                           <TableCell>{line.shipping_bill_no}</TableCell>
+                          <TableCell>{fmtDate(line.sb_date || null)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(line.sb_value_usd)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(line.export_in_mts)}</TableCell>
                           <TableCell className="text-right">
@@ -584,6 +586,10 @@ export default function AdvanceLicenseDetailPage() {
               <Input id="exp_shipping_bill_no" value={exportForm.shipping_bill_no} onChange={(e) => setExportForm({ ...exportForm, shipping_bill_no: e.target.value })} placeholder="SB-2024-00456" />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="exp_sb_date">SB Date</Label>
+              <DatePicker value={exportForm.sb_date ?? ""} onChange={(v) => setExportForm({ ...exportForm, sb_date: v || "" })} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="exp_sb_value_usd">SB Value (USD)</Label>
               <Input id="exp_sb_value_usd" type="number" step="0.001" value={exportForm.sb_value_usd} onChange={(e) => setExportForm({ ...exportForm, sb_value_usd: e.target.value })} placeholder="11000.000" />
             </div>
@@ -611,6 +617,10 @@ export default function AdvanceLicenseDetailPage() {
             <div className="col-span-2 space-y-2">
               <Label htmlFor="edit_exp_shipping_bill_no">Shipping Bill No</Label>
               <Input id="edit_exp_shipping_bill_no" value={editExportForm.shipping_bill_no} onChange={(e) => setEditExportForm({ ...editExportForm, shipping_bill_no: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_exp_sb_date">SB Date</Label>
+              <DatePicker value={editExportForm.sb_date ?? ""} onChange={(v) => setEditExportForm({ ...editExportForm, sb_date: v || "" })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_exp_sb_value_usd">SB Value (USD)</Label>
