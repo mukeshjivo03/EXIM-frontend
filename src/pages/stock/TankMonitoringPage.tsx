@@ -824,7 +824,7 @@ export default function TankMonitoringPage() {
                       <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
-                      <TableHead>Opening Stock</TableHead>
+                      <TableHead>Opening Rate</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
