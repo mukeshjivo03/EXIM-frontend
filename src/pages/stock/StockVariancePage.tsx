@@ -71,7 +71,7 @@ function InsightCard({ type, insight, loading }: { type: "GAIN" | "LOSS"; insigh
         ) : (
           <>
             <p className={cn("text-2xl font-bold", isGain ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-              {fmtDecimal(Math.abs(insight?.total_qty ?? 0))} MTS
+              {fmtDecimal(Math.abs(insight?.total_qty ?? 0))} KGS
             </p>
             <p className="text-sm text-muted-foreground">
               Value: ₹ {fmtDecimal(Math.abs(insight?.total_value ?? 0))}
@@ -242,7 +242,7 @@ export default function StockVariancePage() {
                   </TableHead>
                   <TableHead className="text-right">
                     <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("quantity")}>
-                      Quantity (MTS)<SortIcon col="quantity" sortKey={sortKey} sortDir={sortDir} />
+                      Quantity (KGS)<SortIcon col="quantity" sortKey={sortKey} sortDir={sortDir} />
                     </button>
                   </TableHead>
                   <TableHead className="text-right">
