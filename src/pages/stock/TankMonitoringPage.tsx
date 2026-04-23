@@ -820,8 +820,8 @@ export default function TankMonitoringPage() {
                       <TableHead>Item Name</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
+                      {/* <TableHead>Avg Price</TableHead> */}
                       <TableHead>Avg Price</TableHead>
-                      <TableHead>Adjusted Avg Price</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                       <TableHead>Opening Rate</TableHead>
@@ -857,11 +857,11 @@ export default function TankMonitoringPage() {
                             </div>
                           </TableCell>
                           <TableCell>{conv(item.total_capacity, unit)}</TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             {avg?.["average_rate(IN_TANK)"] != null
                               ? `₹ ${Number(avg["average_rate(IN_TANK)"]).toLocaleString("en-IN")}`
                               : "—"}
-                          </TableCell>
+                          </TableCell> */}
                           <TableCell>
                             {avg?.["adjusted_average(STO)"] != null
                               ? `₹ ${Number(avg["adjusted_average(STO)"]).toLocaleString("en-IN")}`

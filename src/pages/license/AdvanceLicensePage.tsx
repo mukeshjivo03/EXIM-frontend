@@ -439,7 +439,8 @@ export default function AdvanceLicensePage() {
                       return (
                         <TableRow
                           key={h.license_no}
-                          className={`cursor-pointer hover:bg-muted/50 ${isClosed ? "opacity-40 line-through decoration-muted-foreground/30" : ""}`}
+                          // className={`cursor-pointer hover:bg-muted/50 ${isClosed ? "opacity-40 line-through decoration-muted-foreground/30" : ""}`}
+                          className={`cursor-pointer hover:bg-muted/50 `}
                           onClick={() => navigate(`/license/advance-license/${encodeURIComponent(h.license_no)}`)}
                         >
                           <TableCell className="font-medium">{(page - 1) * perPage + i + 1}</TableCell>
