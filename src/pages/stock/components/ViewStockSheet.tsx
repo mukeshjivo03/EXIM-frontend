@@ -149,7 +149,7 @@ export function ViewStockSheet({ data, loading, tankItems, vendors, onClose, onE
                 <div className="grid grid-cols-1 gap-3 pl-2">
                   <div>
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Vehicle / Transporter</p>
-                    <p className="text-sm font-medium">{data.vehicle_number || "—"} / {data.transporter_name || "—"}</p>
+                    <p className="text-sm font-medium">{data.vehicle_number || "—"} / {data.transporter || "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Current Location</p>

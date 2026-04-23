@@ -93,7 +93,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEVehicleNumber(data.vehicle_number ?? "");
       setELocation(data.location ?? "");
       setEEta(data.eta ?? "");
-      setETransporterName(data.transporter_name ?? "");
+      setETransporterName(data.transporter ?? "");
       setETransferType("");
       setEAction("");
       setEJobWorkVendor(data.job_work_vendor ?? "");
@@ -156,7 +156,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           vehicle_number: eVehicleNumber.trim() || undefined,
           location: eLocation.trim() || undefined,
           eta: eEta.trim() || undefined,
-          transporter_name: eTransporterName.trim() || undefined,
+          transporter: eTransporterName.trim() || undefined,
           created_by: email,
         });
         toast.success("Stock status metadata updated.");

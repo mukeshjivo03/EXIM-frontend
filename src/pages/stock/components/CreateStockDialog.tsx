@@ -120,7 +120,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
         vehicle_number: cVehicleNumber.trim() || undefined,
         location: cLocation.trim() || undefined,
         eta: cEta.trim() || undefined,
-        transporter_name: cTransporterName.trim() || undefined,
+        transporter: cTransporterName.trim() || undefined,
       });
       toast.success("Stock status created.");
       onOpenChange(false);
