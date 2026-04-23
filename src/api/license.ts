@@ -79,6 +79,8 @@ export interface LicenseHeader {
   fob_value_inr: string;
   fob_value_usd: string;
   fob_exhange_rate: string;
+  total_import_quantity: string,
+  total_to_be_exported_quantity: string,
   status: string;
   total_import: string;
   total_export: string;
@@ -95,6 +97,7 @@ export interface LicenseHeaderPayload {
   cif_exchange_rate: string;
   fob_value_inr: string;
   fob_exhange_rate: string;
+  total_import_quantity: string
   status: string;
 }
 

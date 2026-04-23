@@ -109,6 +109,7 @@ export default function AdvanceLicensePage() {
     cif_exchange_rate: "",
     fob_value_inr: "",
     fob_exhange_rate: "",
+    total_import_quantity: "",
     status: "OPEN",
   });
   const [formError, setFormError] = useState("");
@@ -119,7 +120,7 @@ export default function AdvanceLicensePage() {
   const [editTarget, setEditTarget] = useState<LicenseHeader | null>(null);
   const [editForm, setEditForm] = useState<LicenseHeaderPayload>({
     license_no: "", issue_date: "", import_validity: "", export_validity: "",
-    cif_value_inr: "", cif_exchange_rate: "",
+    cif_value_inr: "", cif_exchange_rate: "", total_import_quantity: "",
     fob_value_inr: "", fob_exhange_rate: "", status: "OPEN",
   });
   const [editFormError, setEditFormError] = useState("");
@@ -198,6 +199,7 @@ export default function AdvanceLicensePage() {
       cif_exchange_rate: "",
       fob_value_inr: "",
       fob_exhange_rate: "",
+      total_import_quantity: "",
       status: "OPEN",
     });
     setFormError("");
@@ -234,7 +236,7 @@ export default function AdvanceLicensePage() {
     setEditTarget(h);
     setEditForm({
       license_no: h.license_no, issue_date: h.issue_date, import_validity: h.import_validity, export_validity: h.export_validity,
-      cif_value_inr: h.cif_value_inr,
+      cif_value_inr: h.cif_value_inr,total_import_quantity: h.total_import_quantity,
       cif_exchange_rate: h.cif_exchange_rate, fob_value_inr: h.fob_value_inr,
       fob_exhange_rate: h.fob_exhange_rate, status: h.status,
     });
@@ -376,11 +378,6 @@ export default function AdvanceLicensePage() {
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_exchange_rate")}>
-                        CIF Rate<SortIcon column="cif_exchange_rate" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_value_inr")}>
                         FOB (INR)<SortIcon column="fob_value_inr" />
                       </button>
@@ -391,25 +388,16 @@ export default function AdvanceLicensePage() {
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_exhange_rate")}>
-                        FOB Rate<SortIcon column="fob_exhange_rate" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_import")}>
-                        Total Import<SortIcon column="total_import" />
+                        Valid Import<SortIcon column="total_import" />
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_export")}>
-                        Total Export<SortIcon column="total_export" />
+                        To be Export<SortIcon column="total_export" />
                       </button>
                     </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("to_be_exported")}>
-                        To Export<SortIcon column="to_be_exported" />
-                      </button>
-                    </TableHead>
+
                     <TableHead className="text-right">
                       <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("balance")}>
                         Balance<SortIcon column="balance" />
@@ -469,12 +457,10 @@ export default function AdvanceLicensePage() {
                           </TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.cif_value_inr)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.cif_value_usd)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.cif_exchange_rate)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.fob_value_inr)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.fob_value_usd)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.fob_exhange_rate)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.total_import)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.total_export)}</TableCell>
+                          
+                          <TableCell className="text-right">{fmtDecimal(h.total_import_quantity)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.to_be_exported)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
@@ -551,6 +537,13 @@ export default function AdvanceLicensePage() {
               <Label>Export Validity</Label>
               <DatePicker value={form.export_validity} onChange={(v) => setForm({ ...form, export_validity: v })} className="w-full" />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="cif_value_inr">Valid Import</Label>
+              <Input id="valid_import" type="number" step="0.001" value={form.total_import_quantity} onChange={(e) => setForm({ ...form, total_import_quantity: e.target.value })} placeholder="1200.000" />
+            </div>
+
+
             <div className="space-y-2">
               <Label htmlFor="cif_value_inr">CIF Value (INR)</Label>
               <Input id="cif_value_inr" type="number" step="0.001" value={form.cif_value_inr} onChange={(e) => setForm({ ...form, cif_value_inr: e.target.value })} placeholder="8300000.000" />
@@ -629,6 +622,13 @@ export default function AdvanceLicensePage() {
               <Label>Export Validity</Label>
               <DatePicker value={editForm.export_validity} onChange={(v) => setEditForm({ ...editForm, export_validity: v })} className="w-full" />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit_cif_exchange_rate">Valid Import</Label>
+              <Input id="edit_cif_exchange_rate" type="number" step="0.001" value={editForm.cif_exchange_rate} onChange={(e) => setEditForm({ ...editForm, cif_exchange_rate: e.target.value })} />
+            </div>
+
+
             <div className="space-y-2">
               <Label htmlFor="edit_cif_value_inr">CIF Value (INR)</Label>
               <Input id="edit_cif_value_inr" type="number" step="0.001" value={editForm.cif_value_inr} onChange={(e) => setEditForm({ ...editForm, cif_value_inr: e.target.value })} />
