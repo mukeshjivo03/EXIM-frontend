@@ -624,8 +624,8 @@ export default function AdvanceLicensePage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="edit_cif_exchange_rate">Valid Import</Label>
-              <Input id="edit_cif_exchange_rate" type="number" step="0.001" value={editForm.cif_exchange_rate} onChange={(e) => setEditForm({ ...editForm, cif_exchange_rate: e.target.value })} />
+              <Label htmlFor="edit_valid_import">Valid Import</Label>
+              <Input id="edit_valid_import" type="number" step="0.001" value={editForm.total_import_quantity} onChange={(e) => setEditForm({ ...editForm, total_import_quantity: e.target.value })} />
             </div>
 
 
