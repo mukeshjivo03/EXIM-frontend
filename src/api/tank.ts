@@ -149,6 +149,9 @@ export interface TankLog {
   vehicle_number?: string | null;
   rate?: string | null;
   party?: string | null;
+  item_code?: string | null;
+  item_name?: string | null;
+  arrival?: string | null;
   created_at: string;
   created_by: string;
   stock_status?: number | null;

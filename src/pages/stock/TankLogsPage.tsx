@@ -52,30 +52,14 @@ import {
 
 /* ── helpers ─────────────────────────────────────────── */
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+function formatArrival(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function relativeTime(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay === 1) return "Yesterday";
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return "";
-}
 
 type LogType = "INWARD" | "OUTWARD" | "TRANSFER";
 type DateRange = "all" | "today" | "7d" | "30d" | "custom";
@@ -213,12 +197,13 @@ export default function TankLogsPage() {
 
     const rows = filteredLogs.map((log) => ({
       "Vehicle Number": log.vehicle_number || "—",
+      "Item Name": log.item_name || log.item_code || "—",
       "Party": log.party || "—",
       "Log Type": log.log_type,
       "Rate (₹)": log.rate ? Number(log.rate) : "",
       "Value (₹)": log.rate ? Number(log.rate) * Number(log.quantity) : "",
       "Quantity (L)": Number(log.quantity),
-      "Created At": formatDate(log.created_at),
+      "Arrival Date": formatArrival(log.arrival),
       "Created By": log.created_by,
       "Stock Status ID": log.stock_status ?? "",
     }));
@@ -330,13 +315,14 @@ export default function TankLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vehicle Number</TableHead>
-                    <TableHead>Party</TableHead>
                     <TableHead>Log Type</TableHead>
+                    <TableHead>Vehicle Number</TableHead>
+                    <TableHead>Item Name</TableHead>
+                    <TableHead>Party</TableHead>
                     <TableHead>Rate (&#8377;)</TableHead>
+                    <TableHead>Quantity (L)</TableHead>
                     <TableHead>Value (&#8377;)</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Arrival Date</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -344,7 +330,7 @@ export default function TankLogsPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-16" />
                         </TableCell>
@@ -359,13 +345,14 @@ export default function TankLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vehicle Number</TableHead>
-                    <TableHead>Party</TableHead>
                     <TableHead>Log Type</TableHead>
+                    <TableHead>Vehicle Number</TableHead>
+                    <TableHead>Item Name</TableHead>
+                    <TableHead>Party</TableHead>
                     <TableHead>Rate (&#8377;)</TableHead>
+                    <TableHead>Quantity (L)</TableHead>
                     <TableHead>Value (&#8377;)</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Arrival Date</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -373,7 +360,7 @@ export default function TankLogsPage() {
                 <TableBody>
                   {paginatedLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-16">
+                      <TableCell colSpan={10} className="py-16">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <Container className="h-10 w-10 stroke-1" />
                           <p className="font-medium">
@@ -406,19 +393,12 @@ export default function TankLogsPage() {
                     </TableRow>
                   ) : (
                     paginatedLogs.map((log) => {
-                      const rel = relativeTime(log.created_at);
                       const rate = Number(log.rate ?? 0);
                       const qty = Number(log.quantity);
                       const value = rate * qty;
 
                       return (
                         <TableRow key={log.id}>
-                          <TableCell className="font-medium">
-                            {log.vehicle_number || "—"}
-                          </TableCell>
-                          <TableCell>
-                            {log.party || "—"}
-                          </TableCell>
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -428,31 +408,30 @@ export default function TankLogsPage() {
                               {logLabel(log.log_type)}
                             </Badge>
                           </TableCell>
+                          <TableCell className="font-medium font-mono text-sm">
+                            {log.vehicle_number || "—"}
+                          </TableCell>
+                          <TableCell>
+                            {log.item_name || log.item_code || "—"}
+                          </TableCell>
+                          <TableCell>
+                            {log.party || "—"}
+                          </TableCell>
                           <TableCell className="tabular-nums">
                             {log.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {qty.toLocaleString("en-IN")}
                           </TableCell>
                           <TableCell className="tabular-nums font-medium">
                             {log.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              {logIcon(log.log_type)}
-                              <span className="font-medium">
-                                {qty.toLocaleString("en-IN")} L
-                              </span>
-                            </div>
+                            {formatArrival(log.arrival)}
                           </TableCell>
-                          <TableCell>
-                            <div>
-                              <p>{formatDate(log.created_at)}</p>
-                              {rel && (
-                                <p className="text-xs text-muted-foreground">
-                                  {rel}
-                                </p>
-                              )}
-                            </div>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {log.created_by}
                           </TableCell>
-                          <TableCell>{log.created_by}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -504,62 +483,62 @@ export default function TankLogsPage() {
 
             return (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                {/* Log Type badge at top */}
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={`gap-1 text-sm px-3 py-1 ${logBadgeClass(viewTarget.log_type)}`}
+                  >
+                    {logIcon(viewTarget.log_type)}
+                    {logLabel(viewTarget.log_type)}
+                  </Badge>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Vehicle Number</p>
-                    <p className="font-medium">{viewTarget.vehicle_number || "—"}</p>
+                    <p className="font-mono font-medium">{viewTarget.vehicle_number || "—"}</p>
                   </div>
                   <div>
+                    <p className="text-xs text-muted-foreground">Item Name</p>
+                    <p className="font-medium">{viewTarget.item_name || viewTarget.item_code || "—"}</p>
+                  </div>
+                  <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">Party</p>
                     <p className="font-medium">{viewTarget.party || "—"}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Log Type</p>
-                    <Badge
-                      variant="outline"
-                      className={`gap-1 ${logBadgeClass(viewTarget.log_type)}`}
-                    >
-                      {logIcon(viewTarget.log_type)}
-                      {logLabel(viewTarget.log_type)}
-                    </Badge>
-                  </div>
+
+                  <Separator className="col-span-2" />
+
                   <div>
                     <p className="text-xs text-muted-foreground">Rate</p>
-                    <p className="font-medium">
+                    <p className="font-medium tabular-nums">
                       {viewTarget.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Value</p>
-                    <p className="font-medium">
-                      {viewTarget.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
-                    </p>
-                  </div>
-                  <div>
                     <p className="text-xs text-muted-foreground">Quantity</p>
-                    <p className="font-medium">
-                      {qty.toLocaleString("en-IN")} L
+                    <p className="font-medium tabular-nums">{qty.toLocaleString("en-IN")} L</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Value (Rate × Qty)</p>
+                    <p className="font-bold tabular-nums text-base">
+                      {viewTarget.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
                     </p>
                   </div>
 
                   <Separator className="col-span-2" />
 
                   <div>
-                    <p className="text-xs text-muted-foreground">Created At</p>
-                    <p className="font-medium">
-                      {formatDate(viewTarget.created_at)}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Arrival Date</p>
+                    <p className="font-medium">{formatArrival(viewTarget.arrival)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Created By</p>
                     <p className="font-medium">{viewTarget.created_by}</p>
                   </div>
-                  {viewTarget.stock_status != null && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Stock Status ID</p>
-                      <p className="font-medium">{viewTarget.stock_status}</p>
-                    </div>
-                  )}
                 </div>
               </div>
             );

@@ -708,9 +708,6 @@ export default function TankMonitoringPage() {
                       const currentL = tank.current_capacity ? formatCapacity(tank.current_capacity, unit) : "0";
                       const totalL = formatCapacity(tank.tank_capacity, unit);
                       const fillHex = color ?? "#94a3b8";
-                      const fillSolid = hexToRgba(fillHex, 0.8);
-                      const fillLight = hexToRgba(fillHex, 0.5);
-                      const glowColor = hexToRgba(fillHex, 0.3);
                       const isCriticalHigh = pct > 90;
                       const isCriticalLow = pct > 0 && pct < 10;
 

@@ -7,7 +7,15 @@ import {
   type DirectorInventoryLiter,
   type DirectorInventoryResponse,
 } from "@/api/dashboard";
-import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
+import { getVehicleReport, type VehicleReport, type VehicleReportItem } from "@/api/stockStatus";
+
+type FlatVehicleRow = { vehicle_number: string } & VehicleReportItem;
+
+function flattenVehicleReport(vehicles: VehicleReport[]): FlatVehicleRow[] {
+  return vehicles.flatMap((v) =>
+    v.items.map((item) => ({ vehicle_number: v.vehicle_number, ...item }))
+  );
+}
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -90,15 +98,14 @@ function isTransportStatus(statusCode?: string) {
   return statusCode === "ON_THE_WAY" || statusCode === "UNDER_LOADING";
 }
 
-function getVehicleMts(v: VehicleReport): number {
-  const row = v as VehicleReport & { quantity_in_mts?: number; mts?: number };
-  return Number(row.quantity_in_mts ?? row.mts ?? 0);
+function getVehicleMts(v: FlatVehicleRow): number {
+  return Number(v.total_quantity_in_mts ?? 0);
 }
 
 export default function DirectorDashboardPage() {
   const [data, setData] = useState<DirectorInventoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [vehicleReports, setVehicleReports] = useState<Partial<Record<DirectorStageKey, VehicleReport[]>>>({});
+  const [vehicleReports, setVehicleReports] = useState<Partial<Record<DirectorStageKey, FlatVehicleRow[]>>>({});
   const [expanded, setExpanded] = useState<Set<DirectorStageKey | "at_factory">>(new Set());
   const [compactView, setCompactView] = useState(false);
 
@@ -113,12 +120,12 @@ export default function DirectorDashboardPage() {
         Promise.all(
           ORDER.filter((o) => o.statusCode).map(async (o) => {
             const rows = await getVehicleReport(o.statusCode!);
-            return [o.key, rows] as const;
+            return [o.key, flattenVehicleReport(rows)] as const;
           })
         ),
       ]);
       setData(inventory);
-      setVehicleReports(Object.fromEntries(reports) as Partial<Record<DirectorStageKey, VehicleReport[]>>);
+      setVehicleReports(Object.fromEntries(reports) as Partial<Record<DirectorStageKey, FlatVehicleRow[]>>);
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to load director inventory"));
     } finally {
@@ -418,7 +425,7 @@ export default function DirectorDashboardPage() {
                                         reportRows.map((v, idx) => (
                                           <tr key={`${row.key}-${idx}`} className="border-b last:border-b-0">
                                             <td className="px-3 py-2">{v.item_name || "—"}</td>
-                                            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(Number(v.quantity_in_litre ?? 0))}</td>
+                                            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(Number(v.total_quantity_in_litre ?? 0))}</td>
                                             <td className="px-3 py-2 text-right tabular-nums">{fmtNum(getVehicleMts(v))}</td>
                                             {isTransportStatus(row.statusCode) && (
                                               <>
