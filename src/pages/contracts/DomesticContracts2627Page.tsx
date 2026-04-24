@@ -1470,7 +1470,7 @@ export default function DomesticContracts2627Page() {
                     <Badge variant="outline" className="mt-0.5">{viewData.status || "—"}</Badge>
                   </div>
                   <div><p className="text-xs text-muted-foreground">Product</p><p className="text-sm font-medium">{viewData.product_name || viewData.product_code}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Vendor Code</p><p className="text-sm font-medium">{viewData.vendor_code}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Vendor</p><p className="text-sm font-medium">{viewData.vendor_name || viewData.vendor_code}</p></div>
                   <div><p className="text-xs text-muted-foreground">Invoice Number</p><p className="text-sm font-medium">{viewData.invoice_number || "—"}</p></div>
                   <div><p className="text-xs text-muted-foreground">Contract Qty</p><p className="text-sm font-medium">{fmtDecimal(viewData.contract_qty || 0)} MTS</p></div>
                   <div><p className="text-xs text-muted-foreground">Contract Rate</p><p className="text-sm font-medium">₹ {fmtDecimal(viewData.contract_rate || 0)}/MTS</p></div>
