@@ -45,7 +45,15 @@ const TABS: { key: StatusKey; label: string; color: string; badge: string }[] = 
 
 
 function fmtMts(n: number) {
-  return (n / 1098.9).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  return n.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+type FlatRow = { vehicle_number: string } & VehicleReport["items"][number];
+
+function flattenVehicles(vehicles: VehicleReport[]): FlatRow[] {
+  return vehicles.flatMap((v) =>
+    v.items.map((item) => ({ vehicle_number: v.vehicle_number, ...item }))
+  );
 }
 
 function daysRemaining(eta: string | null): number | null {
@@ -102,22 +110,24 @@ export default function VehicleReportPage() {
   }
 
   const tab = TABS.find((t) => t.key === activeTab)!;
-  const rows = data[activeTab];
+  const vehicles = data[activeTab];
+  const rows = flattenVehicles(vehicles);
   const isLoading = loading[activeTab];
-  const totalLtr = rows.reduce((s, r) => s + r.quantity_in_litre, 0);
+  const totalMts = rows.reduce((s, r) => s + r.total_quantity_in_mts, 0);
 
   const insights = useMemo(() => {
-    const allRows = TABS.flatMap((t) => data[t.key]);
-    const totalVehicles = allRows.length;
-    const totalLtrAll = allRows.reduce((s, r) => s + r.quantity_in_litre, 0);
-    const overdueCount = allRows.filter((r) => {
+    const allVehicles = TABS.flatMap((t) => data[t.key]);
+    const totalVehicles = allVehicles.length;
+    const allItems = flattenVehicles(allVehicles);
+    const totalMtsAll = allItems.reduce((s, r) => s + r.total_quantity_in_mts, 0);
+    const overdueCount = allItems.filter((r) => {
       const d = daysRemaining(r.eta);
       return d !== null && d < 0;
     }).length;
     const topTab = TABS.reduce((best, t) =>
       data[t.key].length > data[best.key].length ? t : best, TABS[0]
     );
-    return { totalVehicles, totalLtrAll, overdueCount, topTab };
+    return { totalVehicles, totalMtsAll, overdueCount, topTab };
   }, [data]);
 
   return (
@@ -157,7 +167,7 @@ export default function VehicleReportPage() {
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-24 bg-emerald-200/50 dark:bg-emerald-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{fmtMts(insights.totalLtrAll)} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>}
+              : <h3 className="text-2xl font-bold tabular-nums">{fmtMts(insights.totalMtsAll)} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>}
           </CardContent>
         </Card>
 
@@ -223,7 +233,7 @@ export default function VehicleReportPage() {
             <div>
               <CardTitle className="text-base">{tab.label}</CardTitle>
               <CardDescription>
-                {isLoading ? "Loading..." : `${rows.length} vehicles · ${fmtMts(totalLtr)} MTS`}
+                {isLoading ? "Loading..." : `${vehicles.length} vehicles · ${fmtMts(totalMts)} MTS`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchStatus(activeTab)} disabled={isLoading}>
@@ -264,7 +274,7 @@ export default function VehicleReportPage() {
                         </span>
                       </TableCell>
                       <TableCell>{r.item_name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmtMts(r.quantity_in_litre)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmtMts(r.total_quantity_in_mts)}</TableCell>
                       <TableCell className="tabular-nums">
                         {(() => {
                           const d = daysRemaining(r.eta);
@@ -289,7 +299,7 @@ export default function VehicleReportPage() {
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
                     <td colSpan={3} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalLtr)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalMts)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>

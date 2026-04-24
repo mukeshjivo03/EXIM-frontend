@@ -205,13 +205,19 @@ export async function arriveBatch(data: {
   return res.data;
 }
 
-export interface VehicleReport {
-  vehicle_number: string;
-  quantity_in_litre: number;
+export interface VehicleReportItem {
+  item_code: string;
+  item_name: string;
+  total_quantity_in_litre: number;
+  total_quantity_in_mts: number;
   eta: string | null;
   status: string;
   job_work: string | null;
-  item_name: string;
+}
+
+export interface VehicleReport {
+  vehicle_number: string;
+  items: VehicleReportItem[];
 }
 
 export async function getVehicleReport(status: string): Promise<VehicleReport[]> {
