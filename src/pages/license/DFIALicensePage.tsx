@@ -237,7 +237,7 @@ export default function DFIALicensePage() {
     );
   }
 
-  const skeletonCols = 14;
+  const skeletonCols = 13;
 
   /* ── Fetch ───────────────────────────────────────────────── */
 
@@ -475,11 +475,6 @@ export default function DFIALicensePage() {
                         To Import<SortIcon column="to_be_imported" />
                       </button>
                     </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("balance")}>
-                        Balance<SortIcon column="balance" />
-                      </button>
-                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -554,7 +549,6 @@ export default function DFIALicensePage() {
                           <TableCell className="text-right">{fmtDecimal(h.fob_value_usd)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.total_export_quantity)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.to_be_imported)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"

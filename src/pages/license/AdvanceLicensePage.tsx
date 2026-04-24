@@ -287,7 +287,7 @@ export default function AdvanceLicensePage() {
     }
   }
 
-  const skeletonCols = 14;
+  const skeletonCols = 13;
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
@@ -398,11 +398,6 @@ export default function AdvanceLicensePage() {
                       </button>
                     </TableHead>
 
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("balance")}>
-                        Balance<SortIcon column="balance" />
-                      </button>
-                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -462,7 +457,6 @@ export default function AdvanceLicensePage() {
                           
                           <TableCell className="text-right">{fmtDecimal(h.total_import_quantity)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.to_be_exported)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
