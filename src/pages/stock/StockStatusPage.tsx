@@ -21,6 +21,7 @@ import {
   Factory,
   Trash2,
   Container,
+  Search,
 } from "lucide-react";
 
 import {
@@ -46,6 +47,7 @@ import { Pagination } from "@/components/Pagination";
 import { formatStatus, statusColorClass, getEtaCountdown, STATUS_ORDER } from "./stock-helpers";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -121,11 +123,33 @@ export default function StockStatusPage() {
   const uniqueItems = useMemo(() => [...new Set(allRows.map((r) => r.item_code))].sort(), [allRows]);
   const itemNameMap = useMemo(() => new Map(tankItems.map((t) => [t.tank_item_code, t.tank_item_name])), [tankItems]);
 
+  // search
+  const [search, setSearch] = useState("");
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((row) => {
+      const itemName = (itemNameMap.get(row.item_code) ?? row.item_code).toLowerCase();
+      const vendorName = (vendors.find((v) => v.card_code === row.vendor_code)?.card_name ?? row.vendor_code).toLowerCase();
+      return (
+        itemName.includes(q) ||
+        formatStatus(row.status).toLowerCase().includes(q) ||
+        vendorName.includes(q) ||
+        (row.vehicle_number ?? "").toLowerCase().includes(q) ||
+        String(row.rate).includes(q) ||
+        String(row.quantity).includes(q) ||
+        (row.eta ?? "").toLowerCase().includes(q) ||
+        (row.arrival_date ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search, itemNameMap, vendors]);
+
   // pagination
   const [page, setPage] = useState(1);
   const perPage = 20;
-  const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
-  const paginated = rows.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+  const paginated = filteredRows.slice((page - 1) * perPage, page * perPage);
 
   /* ── fetch list ──────────────────────────────────────────── */
 
@@ -594,10 +618,21 @@ export default function StockStatusPage() {
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <CardTitle>Stock Statuses</CardTitle>
-              <CardDescription>{rows.length} records</CardDescription>
+              <CardDescription>
+                {filteredRows.length}{search ? ` of ${rows.length}` : ""} record{rows.length !== 1 ? "s" : ""}
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search any value..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                className="pl-8"
+              />
             </div>
           </div>
         </CardHeader>
@@ -779,7 +814,7 @@ export default function StockStatusPage() {
 
           {/* Pagination */}
           {!loading && (
-            <Pagination page={page} totalPages={totalPages} totalItems={rows.length} perPage={perPage} onPageChange={setPage} />
+            <Pagination page={page} totalPages={totalPages} totalItems={filteredRows.length} perPage={perPage} onPageChange={setPage} />
           )}
         </CardContent>
       </Card>
