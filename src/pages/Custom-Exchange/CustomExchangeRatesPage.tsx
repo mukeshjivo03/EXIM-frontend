@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  Download,
   PackageOpen,
   RefreshCw,
   Search,
@@ -11,7 +10,6 @@ import {
   Euro,
   Globe,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { format, isValid } from "date-fns";
 
 import { fetchCustomRates, type EximRate } from "@/api/customRates";
@@ -135,24 +133,6 @@ export default function CustomExchangeRatesPage() {
     }
   }
 
-  /* ── Excel Export ─────────────────────────────────────────── */
-
-  function exportExcel() {
-    const rows = filteredCustomRates.map((r, i) => ({
-      "S.No": i + 1,
-      "CURRENCY": r.currency,
-      "IMPORT RATE": r.import,
-      "EXPORT RATE": r.export,
-      "NOTIFICATION NO": r.notification_no || "---",
-      "DATE": format(new Date(r.date), "dd-MM-yyyy"),
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Custom Rates");
-    XLSX.writeFile(wb, `Custom_Exchange_Rates_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
-  }
-
   /* ── Filtering & Sorting ──────────────────────────────────── */
 
   const filteredCustomRates = useMemo(() => {
@@ -215,16 +195,6 @@ export default function CustomExchangeRatesPage() {
             />
             {fetching ? "Refreshing..." : "Refresh All Rates"}
           </Button>
-          {hasFetched && filteredCustomRates.length > 0 && (
-            <Button
-              variant="outline"
-              className="btn-press gap-2"
-              onClick={exportExcel}
-            >
-              <Download className="h-4 w-4" />
-              Export Custom
-            </Button>
-          )}
         </div>
       </div>
 

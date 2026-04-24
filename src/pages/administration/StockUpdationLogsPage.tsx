@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import {
   ArrowDownUp,
   Calendar,
   ChevronDown,
   ChevronRight,
-  Download,
   History,
   RefreshCw,
   Search,
   User,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 
 import { getStockLogs, type StockLog } from "@/api/stockStatus";
 import { fmtDateTime } from "@/lib/formatters";
@@ -280,49 +277,6 @@ export default function StockUpdationLogsPage() {
     });
   }
 
-  /* ── Excel export ────────────────────────────────────────── */
-
-  function handleExport() {
-    const rows = filteredGroups.flatMap((group) => {
-      if (group.changes.length === 0) {
-        return [
-          {
-            "Stock ID": group.stock_id,
-            Action: group.action,
-            Note: group.note || "—",
-            "Updated By": group.updated_by,
-            "Updated At": fmtDateTime(group.updated_at),
-            Field: "—",
-            "Old Value": "—",
-            "New Value": "—",
-          },
-        ];
-      }
-      return group.changes.map((change) => ({
-        "Stock ID": group.stock_id,
-        Action: group.action,
-        Note: group.note || "—",
-        "Updated By": group.updated_by,
-        "Updated At": fmtDateTime(group.updated_at),
-        Field: formatFieldName(change.field_name),
-        "Old Value": formatValue(change.field_name, change.old_value) || "—",
-        "New Value": formatValue(change.field_name, change.new_value) || "—",
-      }));
-    });
-    if (rows.length === 0) {
-      toast.error("No data to export.");
-      return;
-    }
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Stock Updation Logs");
-    XLSX.writeFile(
-      wb,
-      `Stock_Updation_Logs_${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
-    toast.success("Exported to Excel");
-  }
-
   /* ── Filters active? ─────────────────────────────────────── */
 
   const hasFilters =
@@ -349,16 +303,6 @@ export default function StockUpdationLogsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleExport}
-            disabled={filteredGroups.length === 0}
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
           <Button
             variant="outline"
             size="icon"

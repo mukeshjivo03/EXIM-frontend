@@ -4,12 +4,9 @@ import {
   ArrowRightLeft,
   ArrowUpFromLine,
   Container,
-  Download,
   Eye,
   Search,
 } from "lucide-react";
-import * as XLSX from "xlsx";
-import { toast } from "sonner";
 
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
@@ -187,37 +184,6 @@ export default function TankLogsPage() {
     page * perPage
   );
 
-  /* ── excel export ───────────────────────────────── */
-
-  function handleExport() {
-    if (filteredLogs.length === 0) {
-      toast.error("No logs to export.");
-      return;
-    }
-
-    const rows = filteredLogs.map((log) => ({
-      "Vehicle Number": log.vehicle_number || "—",
-      "Item Name": log.item_name || log.item_code || "—",
-      "Party": log.party || "—",
-      "Log Type": log.log_type,
-      "Rate (₹)": log.rate ? Number(log.rate) : "",
-      "Value (₹)": log.rate ? Number(log.rate) * Number(log.quantity) : "",
-      "Quantity (L)": Number(log.quantity),
-      "Arrival Date": formatArrival(log.arrival),
-      "Created By": log.created_by,
-      "Stock Status ID": log.stock_status ?? "",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tank Logs");
-    XLSX.writeFile(
-      wb,
-      `Tank_Logs_${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
-    toast.success("Exported to Excel");
-  }
-
   /* ── render ─────────────────────────────────────── */
 
   return (
@@ -230,16 +196,6 @@ export default function TankLogsPage() {
             Inward, outward, and transfer operation logs
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={handleExport}
-          disabled={loading || filteredLogs.length === 0}
-        >
-          <Download className="h-4 w-4" />
-          Export Excel
-        </Button>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}

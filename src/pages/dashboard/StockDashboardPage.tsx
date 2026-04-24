@@ -9,9 +9,8 @@ import {
   Eye,
   ChevronRight,
   Info,
-  Download,
+  Printer,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 
 import { getStockDashboard, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
@@ -273,63 +272,92 @@ export default function StockDashboardPage() {
     });
   }, [data, hideZeroRows, tankQtyMap, tankSummary, filters.status, filters.rmcode, filters.vendor]);
 
-  /* ── Export to Excel ─────────────────────────────────────── */
+  /* ── Print ───────────────────────────────────────────────── */
 
-  function exportToExcel() {
+  function handlePrint() {
     if (!data) return;
 
-    const rows: Record<string, string | number>[] = [];
+    const EU: Unit = "MTS";
+    const vendorCols = statusGroups.flatMap((g) =>
+      g.vendors.map(({ key, vendor }) => ({ key, vendor, status: g.status }))
+    );
 
-    for (const item of displayItems) {
-      const tankVal = tankQtyMap.get(item.item_code) ?? 0;
-      const row: Record<string, string | number> = { "RM Code": item.item_code };
-      if (showFactoryCols) {
-        row["In Factory"] = unit === "LTR" ? tankVal : Number(convertFromLiters(tankVal, unit).toFixed(3));
-        row["Outside Factory"] = Number(convertUnit(item.outside_factory, unit).toFixed(3));
-      }
+    const td = (content: string | number, style = "") =>
+      `<td style="border:1px solid #ccc;padding:5px 8px;text-align:center;${style}">${content}</td>`;
+    const th = (content: string | number, extra = "") =>
+      `<th style="border:1px solid #999;padding:6px 8px;text-align:center;${extra}">${content}</th>`;
 
-      for (const group of statusGroups) {
-        for (const { key, vendor } of group.vendors) {
-          const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
-          row[colLabel] = Number(convertUnit(item.status_data[key] ?? 0, unit).toFixed(3));
-        }
-      }
-
-      const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
-      const grandTotal = showFactoryCols
-        ? convertFromLiters(tankVal, unit) + convertUnit(item.outside_factory + statusKg, unit)
-        : convertUnit(statusKg, unit);
-      row["Total"] = Math.round(grandTotal);
-      rows.push(row);
+    // Row 0 — group headers (pink)
+    let row0Cells = th("In Factory", "background:#F4CCCC;font-weight:bold;") +
+      th("Qty MTS", "background:#F4CCCC;font-weight:bold;") +
+      th("Outside Factory", "background:#F4CCCC;font-weight:bold;");
+    for (const group of statusGroups) {
+      row0Cells += `<th colspan="${group.vendors.length}" style="border:1px solid #999;padding:6px 8px;text-align:center;background:#F4CCCC;font-weight:bold;">${group.status.replace(/_/g, " ")}</th>`;
     }
+    row0Cells += th("Total MTS", "background:#F4CCCC;font-weight:bold;");
+
+    // Row 1 — sub-headers (green)
+    let row1Cells = th("Name", "background:#B6D7A8;font-weight:bold;") +
+      th("Qty MTS", "background:#B6D7A8;font-weight:bold;") +
+      th("Outside Factory", "background:#B6D7A8;font-weight:bold;");
+    for (const { vendor } of vendorCols) {
+      row1Cells += th(vendor, "background:#B6D7A8;font-weight:bold;");
+    }
+    row1Cells += th("", "background:#B6D7A8;");
+
+    // Data rows
+    const dataRowsHtml = displayItems.map((item) => {
+      const tankVal  = tankQtyMap.get(item.item_code) ?? 0;
+      const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
+      const rowTotal = convertFromLiters(tankVal, EU) + convertUnit(item.outside_factory + statusKg, EU);
+
+      let cells = td(item.item_code, "font-weight:bold;") +
+        td(Math.round(convertFromLiters(tankVal, EU)).toLocaleString("en-IN")) +
+        td(Math.round(convertUnit(item.outside_factory, EU)).toLocaleString("en-IN"));
+      for (const { key } of vendorCols) {
+        cells += td(Math.round(convertUnit(item.status_data[key] ?? 0, EU)).toLocaleString("en-IN"));
+      }
+      cells += td(Math.round(rowTotal).toLocaleString("en-IN"), "font-weight:bold;");
+      return `<tr>${cells}</tr>`;
+    }).join("");
 
     // Grand total row
-    const totalRow: Record<string, string | number> = { "RM Code": "GRAND TOTAL" };
-    if (showFactoryCols) {
-      totalRow["In Factory"] = Number(convertFromLiters(tankInFactoryTotal, unit).toFixed(3));
-      totalRow["Outside Factory"] = Number(convertUnit(data.totals.outside_factory, unit).toFixed(3));
-    }
-    for (const group of statusGroups) {
-      for (const [idx, { vendor }] of group.vendors.entries()) {
-        const colLabel = `${group.status.replace(/_/g, " ")} — ${vendor}`;
-        const statusTotal = data.totals.status_totals?.[group.status];
-        const fallbackTotal = group.vendors.reduce(
-          (sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0),
-          0
-        );
-        totalRow[colLabel] = idx === 0
-          ? Number(convertUnit(statusTotal ?? fallbackTotal, unit).toFixed(3))
-          : "—";
-      }
-    }
-    totalRow["Total"] = Number(convertUnit(data.totals.grand_total, unit).toFixed(3));
-    rows.push(totalRow);
+    const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
+      convertUnit((data.totals.outside_factory ?? 0) + colKeys.reduce((s, k) => s + (data.totals.status_vendor_totals[k] ?? 0), 0), EU);
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Stock Dashboard");
-    XLSX.writeFile(wb, `Stock_Dashboard_${UNIT_LABELS[unit]}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Exported to Excel");
+    let gtCells = td("Grand Total", "background:#CFE2F3;font-weight:bold;") +
+      td(Math.round(convertFromLiters(tankInFactoryTotal, EU)).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;") +
+      td(Math.round(convertUnit(data.totals.outside_factory, EU)).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;");
+    for (const group of statusGroups) {
+      const st = data.totals.status_totals?.[group.status] ??
+        group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
+      gtCells += `<td colspan="${group.vendors.length}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;background:#CFE2F3;font-weight:bold;">${Math.round(convertUnit(st, EU)).toLocaleString("en-IN")}</td>`;
+    }
+    gtCells += td(Math.round(gtTotal).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;");
+
+    const html = `<!DOCTYPE html><html><head><title>Stock Dashboard</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11px; margin: 16px; }
+  h2 { margin-bottom: 8px; }
+  table { border-collapse: collapse; width: 100%; }
+  @media print { body { margin: 8px; } }
+</style></head><body>
+<h2>Stock Dashboard — MTS — ${new Date().toLocaleDateString("en-IN")}</h2>
+<table>
+  <thead>
+    <tr>${row0Cells}</tr>
+    <tr>${row1Cells}</tr>
+  </thead>
+  <tbody>${dataRowsHtml}<tr>${gtCells}</tr></tbody>
+</table>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { toast.error("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
   }
 
   return (
@@ -371,9 +399,9 @@ export default function StockDashboardPage() {
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
-          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={exportToExcel} disabled={!data}>
-            <Download className="h-4 w-4" />
-            Export
+          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={handlePrint} disabled={!data}>
+            <Printer className="h-4 w-4" />
+            Print
           </Button>
         </div>
       </div>

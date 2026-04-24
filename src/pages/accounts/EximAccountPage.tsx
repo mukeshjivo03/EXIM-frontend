@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   Clock,
   Crown,
-  Download,
   PackageOpen,
   RefreshCw,
   AlertTriangle,
@@ -105,41 +104,6 @@ export default function EximAccountPage() {
     } finally {
       setSyncing(false);
     }
-  }
-
-  /* ── CSV Export ──────────────────────────────────────────── */
-
-  function exportCSV() {
-    const rows = filteredEntries.map((e, i) => [
-      i + 1,
-      e.CardCode,
-      `"${e.CardName.replace(/"/g, '""')}"`,
-      e.Balance,
-      e["Last Transaction Date"]
-        ? fmtDate(e["Last Transaction Date"])
-        : "",
-      e["Last Transanction Amount"],
-    ]);
-    const header = [
-      "S.No",
-      "Card Code",
-      "Card Name",
-      "Balance (₹)",
-      "Last Trans. Date",
-      "Last Trans. Amt (₹)",
-    ];
-    const csv = [header.join(","), ...rows.map((r) => r.join(","))].join(
-      "\n"
-    );
-    const blob = new Blob(["\uFEFF" + csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dr_cr_outstanding.csv";
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   /* ── Filtering ───────────────────────────────────────────── */
@@ -322,16 +286,6 @@ export default function EximAccountPage() {
             />
             {syncing ? "Syncing..." : "Sync Balance Sheet"}
           </Button>
-          {synced && entries.length > 0 && (
-            <Button
-              variant="outline"
-              className="btn-press gap-2"
-              onClick={exportCSV}
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
-          )}
         </div>
       </div>
 
