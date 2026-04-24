@@ -86,7 +86,8 @@ type SortKey =
   | "total_import"
   | "total_export"
   | "to_be_imported"
-  | "balance";
+  | "balance"
+  | "total_export_quantity";
 type SortDir = "asc" | "desc";
 
 /* ── Validity helpers ────────────────────────────────────── */
@@ -136,6 +137,7 @@ const EMPTY_FORM: DFIALicenseHeaderPayload = {
   cif_value_inr: "",
   cif_exchange_rate: "",
   status: "OPEN",
+  total_export_quantity: "",
 };
 
 export default function DFIALicensePage() {
@@ -196,6 +198,7 @@ export default function DFIALicensePage() {
           "total_export",
           "to_be_imported",
           "balance",
+          "total_export_quantity",
         ].includes(sortKey)
       ) {
         cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
@@ -234,7 +237,7 @@ export default function DFIALicensePage() {
     );
   }
 
-  const skeletonCols = 19;
+  const skeletonCols = 14;
 
   /* ── Fetch ───────────────────────────────────────────────── */
 
@@ -304,6 +307,7 @@ export default function DFIALicensePage() {
       cif_value_inr: h.cif_value_inr,
       cif_exchange_rate: h.cif_exchange_rate,
       status: h.status,
+      total_export_quantity: h.total_export_quantity,
     });
     setEditFormError("");
     setEditOpen(true);
@@ -442,13 +446,13 @@ export default function DFIALicensePage() {
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("export_in_mts")}>
-                        Export (MTS)<SortIcon column="export_in_mts" />
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_inr")}>
+                        CIF (INR)<SortIcon column="cif_value_inr" />
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("import_in_mts")}>
-                        Import (MTS)<SortIcon column="import_in_mts" />
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_usd")}>
+                        CIF (USD)<SortIcon column="cif_value_usd" />
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
@@ -462,33 +466,8 @@ export default function DFIALicensePage() {
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("fob_exchange_rate")}>
-                        FOB Rate<SortIcon column="fob_exchange_rate" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_inr")}>
-                        CIF (INR)<SortIcon column="cif_value_inr" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_value_usd")}>
-                        CIF (USD)<SortIcon column="cif_value_usd" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("cif_exchange_rate")}>
-                        CIF Rate<SortIcon column="cif_exchange_rate" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_import")}>
-                        Total Import<SortIcon column="total_import" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_export")}>
-                        Total Export<SortIcon column="total_export" />
+                      <button type="button" className="flex items-center cursor-pointer hover:text-foreground transition-colors ml-auto" onClick={() => handleSort("total_export_quantity")}>
+                        Valid Export<SortIcon column="total_export_quantity" />
                       </button>
                     </TableHead>
                     <TableHead className="text-right">
@@ -534,7 +513,7 @@ export default function DFIALicensePage() {
                       return (
                         <TableRow
                           key={h.file_no}
-                          className={`cursor-pointer hover:bg-muted/50 ${isClosed ? "opacity-40 line-through decoration-muted-foreground/30" : ""}`}
+                          className={`cursor-pointer hover:bg-muted/50 `}
                           onClick={() =>
                             navigate(
                               `/license/dfia-license/${encodeURIComponent(h.file_no)}`
@@ -545,7 +524,7 @@ export default function DFIALicensePage() {
                             {(page - 1) * perPage + i + 1}
                           </TableCell>
                           <TableCell>
-                            <span className="text-primary underline underline-offset-4 font-medium">
+                            <span className="text-primary underline underline-offset-4 font-medium no-underline-override">
                               {h.file_no}
                             </span>
                           </TableCell>
@@ -569,32 +548,11 @@ export default function DFIALicensePage() {
                               {!isClosed && validityBadge(h.import_validity)}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.export_in_mts)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.import_in_mts)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.fob_value_inr)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.fob_value_usd)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.fob_exchange_rate)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.cif_value_inr)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.cif_value_usd)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {fmtDecimal(h.cif_exchange_rate)}
-                          </TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.total_import)}</TableCell>
-                          <TableCell className="text-right">{fmtDecimal(h.total_export)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.cif_value_inr)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.cif_value_usd)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.fob_value_inr)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.fob_value_usd)}</TableCell>
+                          <TableCell className="text-right">{fmtDecimal(h.total_export_quantity)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.to_be_imported)}</TableCell>
                           <TableCell className="text-right">{fmtDecimal(h.balance)}</TableCell>
                           <TableCell className="text-right">
@@ -695,6 +653,10 @@ export default function DFIALicensePage() {
               <Label htmlFor="cif_exchange_rate">CIF Exchange Rate</Label>
               <Input id="cif_exchange_rate" type="number" step="0.001" value={form.cif_exchange_rate} onChange={(e) => setForm({ ...form, cif_exchange_rate: e.target.value })} placeholder="82.500" />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="total_export_quantity">Valid Export</Label>
+              <Input id="total_export_quantity" type="number" step="0.001" value={form.total_export_quantity} onChange={(e) => setForm({ ...form, total_export_quantity: e.target.value })} placeholder="1000.000" />
+            </div>
           </div>
 
           {formError && <p className="text-sm text-destructive">{formError}</p>}
@@ -760,6 +722,10 @@ export default function DFIALicensePage() {
             <div className="space-y-2">
               <Label htmlFor="edit_cif_exchange_rate">CIF Exchange Rate</Label>
               <Input id="edit_cif_exchange_rate" type="number" step="0.001" value={editForm.cif_exchange_rate} onChange={(e) => setEditForm({ ...editForm, cif_exchange_rate: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_total_export_quantity">Valid Export</Label>
+              <Input id="edit_total_export_quantity" type="number" step="0.001" value={editForm.total_export_quantity} onChange={(e) => setEditForm({ ...editForm, total_export_quantity: e.target.value })} />
             </div>
           </div>
 

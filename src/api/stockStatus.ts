@@ -184,6 +184,10 @@ export async function dispatchStock(data: {
   destination_status: string;
   action: string;
   created_by: string;
+  vehicle_number?: string;
+  transporter?: string;
+  location?: string;
+  eta?: string;
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/dispatch/", data);
   return res.data;

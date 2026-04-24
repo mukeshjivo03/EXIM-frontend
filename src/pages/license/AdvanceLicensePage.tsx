@@ -287,7 +287,7 @@ export default function AdvanceLicensePage() {
     }
   }
 
-  const skeletonCols = 17;
+  const skeletonCols = 14;
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">

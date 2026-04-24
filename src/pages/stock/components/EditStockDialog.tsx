@@ -146,6 +146,10 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             destination_status: eStatus,
             action: eAction,
             created_by: email,
+            vehicle_number: eVehicleNumber.trim() || undefined,
+            transporter: eTransporterName.trim() || undefined,
+            location: eLocation.trim() || undefined,
+            eta: eEta.trim() || undefined,
           });
           toast.success("Stock dispatched (Batch).");
         }

@@ -321,6 +321,12 @@ export default function DFIALicenseDetailPage() {
               <CardTitle className="text-lg">{fmtDecimal(header.to_be_imported)} / {fmtDecimal(header.balance)}</CardTitle>
             </CardHeader>
           </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Valid Export</CardDescription>
+              <CardTitle className="text-lg">{fmtDecimal(header.total_export_quantity)}</CardTitle>
+            </CardHeader>
+          </Card>
         </div>
       )}
 

@@ -181,6 +181,7 @@ export interface DFIALicenseHeader {
   total_export: string;
   to_be_imported: string;
   balance: string;
+  total_export_quantity: string;
 }
 
 export interface DFIALicenseHeaderPayload {
@@ -193,6 +194,7 @@ export interface DFIALicenseHeaderPayload {
   cif_value_inr: string;
   cif_exchange_rate: string;
   status: string;
+  total_export_quantity: string;
 }
 
 export async function getDFIALicenseHeaders(): Promise<DFIALicenseHeader[]> {
