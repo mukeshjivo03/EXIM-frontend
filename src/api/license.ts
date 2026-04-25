@@ -34,6 +34,12 @@ export interface ExportLinePayload {
   sb_value_usd: string;
   sb_date?: string | null;
   export_in_mts: string;
+  linked_import_line_id?: number | null;
+}
+
+export async function getImportLinesDropdown(licenseNo: string): Promise<ImportLine[]> {
+  const res = await api.get<ImportLine[]>("/license/advance-license-import-lines/dropdown/", { params: { license_no: licenseNo } });
+  return res.data ?? [];
 }
 
 export async function createImportLine(data: ImportLinePayload): Promise<ImportLine> {
@@ -151,6 +157,7 @@ export interface DFIAImportLinePayload {
   boe_value_usd: string;
   boe_date: string;
   import_in_mts: string;
+  linked_export_line_id?: number | null;
 }
 
 export interface DFIAExportLinePayload {
@@ -219,6 +226,11 @@ export async function updateDFIALicenseHeader(fileNo: string, data: DFIALicenseH
 export async function getDFIALicenseHeader(fileNo: string): Promise<DFIALicenseHeader> {
   const res = await api.get<DFIALicenseHeader>(`/license/dfia-license-header/${fileNo}/`);
   return res.data;
+}
+
+export async function getDFIAExportLinesDropdown(fileNo: string): Promise<DFIAExportLine[]> {
+  const res = await api.get<DFIAExportLine[]>("/license/dfia-license-export-lines/dropdown/", { params: { file_no: fileNo } });
+  return res.data ?? [];
 }
 
 export async function createDFIAImportLine(data: DFIAImportLinePayload): Promise<DFIAImportLine> {

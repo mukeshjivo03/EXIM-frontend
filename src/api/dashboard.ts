@@ -15,6 +15,7 @@ export async function getCapacityInsights(): Promise<CapacityInsight> {
 
 export interface StockDashboardItem {
   item_code: string;
+  item_name: string;
   in_factory: number;
   outside_factory: number;
   status_data: Record<string, number>;
