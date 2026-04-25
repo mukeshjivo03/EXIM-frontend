@@ -246,6 +246,7 @@ export async function createOpeningStock(data: OpeningStockPayload): Promise<voi
 
 export interface DebitEntry {
   id: number;
+  item_code: string;
   item_name: string | null;
   rate: string;
   load_qty: string;
@@ -254,12 +255,13 @@ export interface DebitEntry {
   allowed_shortage_qty: string;
   deducted_shortage_qty: string;
   deduction_amount: string;
+  supplier_code: string;
+  supplier: string;
   vehicle_number: string;
   transporter: string | null;
   created_at: string;
   created_by: string;
   stock: number;
-  supplier: string;
 }
 
 export async function getDebitEntries(): Promise<DebitEntry[]> {

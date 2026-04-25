@@ -10,7 +10,6 @@ import {
   getDebitEntries,
   type DebitEntry,
 } from "@/api/stockStatus";
-import { getVendors } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,7 +88,6 @@ const COLS = 11;
 
 export default function StockVariancePage() {
   const [entries, setEntries] = useState<DebitEntry[]>([]);
-  const [vendorMap, setVendorMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -103,11 +101,8 @@ export default function StockVariancePage() {
       setLoading(true);
       setError("");
       try {
-        const [data, vendorsRes] = await Promise.all([getDebitEntries(), getVendors()]);
+        const data = await getDebitEntries();
         setEntries(data);
-        const map = new Map<string, string>();
-        for (const v of vendorsRes.parties) map.set(v.card_code, v.card_name);
-        setVendorMap(map);
       } catch (err) {
         setError(getErrorMessage(err, "Failed to load variance entries"));
       } finally {
@@ -199,7 +194,7 @@ export default function StockVariancePage() {
                       <TableCell className="font-medium text-muted-foreground">
                         {(page - 1) * perPage + i + 1}
                       </TableCell>
-                      <TableCell>{vendorMap.get(entry.supplier) || entry.supplier || "—"}</TableCell>
+                      <TableCell>{entry.supplier || "—"}</TableCell>
                       <TableCell>{entry.item_name || "—"}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.load_qty)}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.unload_qty)}</TableCell>
