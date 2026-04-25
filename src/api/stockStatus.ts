@@ -246,32 +246,23 @@ export async function createOpeningStock(data: OpeningStockPayload): Promise<voi
 
 export interface DebitEntry {
   id: number;
-  type: "GAIN" | "LOSS";
-  quantity: string;
+  item_name: string | null;
   rate: string;
-  total: string;
+  load_qty: string;
+  unload_qty: string;
+  shortage_qty: string;
+  allowed_shortage_qty: string;
+  deducted_shortage_qty: string;
+  deduction_amount: string;
   vehicle_number: string;
-  responsible_transporter: string | null;
-  reason: string;
+  transporter: string | null;
   created_at: string;
   created_by: string;
   stock: number;
-  responsible_party: string;
-}
-
-export interface DebitInsight {
-  type: "GAIN" | "LOSS";
-  total_qty: number;
-  total_records: number;
-  total_value: number;
+  supplier: string;
 }
 
 export async function getDebitEntries(): Promise<DebitEntry[]> {
   const res = await api.get<DebitEntry[]>("/stock-status/debit-entries/");
-  return res.data ?? [];
-}
-
-export async function getDebitInsights(): Promise<DebitInsight[]> {
-  const res = await api.get<DebitInsight[]>("/stock-status/debit-insights/");
   return res.data ?? [];
 }
