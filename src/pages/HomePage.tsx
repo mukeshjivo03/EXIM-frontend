@@ -16,6 +16,9 @@ import {
   BookOpen,
   FileText,
   TrendingUp,
+  LineChart,
+  Scale,
+  ShoppingCart,
   Search,
   Bell,
   Activity,
@@ -76,13 +79,16 @@ const quickLinks: QuickLink[] = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items", category: "Operations", modules: ["tankitem"] },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks", category: "Operations", modules: ["tankdata"] },
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations", modules: ["tanklog"] },
+  { to: "/stock/variance", label: "Stock Variance", icon: Scale, desc: "Stock variance analysis", category: "Operations", modules: ["stockstatus"] },
 
   // Commercials
+  { to: "/contracts/open-grpos", label: "Open GRPOs", icon: ShoppingCart, desc: "Open goods receipt orders", category: "Commercials", modules: ["open_grpos"] },
   { to: "/domestic-contracts", label: "Contracts (25-26)", icon: FileText, desc: "Historical orders", category: "Commercials", modules: ["domesticcontract"] },
   { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", modules: ["domesticcontract"] },
   { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", modules: ["exim_rates"] },
   { to: "/exim-account", label: "Exim Account", icon: BookOpen, desc: "Account & balance", category: "Commercials", modules: ["debitentry"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", modules: ["dailyprice"] },
+  { to: "/commodity/jivo-rates", label: "Jivo Rates", icon: LineChart, desc: "Jivo commodity rates", category: "Commercials", modules: ["jivorates"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", modules: ["advancelicenseheaders"] },
   { to: "/license/dfia-license", label: "DFIA License", icon: FileText, desc: "DFIA license management", category: "Commercials", modules: ["dfialicenseheader"] },
 
