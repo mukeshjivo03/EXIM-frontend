@@ -143,10 +143,13 @@ export default function StockDashboardPage() {
 
   const hasFilters = Boolean(filters.rmcode || filters.vendor || filters.status);
 
-  const availableRmCodes = useMemo(() => {
+  const availableRmItems = useMemo(() => {
     const source = optionsData ?? data;
     if (!source) return [];
-    return [...new Set(source.items.map((item) => item.item_code))].sort();
+    const seen = new Set<string>();
+    return source.items
+      .filter((item) => { if (seen.has(item.item_code)) return false; seen.add(item.item_code); return true; })
+      .sort((a, b) => (a.item_name || a.item_code).localeCompare(b.item_name || b.item_code));
   }, [optionsData, data]);
 
   const availableStatuses = useMemo(() => {
@@ -257,6 +260,7 @@ export default function StockDashboardPage() {
       .filter((t) => !stockItemCodes.has(t.tank_item_code))
       .map((t) => ({
         item_code: t.tank_item_code,
+        item_name: "",
         in_factory: 0,
         outside_factory: 0,
         status_data: {},
@@ -435,7 +439,7 @@ export default function StockDashboardPage() {
           <CardContent className="p-5 flex flex-col gap-1">
             <p className="text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Top Item</p>
             {loading ? <Skeleton className="h-6 w-20" /> : (
-              <h3 className="text-xl font-bold truncate">{insights?.topItem?.item_code ?? "—"}</h3>
+              <h3 className="text-xl font-bold truncate">{(insights?.topItem?.item_name || insights?.topItem?.item_code) ?? "—"}</h3>
             )}
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className="text-[10px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5">BY VOLUME</Badge>
@@ -457,9 +461,9 @@ export default function StockDashboardPage() {
                 onChange={(e) => updateFilter({ rmcode: e.target.value })}
                 disabled={loading}
               >
-                <option value="">All RM Codes</option>
-                {availableRmCodes.map((code) => (
-                  <option key={code} value={code}>{code}</option>
+                <option value="">All Items</option>
+                {availableRmItems.map((item) => (
+                  <option key={item.item_code} value={item.item_code}>{item.item_name || item.item_code}</option>
                 ))}
               </select>
             </div>
@@ -560,7 +564,7 @@ export default function StockDashboardPage() {
                   {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/40 border-b">
                     <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-foreground/30 text-base" rowSpan={2}>
-                      RM CODE
+                      RM NAME
                     </th>
                     {showFactoryCols && <>
                       <th
@@ -677,10 +681,10 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 font-mono text-base text-center border border-foreground/30 transition-colors",
+                          "sticky left-0 z-20 px-4 py-3 text-sm text-center border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
-                          {item.item_code}
+                          {item.item_name || item.item_code}
                         </td>
                         {showFactoryCols && <>
                           {/* IN FACTORY */}

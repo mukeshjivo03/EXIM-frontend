@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, FileText, Pencil, Trash2 } from "lucide-react";
 
 import {
   getDFIALicenseHeader,
+  getDFIAExportLinesDropdown,
   createDFIAImportLine,
   updateDFIAImportLine,
   deleteDFIAImportLine,
@@ -42,6 +43,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   OPEN: "default",
@@ -52,7 +60,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 type ImportForm = Omit<DFIAImportLinePayload, "license_no">;
 type ExportForm = Omit<DFIAExportLinePayload, "license_no">;
 
-const emptyImportForm: ImportForm = { boe_no: "", boe_value_usd: "", boe_date: "", import_in_mts: "" };
+const emptyImportForm: ImportForm = { boe_no: "", boe_value_usd: "", boe_date: "", import_in_mts: "", linked_export_line_id: null };
 const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", sb_date: "", export_in_mts: "" };
 
 export default function DFIALicenseDetailPage() {
@@ -67,6 +75,8 @@ export default function DFIALicenseDetailPage() {
   const [importForm, setImportForm] = useState<ImportForm>(emptyImportForm);
   const [importError, setImportError] = useState("");
   const [savingImport, setSavingImport] = useState(false);
+  const [exportLinesDropdown, setExportLinesDropdown] = useState<DFIAExportLine[]>([]);
+  const [loadingExportDropdown, setLoadingExportDropdown] = useState(false);
 
   // Import line – edit
   const [editImportOpen, setEditImportOpen] = useState(false);
@@ -125,6 +135,18 @@ export default function DFIALicenseDetailPage() {
   }
 
   /* ── Import CRUD ─────────────────────────────────────────── */
+
+  async function fetchExportDropdown() {
+    setLoadingExportDropdown(true);
+    try {
+      const lines = await getDFIAExportLinesDropdown(fileNo!);
+      setExportLinesDropdown(lines);
+    } catch {
+      setExportLinesDropdown([]);
+    } finally {
+      setLoadingExportDropdown(false);
+    }
+  }
 
   async function handleSaveImport() {
     setSavingImport(true);
@@ -422,7 +444,7 @@ export default function DFIALicenseDetailPage() {
               <CardTitle>Import Lines</CardTitle>
               <CardDescription>{importLines.length} line{importLines.length !== 1 ? "s" : ""}</CardDescription>
             </div>
-            <Button size="sm" className="btn-press gap-1.5" onClick={() => { setImportForm(emptyImportForm); setImportError(""); setImportOpen(true); }}>
+            <Button size="sm" className="btn-press gap-1.5" onClick={() => { setImportForm(emptyImportForm); setImportError(""); setImportOpen(true); fetchExportDropdown(); }}>
               <Plus className="h-3.5 w-3.5" /> Add Import
             </Button>
           </CardHeader>
@@ -506,6 +528,25 @@ export default function DFIALicenseDetailPage() {
             <DialogDescription>Add a new BOE import entry for {fileNo}.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label>Export Line (Shipping Bill No)</Label>
+              <Select
+                value={importForm.linked_export_line_id?.toString() ?? ""}
+                onValueChange={(v) => setImportForm({ ...importForm, linked_export_line_id: v ? Number(v) : null })}
+                disabled={loadingExportDropdown}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingExportDropdown ? "Loading..." : "Select Shipping Bill No"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {exportLinesDropdown.map((line) => (
+                    <SelectItem key={line.id} value={line.id.toString()}>
+                      {line.shipping_bill_no}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="imp_boe_no">BOE No</Label>
               <Input id="imp_boe_no" value={importForm.boe_no} onChange={(e) => setImportForm({ ...importForm, boe_no: e.target.value })} placeholder="BOE-2024-00789" />

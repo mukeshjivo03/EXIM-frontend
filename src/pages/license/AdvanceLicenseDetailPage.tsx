@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, FileText, Pencil, Trash2 } from "lucide-react";
 
 import {
   getLicenseHeader,
+  getImportLinesDropdown,
   createImportLine,
   updateImportLine,
   deleteImportLine,
@@ -42,6 +43,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   OPEN: "default",
@@ -52,7 +60,7 @@ type ImportForm = Omit<ImportLinePayload, "license_no">;
 type ExportForm = Omit<ExportLinePayload, "license_no">;
 
 const emptyImportForm: ImportForm = { boe_No: "", boe_value_usd: "", boe_date: "", import_in_mts: "" };
-const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", sb_date: "", export_in_mts: "" };
+const emptyExportForm: ExportForm = { shipping_bill_no: "", sb_value_usd: "", sb_date: "", export_in_mts: "", linked_import_line_id: null };
 
 export default function AdvanceLicenseDetailPage() {
   const { licenseNo } = useParams<{ licenseNo: string }>();
@@ -83,6 +91,8 @@ export default function AdvanceLicenseDetailPage() {
   const [exportForm, setExportForm] = useState<ExportForm>(emptyExportForm);
   const [exportError, setExportError] = useState("");
   const [savingExport, setSavingExport] = useState(false);
+  const [importLinesDropdown, setImportLinesDropdown] = useState<ImportLine[]>([]);
+  const [loadingImportDropdown, setLoadingImportDropdown] = useState(false);
 
   // Export line – edit
   const [editExportOpen, setEditExportOpen] = useState(false);
@@ -179,6 +189,18 @@ export default function AdvanceLicenseDetailPage() {
   }
 
   /* ── Export CRUD ─────────────────────────────────────────── */
+
+  async function fetchImportDropdown() {
+    setLoadingImportDropdown(true);
+    try {
+      const lines = await getImportLinesDropdown(licenseNo!);
+      setImportLinesDropdown(lines);
+    } catch {
+      setImportLinesDropdown([]);
+    } finally {
+      setLoadingImportDropdown(false);
+    }
+  }
 
   async function handleSaveExport() {
     setSavingExport(true);
@@ -415,7 +437,7 @@ export default function AdvanceLicenseDetailPage() {
               <CardTitle>Export Lines</CardTitle>
               <CardDescription>{exportLines.length} line{exportLines.length !== 1 ? "s" : ""}</CardDescription>
             </div>
-            <Button size="sm" className="btn-press gap-1.5" disabled={Number(header?.balance ?? 1) <= 0} onClick={() => { setExportForm(emptyExportForm); setExportError(""); setExportOpen(true); }}>
+            <Button size="sm" className="btn-press gap-1.5" disabled={Number(header?.balance ?? 1) <= 0} onClick={() => { setExportForm(emptyExportForm); setExportError(""); setExportOpen(true); fetchImportDropdown(); }}>
               <Plus className="h-3.5 w-3.5" /> Add Export
             </Button>
           </CardHeader>
@@ -581,6 +603,25 @@ export default function AdvanceLicenseDetailPage() {
             <DialogDescription>Add a new shipping bill export entry for {licenseNo}.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-2">
+              <Label>Import Line (BOE No)</Label>
+              <Select
+                value={exportForm.linked_import_line_id?.toString() ?? ""}
+                onValueChange={(v) => setExportForm({ ...exportForm, linked_import_line_id: v ? Number(v) : null })}
+                disabled={loadingImportDropdown}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingImportDropdown ? "Loading..." : "Select BOE No"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {importLinesDropdown.map((line) => (
+                    <SelectItem key={line.id} value={line.id.toString()}>
+                      {line.boe_No}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="exp_shipping_bill_no">Shipping Bill No</Label>
               <Input id="exp_shipping_bill_no" value={exportForm.shipping_bill_no} onChange={(e) => setExportForm({ ...exportForm, shipping_bill_no: e.target.value })} placeholder="SB-2024-00456" />
