@@ -3,8 +3,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
-import ThreeBackground from "./ThreeBackground";
-
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -26,7 +24,6 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <ThreeBackground />
       <Navbar onMenuToggle={() => setMobileOpen((prev) => !prev)} />
 
       {/* Mobile overlay */}
