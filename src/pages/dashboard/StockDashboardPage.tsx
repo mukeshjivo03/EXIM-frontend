@@ -34,9 +34,11 @@ function convertUnit(kg: number, unit: Unit): number {
 
 function fmtNum(n: number, unit: Unit = "KG", roundingEnabled: boolean = true) {
   const val = convertUnit(n, unit);
-  return val.toLocaleString("en-IN", {
-    minimumFractionDigits: roundingEnabled ? 0 : 3,
-    maximumFractionDigits: roundingEnabled ? 0 : 3,
+  if (val === 0) return "0";
+  if (roundingEnabled) return Math.round(val).toLocaleString("en-IN");
+  return Number(val.toFixed(3)).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
   });
 }
 
@@ -49,9 +51,20 @@ function convertFromLiters(liters: number, unit: Unit): number {
 
 function fmtLiters(n: number, unit: Unit, roundingEnabled: boolean = true) {
   const val = convertFromLiters(n, unit);
-  return val.toLocaleString("en-IN", {
-    minimumFractionDigits: roundingEnabled ? 0 : 3,
-    maximumFractionDigits: roundingEnabled ? 0 : 3,
+  if (val === 0) return "0";
+  if (roundingEnabled) return Math.round(val).toLocaleString("en-IN");
+  return Number(val.toFixed(3)).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
+}
+
+function fmtAny(val: number, roundingEnabled: boolean) {
+  if (val === 0) return "0";
+  if (roundingEnabled) return Math.round(val).toLocaleString("en-IN");
+  return Number(val.toFixed(3)).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
   });
 }
 
@@ -108,6 +121,16 @@ export default function StockDashboardPage() {
     const map = new Map<string, number>();
     for (const item of tankSummary?.items ?? []) {
       map.set(item.tank_item_code, item.quantity_in_liters);
+    }
+    return map;
+  }, [tankSummary]);
+
+  const tankNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of tankSummary?.items ?? []) {
+      if (item.tank_item_name) {
+        map.set(item.tank_item_code, item.tank_item_name);
+      }
     }
     return map;
   }, [tankSummary]);
@@ -269,7 +292,7 @@ export default function StockDashboardPage() {
       .filter((t) => !stockItemCodes.has(t.tank_item_code))
       .map((t) => ({
         item_code: t.tank_item_code,
-        item_name: "",
+        item_name: t.tank_item_name || "",
         in_factory: 0,
         outside_factory: 0,
         status_data: {},
@@ -300,11 +323,7 @@ export default function StockDashboardPage() {
     const th = (content: string | number, extra = "") =>
       `<th style="border:1px solid #999;padding:6px 8px;text-align:center;${extra}">${content}</th>`;
 
-    const fmt = (val: number) => 
-      val.toLocaleString("en-IN", {
-        minimumFractionDigits: roundingEnabled ? 0 : 3,
-        maximumFractionDigits: roundingEnabled ? 0 : 3,
-      });
+    const fmt = (val: number) => fmtAny(val, roundingEnabled);
 
     // Row 0 — group headers (pink)
     let row0Cells = th("In Factory", "background:#F4CCCC;font-weight:bold;") +
@@ -709,7 +728,7 @@ export default function StockDashboardPage() {
                           "sticky left-0 z-20 px-4 py-3 text-sm text-center border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
-                          {item.item_name || item.item_code}
+                          {item.item_name || tankNameMap.get(item.item_code) || item.item_code}
                         </td>
                         {showFactoryCols && <>
                           {/* IN FACTORY */}
@@ -759,10 +778,7 @@ export default function StockDashboardPage() {
                           </Fragment>
                         ))}
                         <td className="px-4 py-3 text-center tabular-nums text-base font-semibold bg-muted/20 border border-foreground/30">
-                          {(grandTotal).toLocaleString("en-IN", {
-                            minimumFractionDigits: roundingEnabled ? 0 : 3,
-                            maximumFractionDigits: roundingEnabled ? 0 : 3,
-                          })}
+                          {fmtAny(grandTotal, roundingEnabled)}
                         </td>
                       </tr>
                     );
@@ -803,7 +819,7 @@ export default function StockDashboardPage() {
                       </Fragment>
                     ))}
                     <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground font-bold border border-foreground/30">
-                      {(
+                      {fmtAny(
                         showFactoryCols
                           ? convertFromLiters(tankInFactoryTotal, unit) +
                             convertUnit(
@@ -811,11 +827,9 @@ export default function StockDashboardPage() {
                               colKeys.reduce((sum, k) => sum + (data?.totals.status_vendor_totals[k] ?? 0), 0),
                               unit
                             )
-                          : convertUnit(data?.totals.grand_total ?? 0, unit)
-                      ).toLocaleString("en-IN", {
-                        minimumFractionDigits: roundingEnabled ? 0 : 3,
-                        maximumFractionDigits: roundingEnabled ? 0 : 3,
-                      })}
+                          : convertUnit(data?.totals.grand_total ?? 0, unit),
+                        roundingEnabled
+                      )}
                     </td>
                   </tr>
                 </tbody>
