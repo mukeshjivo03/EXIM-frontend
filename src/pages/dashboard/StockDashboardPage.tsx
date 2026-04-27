@@ -32,11 +32,11 @@ function convertUnit(kg: number, unit: Unit): number {
   return kg;
 }
 
-function fmtNum(n: number, unit: Unit = "KG") {
+function fmtNum(n: number, unit: Unit = "KG", roundingEnabled: boolean = true) {
   const val = convertUnit(n, unit);
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: roundingEnabled ? 0 : 3,
+    maximumFractionDigits: roundingEnabled ? 0 : 3,
   });
 }
 
@@ -47,11 +47,11 @@ function convertFromLiters(liters: number, unit: Unit): number {
   return liters;
 }
 
-function fmtLiters(n: number, unit: Unit) {
+function fmtLiters(n: number, unit: Unit, roundingEnabled: boolean = true) {
   const val = convertFromLiters(n, unit);
   return val.toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: roundingEnabled ? 0 : 3,
+    maximumFractionDigits: roundingEnabled ? 0 : 3,
   });
 }
 
@@ -91,9 +91,18 @@ export default function StockDashboardPage() {
     return (saved === "KG" || saved === "MTS" || saved === "LTR") ? saved : "MTS";
   });
 
+  const [roundingEnabled, setRoundingEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem("stock_dashboard_rounding");
+    return saved === null ? true : saved === "true";
+  });
+
   useEffect(() => {
     localStorage.setItem("stock_dashboard_unit", unit);
   }, [unit]);
+
+  useEffect(() => {
+    localStorage.setItem("stock_dashboard_rounding", String(roundingEnabled));
+  }, [roundingEnabled]);
 
   const tankQtyMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -109,7 +118,7 @@ export default function StockDashboardPage() {
     setLoading(true);
     try {
       const [res, tankData] = await Promise.all([
-        getStockDashboard(activeFilters),
+        getStockDashboard({ ...activeFilters, rounding: roundingEnabled }),
         getItemWiseTankSummary(),
       ]);
       setData(res);
@@ -126,7 +135,7 @@ export default function StockDashboardPage() {
       setLoading(true);
       try {
         const [res, tankData] = await Promise.all([
-          getStockDashboard(),
+          getStockDashboard({ rounding: roundingEnabled }),
           getItemWiseTankSummary(),
         ]);
         setData(res);
@@ -139,7 +148,7 @@ export default function StockDashboardPage() {
       }
     }
     initialLoad();
-  }, []);
+  }, [roundingEnabled]);
 
   const hasFilters = Boolean(filters.rmcode || filters.vendor || filters.status);
 
@@ -291,6 +300,12 @@ export default function StockDashboardPage() {
     const th = (content: string | number, extra = "") =>
       `<th style="border:1px solid #999;padding:6px 8px;text-align:center;${extra}">${content}</th>`;
 
+    const fmt = (val: number) => 
+      val.toLocaleString("en-IN", {
+        minimumFractionDigits: roundingEnabled ? 0 : 3,
+        maximumFractionDigits: roundingEnabled ? 0 : 3,
+      });
+
     // Row 0 — group headers (pink)
     let row0Cells = th("In Factory", "background:#F4CCCC;font-weight:bold;") +
       th("Qty MTS", "background:#F4CCCC;font-weight:bold;") +
@@ -316,12 +331,12 @@ export default function StockDashboardPage() {
       const rowTotal = convertFromLiters(tankVal, EU) + convertUnit(item.outside_factory + statusKg, EU);
 
       let cells = td(item.item_code, "font-weight:bold;") +
-        td(Math.round(convertFromLiters(tankVal, EU)).toLocaleString("en-IN")) +
-        td(Math.round(convertUnit(item.outside_factory, EU)).toLocaleString("en-IN"));
+        td(fmt(convertFromLiters(tankVal, EU))) +
+        td(fmt(convertUnit(item.outside_factory, EU)));
       for (const { key } of vendorCols) {
-        cells += td(Math.round(convertUnit(item.status_data[key] ?? 0, EU)).toLocaleString("en-IN"));
+        cells += td(fmt(convertUnit(item.status_data[key] ?? 0, EU)));
       }
-      cells += td(Math.round(rowTotal).toLocaleString("en-IN"), "font-weight:bold;");
+      cells += td(fmt(rowTotal), "font-weight:bold;");
       return `<tr>${cells}</tr>`;
     }).join("");
 
@@ -330,14 +345,14 @@ export default function StockDashboardPage() {
       convertUnit((data.totals.outside_factory ?? 0) + colKeys.reduce((s, k) => s + (data.totals.status_vendor_totals[k] ?? 0), 0), EU);
 
     let gtCells = td("Grand Total", "background:#CFE2F3;font-weight:bold;") +
-      td(Math.round(convertFromLiters(tankInFactoryTotal, EU)).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;") +
-      td(Math.round(convertUnit(data.totals.outside_factory, EU)).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;");
+      td(fmt(convertFromLiters(tankInFactoryTotal, EU)), "background:#CFE2F3;font-weight:bold;") +
+      td(fmt(convertUnit(data.totals.outside_factory, EU)), "background:#CFE2F3;font-weight:bold;");
     for (const group of statusGroups) {
       const st = data.totals.status_totals?.[group.status] ??
         group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
-      gtCells += `<td colspan="${group.vendors.length}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;background:#CFE2F3;font-weight:bold;">${Math.round(convertUnit(st, EU)).toLocaleString("en-IN")}</td>`;
+      gtCells += `<td colspan="${group.vendors.length}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;background:#CFE2F3;font-weight:bold;">${fmt(convertUnit(st, EU))}</td>`;
     }
-    gtCells += td(Math.round(gtTotal).toLocaleString("en-IN"), "background:#CFE2F3;font-weight:bold;");
+    gtCells += td(fmt(gtTotal), "background:#CFE2F3;font-weight:bold;");
 
     const html = `<!DOCTYPE html><html><head><title>Stock Dashboard</title>
 <style>
@@ -374,6 +389,16 @@ export default function StockDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl border border-foreground/30/50">
+            <Button 
+              variant={roundingEnabled ? "secondary" : "ghost"} 
+              size="sm" 
+              className="h-8 rounded-lg gap-1.5 text-xs uppercase tracking-wider"
+              onClick={() => setRoundingEnabled(!roundingEnabled)}
+            >
+              {roundingEnabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              {roundingEnabled ? "Rounding On" : "Rounding Off"}
+            </Button>
+            <div className="w-[1px] h-4 bg-border mx-1" />
             <Button 
               variant={hideZeroRows ? "secondary" : "ghost"} 
               size="sm" 
@@ -418,7 +443,7 @@ export default function StockDashboardPage() {
               <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">In Factory</p>
               <Factory className="h-4 w-4 text-blue-500" />
             </div>
-            <h3 className="text-2xl font-bold">{data ? fmtLiters(tankInFactoryTotal, unit) : "—"}</h3>
+            <h3 className="text-2xl font-bold">{data ? fmtLiters(tankInFactoryTotal, unit, roundingEnabled) : "—"}</h3>
             <p className="text-xs text-muted-foreground uppercase">{UNIT_LABELS[unit]} Volume</p>
           </CardContent>
         </Card>
@@ -429,7 +454,7 @@ export default function StockDashboardPage() {
               <p className="text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">Outside Factory</p>
               <PackageOpen className="h-4 w-4 text-amber-500" />
             </div>
-            <h3 className="text-2xl font-bold">{data ? fmtNum(data.summary.outside_factory_total, unit) : "—"}</h3>
+            <h3 className="text-2xl font-bold">{data ? fmtNum(data.summary.outside_factory_total, unit, roundingEnabled) : "—"}</h3>
             <p className="text-xs text-muted-foreground uppercase">Logistical Stock</p>
           </CardContent>
         </Card>
@@ -690,7 +715,7 @@ export default function StockDashboardPage() {
                           {/* IN FACTORY */}
                           <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {tankVal > 0
-                              ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit)}</span>
+                              ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit, roundingEnabled)}</span>
                               : <span className="opacity-20">·</span>}
                           </td>
                           {/* spacer */}
@@ -698,7 +723,7 @@ export default function StockDashboardPage() {
                           {/* OUTSIDE */}
                           <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {item.outside_factory > 0
-                              ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit)}</span>
+                              ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit, roundingEnabled)}</span>
                               : <span className="opacity-20">·</span>}
                           </td>
                           {/* spacer */}
@@ -722,7 +747,7 @@ export default function StockDashboardPage() {
                                   {val > 0 ? (
                                     <>
                                       <div className="absolute inset-0 bg-primary pointer-events-none transition-opacity duration-500" style={{ opacity: intensity * 0.4 }} />
-                                      <span className="relative z-10 group-hover/cell:scale-110 transition-transform inline-block">{fmtNum(val, unit)}</span>
+                                      <span className="relative z-10 group-hover/cell:scale-110 transition-transform inline-block">{fmtNum(val, unit, roundingEnabled)}</span>
                                     </>
                                   ) : <span className="opacity-20">·</span>}
                                 </td>
@@ -734,7 +759,10 @@ export default function StockDashboardPage() {
                           </Fragment>
                         ))}
                         <td className="px-4 py-3 text-center tabular-nums text-base font-semibold bg-muted/20 border border-foreground/30">
-                          {Math.round(grandTotal).toLocaleString("en-IN")}
+                          {(grandTotal).toLocaleString("en-IN", {
+                            minimumFractionDigits: roundingEnabled ? 0 : 3,
+                            maximumFractionDigits: roundingEnabled ? 0 : 3,
+                          })}
                         </td>
                       </tr>
                     );
@@ -745,11 +773,11 @@ export default function StockDashboardPage() {
                     <td className="sticky left-0 z-30 bg-muted/60 px-4 py-4 text-center border border-foreground/30 uppercase tracking-wider">Grand Total</td>
                     {showFactoryCols && <>
                       <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
-                        {fmtLiters(tankInFactoryTotal, unit)}
+                        {fmtLiters(tankInFactoryTotal, unit, roundingEnabled)}
                       </td>
                       <td className="p-0 bg-background border-x-0" />
                       <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
-                        {fmtNum(data?.totals.outside_factory ?? 0, unit)}
+                        {fmtNum(data?.totals.outside_factory ?? 0, unit, roundingEnabled)}
                       </td>
                       <td className="p-0 bg-background border-x-0" />
                     </>}
@@ -765,7 +793,8 @@ export default function StockDashboardPage() {
                               (sum, v) => sum + (data?.totals.status_vendor_totals[v.key] ?? 0),
                               0
                             ),
-                            unit
+                            unit,
+                            roundingEnabled
                           )}
                         </td>
                         {gi < statusGroups.length - 1 && (
@@ -774,7 +803,7 @@ export default function StockDashboardPage() {
                       </Fragment>
                     ))}
                     <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground font-bold border border-foreground/30">
-                      {Math.round(
+                      {(
                         showFactoryCols
                           ? convertFromLiters(tankInFactoryTotal, unit) +
                             convertUnit(
@@ -783,7 +812,10 @@ export default function StockDashboardPage() {
                               unit
                             )
                           : convertUnit(data?.totals.grand_total ?? 0, unit)
-                      ).toLocaleString("en-IN")}
+                      ).toLocaleString("en-IN", {
+                        minimumFractionDigits: roundingEnabled ? 0 : 3,
+                        maximumFractionDigits: roundingEnabled ? 0 : 3,
+                      })}
                     </td>
                   </tr>
                 </tbody>

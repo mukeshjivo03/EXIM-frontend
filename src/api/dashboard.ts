@@ -43,13 +43,15 @@ export interface StockDashboardFilters {
   rmcode?: string;
   vendor?: string;
   status?: string;
+  rounding?: boolean;
 }
 
 export async function getStockDashboard(filters?: StockDashboardFilters): Promise<StockDashboardResponse> {
-  const params: Record<string, string> = {};
+  const params: Record<string, any> = {};
   if (filters?.rmcode) params.rmcode = filters.rmcode;
   if (filters?.vendor) params.vendor = filters.vendor;
   if (filters?.status) params.status = filters.status;
+  if (filters?.rounding !== undefined) params.rounding = filters.rounding;
   const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/", { params });
   return res.data;
 }
