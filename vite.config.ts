@@ -25,7 +25,7 @@ export default defineConfig({
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           "vendor-radix": ["radix-ui"],
           "vendor-charts": ["recharts"],
-          "vendor-three": ["three"],
+          // "vendor-three": ["three"],
           "vendor-motion": ["framer-motion"],
           "vendor-excel": ["xlsx", "xlsx-js-style"],
           "vendor-utils": [
