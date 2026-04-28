@@ -454,7 +454,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center space-y-3 mb-10">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            HIIIIIIII
+            JIVO EXIM
           </h1>
           <p className="text-gray-500 dark:text-gray-400">Sign in to your account</p>
         </div>
