@@ -23,17 +23,23 @@ export type StockStatusChoice = (typeof STATUS_CHOICES)[number];
 export interface StockStatus {
   id: number;
   item_code: string;
+  item_name?: string;
   vendor_code: string;
+  vendor_name?: string;
   status: StockStatusChoice;
   rate: string;
   total: string;
   quantity: string;
+  rate_in_litres?: string;
+  quantity_in_litre?: string;
   vehicle_number?: string;
   location?: string;
   eta?: string;
   arrival_date?: string;
   transporter?: string;
   job_work_vendor?: string;
+  bility_number?: string;
+  grpo_number?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -50,6 +56,8 @@ export interface StockStatusPayload {
   location?: string;
   eta?: string;
   transporter?: string;
+  bility_number?: string;
+  grpo_number?: string;
 }
 
 export interface StockStatusFilters {
@@ -111,6 +119,11 @@ export async function createStockStatus(data: StockStatusPayload): Promise<Stock
 
 export async function updateStockStatus(id: number, data: Partial<StockStatusPayload>): Promise<StockStatus> {
   const res = await api.put<StockStatus>(`/stock-status/${id}/`, data);
+  return res.data;
+}
+
+export async function patchStockStatus(id: number, data: Partial<StockStatusPayload>): Promise<StockStatus> {
+  const res = await api.patch<StockStatus>(`/stock-status/${id}/`, data);
   return res.data;
 }
 
@@ -208,6 +221,7 @@ export async function arriveBatch(data: {
 export interface VehicleReportItem {
   item_code: string;
   item_name: string;
+  vendor_name?: string;
   total_quantity_in_litre: number;
   total_quantity_in_mts: number;
   eta: string | null;

@@ -1,17 +1,59 @@
-name: Jivo-Exim-Frontend Deployment
+name: Deploy React App
 
 on:
   push:
     branches:
-      - main
+      - production
 
 jobs:
-  deploy:
-    runs-on: self-hosted
-    
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Run deployment script
-        shell: powershell
-        run: |
-         cd "C:\LiveProjects\JIVO-EXIM\EXIM-frontend"
-          .\deploy_frontend.bat
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache Node Modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          
+
+      - name: Compress Build
+        run: tar -czf build.tar.gz dist
+
+      - name: Upload Build
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build.tar.gz"
+          target: "/tmp"
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo rm -rf /home/superadmin/exim/EXIM-frontend/*
+            sudo mkdir -p /home/superadmin/exim/EXIM-frontend/dist
+            sudo tar -xzf /tmp/build.tar.gz -C /home/superadmin/exim/EXIM-frontend/dist --strip-components=1
+            sudo rm /tmp/build.tar.gz
+            sudo systemctl restart nginx
