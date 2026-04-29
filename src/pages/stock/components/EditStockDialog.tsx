@@ -4,6 +4,7 @@ import { Pencil, Trash2, Search, Lock } from "lucide-react";
 
 import {
   updateStockStatus,
+  patchStockStatus,
   moveStock,
   dispatchStock,
   arriveBatch,
@@ -66,6 +67,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [eTransferType, setETransferType] = useState<"bulk" | "batch" | "">("");
   const [eAction, setEAction] = useState<"RETAIN" | "TOLERATE" | "DEBIT" | "">("");
   const [eJobWorkVendor, setEJobWorkVendor] = useState("");
+  const [eBilityNumber, setEBilityNumber] = useState("");
+  const [eGrpoNumber, setEGrpoNumber] = useState("");
   const [jobWorkSearch, setJobWorkSearch] = useState("");
   const [jobWorkOpen, setJobWorkOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -97,25 +100,33 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setETransferType("");
       setEAction("");
       setEJobWorkVendor(data.job_work_vendor ?? "");
+      setEBilityNumber(data.bility_number ?? "");
+      setEGrpoNumber(data.grpo_number ?? "");
       setJobWorkSearch("");
     }
   }, [data]);
 
   async function handleEdit() {
     if (!data) return;
+
+    const oldQty = Number(data.quantity);
+    const newQty = Number(eQuantity.trim());
+    const isNoDiff = oldQty === newQty;
+    const finalAction = isNoDiff ? "TOLERATE" : eAction;
+
     const result = stockEditSchema.safeParse({
       rate: eRate,
       quantity: eQuantity,
       newStatus: eStatus,
       oldStatus: data.status,
       transferType: eTransferType,
-      action: eAction,
+      action: finalAction,
       jobWorkVendor: eJobWorkVendor,
+      bilityNumber: eBilityNumber,
+      grpoNumber: eGrpoNumber,
     });
     const err = getZodError(result);
     if (err) { toast.error(err); return; }
-
-    const newQty = Number(eQuantity.trim());
 
     setEditing(true);
     try {
@@ -125,7 +136,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             stock_id: data.id,
             weighed_qty: newQty,
             destination_status: eStatus,
-            action: eAction,
+            action: finalAction,
             created_by: email,
             job_work_vendor: eJobWorkVendor.trim(),
           });
@@ -135,16 +146,23 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             stock_id: data.id,
             new_quantity: newQty,
             new_status: eStatus,
-            action: eAction,
+            action: finalAction,
             created_by: email,
           });
           toast.success("Stock moved (Bulk).");
+          
+          if (eStatus === "IN_TANK") {
+             await patchStockStatus(data.id, {
+               bility_number: eBilityNumber.trim(),
+               grpo_number: eGrpoNumber.trim(),
+             });
+          }
         } else if (eTransferType === "batch") {
           await dispatchStock({
             stock_id: data.id,
             quantity: newQty,
             destination_status: eStatus,
-            action: eAction,
+            action: finalAction,
             created_by: email,
             vehicle_number: eVehicleNumber.trim() || undefined,
             transporter: eTransporterName.trim() || undefined,
@@ -162,6 +180,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           eta: eEta.trim() || undefined,
           transporter: eTransporterName.trim() || undefined,
           created_by: email,
+          bility_number: eBilityNumber.trim() || undefined,
+          grpo_number: eGrpoNumber.trim() || undefined,
         });
         toast.success("Stock status metadata updated.");
       }
@@ -263,6 +283,23 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="e-qty">Quantity (KG) *</Label>
+            <Input
+              id="e-qty"
+              type="number"
+              min={0}
+              step="0.01"
+              value={eQuantity}
+              onChange={(e) => setEQuantity(e.target.value)}
+            />
+            {data && eQuantity && Number(eQuantity) !== Number(data.quantity) && (
+              <p className={`text-xs font-medium mt-1.5 ${Number(data.quantity) - Number(eQuantity) > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                Difference: {Number(data.quantity) - Number(eQuantity) > 0 ? "+" : ""}{fmtNum(Number(data.quantity) - Number(eQuantity))} KG
+              </p>
+            )}
+          </div>
+
           {eStatus !== data?.status && (
             <>
               {eStatus !== "AT_REFINERY" &&
@@ -287,7 +324,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                 </div>
               )}
 
-              {eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
+              {eQuantity.trim() !== "" && eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && Number(data?.quantity) !== Number(eQuantity) && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Action *</Label>
                   <Select value={eAction} onValueChange={(v) => setEAction(v as any)}>
@@ -297,7 +334,6 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                     <SelectContent>
                       <SelectItem value="RETAIN">Retain</SelectItem>
                       <SelectItem value="TOLERATE">Tolerate</SelectItem>
-                      <SelectItem value="DEBIT">Debit</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -358,38 +394,43 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                   <p className="text-[10px] text-muted-foreground">Type a custom name or pick from vendor list</p>
                 </div>
               )}
+
+              {eStatus === "IN_TANK" && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <Label htmlFor="e-bility">Bility Number *</Label>
+                    <Input
+                      id="e-bility"
+                      placeholder="e.g. BIL100"
+                      value={eBilityNumber}
+                      onChange={(e) => setEBilityNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="e-grpo">GRPO Number *</Label>
+                    <Input
+                      id="e-grpo"
+                      placeholder="e.g. 123"
+                      value={eGrpoNumber}
+                      onChange={(e) => setEGrpoNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
           <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="e-rate">Rate (&#8377;) *</Label>
-              <Input
-                id="e-rate"
-                type="number"
-                min={0}
-                step="0.01"
-                value={eRate}
-                onChange={(e) => setERate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="e-qty">Quantity (KG) *</Label>
-              <Input
-                id="e-qty"
-                type="number"
-                min={0}
-                step="0.01"
-                value={eQuantity}
-                onChange={(e) => setEQuantity(e.target.value)}
-              />
-              {data && eQuantity && Number(eQuantity) !== Number(data.quantity) && (
-                <p className={`text-xs font-medium mt-1.5 ${Number(data.quantity) - Number(eQuantity) > 0 ? "text-emerald-600" : "text-destructive"}`}>
-                  Difference: {Number(data.quantity) - Number(eQuantity) > 0 ? "+" : ""}{fmtNum(Number(data.quantity) - Number(eQuantity))} KG
-                </p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="e-rate">Rate (&#8377;) *</Label>
+            <Input
+              id="e-rate"
+              type="number"
+              min={0}
+              step="0.01"
+              value={eRate}
+              onChange={(e) => setERate(e.target.value)}
+            />
           </div>
           <Separator />
           <div className="grid grid-cols-2 gap-4">

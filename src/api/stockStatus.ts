@@ -34,6 +34,8 @@ export interface StockStatus {
   arrival_date?: string;
   transporter?: string;
   job_work_vendor?: string;
+  bility_number?: string;
+  grpo_number?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -50,6 +52,8 @@ export interface StockStatusPayload {
   location?: string;
   eta?: string;
   transporter?: string;
+  bility_number?: string;
+  grpo_number?: string;
 }
 
 export interface StockStatusFilters {
@@ -111,6 +115,11 @@ export async function createStockStatus(data: StockStatusPayload): Promise<Stock
 
 export async function updateStockStatus(id: number, data: Partial<StockStatusPayload>): Promise<StockStatus> {
   const res = await api.put<StockStatus>(`/stock-status/${id}/`, data);
+  return res.data;
+}
+
+export async function patchStockStatus(id: number, data: Partial<StockStatusPayload>): Promise<StockStatus> {
+  const res = await api.patch<StockStatus>(`/stock-status/${id}/`, data);
   return res.data;
 }
 
