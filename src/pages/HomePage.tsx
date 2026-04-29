@@ -79,7 +79,7 @@ const quickLinks: QuickLink[] = [
   { to: "/stock/tank-items", label: "Tank Items", icon: Droplets, desc: "Manage tank items", category: "Operations", modules: ["tankitem"] },
   { to: "/stock/tank-data", label: "Tank Data", icon: Container, desc: "Manage tanks", category: "Operations", modules: ["tankdata"] },
   { to: "/stock/tank-logs", label: "Tank Logs", icon: ScrollText, desc: "Tank operation logs", category: "Operations", modules: ["tanklog"] },
-  { to: "/stock/variance", label: "Stock Variance", icon: Scale, desc: "Stock variance analysis", category: "Operations", modules: ["stockstatus"] },
+  { to: "/stock/variance", label: "Shortage Report", icon: Scale, desc: "Shortage Report analysis", category: "Operations", modules: ["stockstatus"] },
 
   // Commercials
   { to: "/contracts/open-grpos", label: "Open GRPOs", icon: ShoppingCart, desc: "Open goods receipt orders", category: "Commercials", modules: ["open_grpos"] },

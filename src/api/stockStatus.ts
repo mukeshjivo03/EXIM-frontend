@@ -273,6 +273,9 @@ export interface DebitEntry {
   supplier: string;
   vehicle_number: string;
   transporter: string | null;
+  grpo_number?: string;
+  grop_number?: string;
+  bility_number?: string;
   created_at: string;
   created_by: string;
   stock: number;
