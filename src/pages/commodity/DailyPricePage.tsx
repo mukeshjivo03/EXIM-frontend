@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
 import { toastApiError } from "@/lib/errors";
 import {
@@ -124,6 +124,8 @@ export default function DailyPricePage() {
   const [trends, setTrends] = useState<PriceTrendsResponse | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
+  const [trendsStartDate, setTrendsStartDate] = useState(format(subDays(new Date(), 7), "yyyy-MM-dd"));
+  const [trendsEndDate, setTrendsEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   // Saved prices by range
   const [fromDate, setFromDate] = useState("");
@@ -138,16 +140,17 @@ export default function DailyPricePage() {
   // Classic = original Excel-style view; default = aesthetic
   const [classicMode, setClassicMode] = useState(false);
   const [savedClassicMode, setSavedClassicMode] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   // Previous day prices for delta calculation
   const [prevDayPrices, setPrevDayPrices] = useState<DbDailyPrice[]>([]);
 
   /* ── data loading ──────────────────────────────────────── */
 
-  async function loadTrends() {
+  async function loadTrends(start?: string, end?: string) {
     setTrendsLoading(true);
     try {
-      const data = await getPriceTrends();
+      const data = await getPriceTrends(start || trendsStartDate, end || trendsEndDate);
       setTrends(data);
       // Default: select first commodity
       if (data.datasets.length > 0 && selectedLabels.size === 0) {
@@ -259,6 +262,24 @@ export default function DailyPricePage() {
   const rangeCommodities = useMemo(() => {
     return Array.from(new Set(rangeData.map((p) => p.commodity_name))).sort();
   }, [rangeData]);
+
+  // Comparison Pivot Logic
+  const uniqueDates = useMemo(() => {
+    return Array.from(new Set(rangeData.map((p) => p.date))).sort();
+  }, [rangeData]);
+
+  const comparisonPivot = useMemo(() => {
+    if (!compareMode) return [];
+    const commodities = rangeCommodities;
+    return commodities.map((name) => {
+      const row: any = { name };
+      uniqueDates.forEach((date) => {
+        const entry = rangeData.find((d) => d.commodity_name === name && d.date === date);
+        row[date] = entry ? Number(entry.factory_price) : null;
+      });
+      return row;
+    });
+  }, [compareMode, rangeData, rangeCommodities, uniqueDates]);
 
   const filteredRangeData = useMemo(() => {
     let data = rangeData;
@@ -528,25 +549,114 @@ export default function DailyPricePage() {
                   </SelectContent>
                 </Select>
               )}
-              <button
-                onClick={() => setSavedClassicMode((v) => !v)}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5",
-                  savedClassicMode
-                    ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-400"
-                    : "border-border hover:bg-muted text-muted-foreground"
-                )}
-                title={savedClassicMode ? "Switch to aesthetic view" : "Switch to classic view"}
-              >
-                <BarChart3 className="h-3 w-3" />
-                Classic
-              </button>
+              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/40">
+                <button
+                  onClick={() => { setCompareMode(false); setSavedClassicMode(false); }}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded transition-all",
+                    !compareMode && !savedClassicMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => { setCompareMode(false); setSavedClassicMode(true); }}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded transition-all",
+                    !compareMode && savedClassicMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Classic
+                </button>
+                <button
+                  onClick={() => setCompareMode(true)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded transition-all",
+                    compareMode ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Compare
+                </button>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-x-auto">
-            {savedClassicMode ? (
+          <div className="rounded-md border overflow-x-auto relative">
+            {compareMode ? (
+               /* ── Comparison Pivot Table view ── */
+               <div className="min-w-full inline-block align-middle">
+                 <Table className="border-separate border-spacing-0">
+                   <TableHeader className="sticky top-0 z-20 bg-background">
+                     <TableRow>
+                       <TableHead className="sticky left-0 z-30 bg-muted/90 backdrop-blur-sm border-b border-r min-w-[200px] font-black text-xs uppercase tracking-tighter">
+                         Commodity Name
+                       </TableHead>
+                       {uniqueDates.map((date) => (
+                         <TableHead key={date} className="text-center border-b border-r min-w-[140px] px-4 py-3 bg-muted/30">
+                           <div className="flex flex-col items-center gap-0.5">
+                             <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">
+                               {format(parseISO(date), "EEE")}
+                             </span>
+                             <span className="text-sm font-bold text-foreground tabular-nums tracking-tighter">
+                               {format(parseISO(date), "dd MMM")}
+                             </span>
+                           </div>
+                         </TableHead>
+                       ))}
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {comparisonPivot.length === 0 ? (
+                       <TableRow>
+                         <TableCell colSpan={uniqueDates.length + 1} className="py-24 text-center">
+                           <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                             <TrendingUp className="h-10 w-10 stroke-1 opacity-20" />
+                             <p className="text-sm font-medium">Select a date range to begin comparison</p>
+                           </div>
+                         </TableCell>
+                       </TableRow>
+                     ) : (
+                       comparisonPivot.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase())).map((row) => (
+                         <TableRow key={row.name} className="group hover:bg-muted/20 transition-colors">
+                           <TableCell className="sticky left-0 z-10 bg-background group-hover:bg-muted/40 transition-colors border-r border-b font-bold text-sm py-3 px-4 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                             {row.name}
+                           </TableCell>
+                           {uniqueDates.map((date, idx) => {
+                             const current = row[date];
+                             const prevDate = idx > 0 ? uniqueDates[idx - 1] : null;
+                             const previous = prevDate ? row[prevDate] : null;
+                             
+                             return (
+                               <TableCell key={date} className="text-center border-r border-b px-4 py-3 tabular-nums relative overflow-hidden">
+                                 <div className="flex flex-col items-center justify-center gap-1">
+                                   <span className="font-bold text-sm leading-none">
+                                     {current !== null ? `₹${current.toFixed(2)}` : "—"}
+                                   </span>
+                                   {current !== null && previous !== null && (
+                                      <div className={cn(
+                                        "text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5",
+                                        current > previous ? "text-red-600 bg-red-50 dark:bg-red-900/20" : 
+                                        current < previous ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : 
+                                        "text-muted-foreground bg-muted"
+                                      )}>
+                                        {current > previous ? <ArrowUpRight className="h-2.5 w-2.5" /> : 
+                                         current < previous ? <ArrowDownRight className="h-2.5 w-2.5" /> : 
+                                         <Minus className="h-2.5 w-2.5" />}
+                                        {Math.abs(current - previous).toFixed(2)}
+                                      </div>
+                                   )}
+                                 </div>
+                               </TableCell>
+                             );
+                           })}
+                         </TableRow>
+                       ))
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+            ) : savedClassicMode ? (
               /* ── Classic Excel-style view ── */
               <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
                 <TableHeader>
@@ -680,6 +790,16 @@ export default function DailyPricePage() {
                 </CardDescription>
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <DatePicker value={trendsStartDate} onChange={setTrendsStartDate} placeholder="Start date" />
+              <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest">to</span>
+              <DatePicker value={trendsEndDate} onChange={setTrendsEndDate} placeholder="End date" />
+              <Button size="sm" onClick={() => loadTrends()} disabled={trendsLoading} className="gap-2">
+                <RefreshCw className={cn("h-3.5 w-3.5", trendsLoading && "animate-spin")} />
+                Update
+              </Button>
+            </div>
           </div>
 
           {/* Commodity toggle pills */}
@@ -798,4 +918,3 @@ export default function DailyPricePage() {
     </Guard>
   );
 }
-

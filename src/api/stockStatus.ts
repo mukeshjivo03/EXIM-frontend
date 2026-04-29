@@ -23,11 +23,15 @@ export type StockStatusChoice = (typeof STATUS_CHOICES)[number];
 export interface StockStatus {
   id: number;
   item_code: string;
+  item_name?: string;
   vendor_code: string;
+  vendor_name?: string;
   status: StockStatusChoice;
   rate: string;
   total: string;
   quantity: string;
+  rate_in_litres?: string;
+  quantity_in_litre?: string;
   vehicle_number?: string;
   location?: string;
   eta?: string;
@@ -217,6 +221,7 @@ export async function arriveBatch(data: {
 export interface VehicleReportItem {
   item_code: string;
   item_name: string;
+  vendor_name?: string;
   total_quantity_in_litre: number;
   total_quantity_in_mts: number;
   eta: string | null;

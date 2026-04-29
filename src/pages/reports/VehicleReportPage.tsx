@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp } from "lucide-react";
 
-import { getVehicleReport, type VehicleReport } from "@/api/stockStatus";
+import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
+
+// ... rest of imports unchanged
+
+// (I will provide the whole file or at least the relevant parts)
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +96,26 @@ export default function VehicleReportPage() {
   async function fetchStatus(status: StatusKey) {
     setLoading((prev) => ({ ...prev, [status]: true }));
     try {
-      const res = await getVehicleReport(status);
+      let res: VehicleReport[];
+      if (status === "IN_CONTRACT") {
+        const stockStatuses = await getStockStatuses({ status: "IN_CONTRACT" });
+        res = stockStatuses.map((s) => ({
+        vehicle_number: s.vehicle_number || "—",
+        items: [
+        {
+        item_code: s.item_code,
+        item_name: s.item_name || s.item_code,
+        vendor_name: s.vendor_name || s.vendor_code,
+        total_quantity_in_litre: parseFloat(s.quantity_in_litre || "0"),
+        total_quantity_in_mts: parseFloat(s.quantity) / 1000,
+        eta: s.eta || null,
+        status: s.status,
+        job_work: s.job_work_vendor || null,
+        },
+        ],
+        }));      } else {
+        res = await getVehicleReport(status);
+      }
       setData((prev) => ({ ...prev, [status]: res }));
     } catch (err) {
       toast.error(getErrorMessage(err, `Failed to load ${status} report`));
@@ -258,6 +281,7 @@ export default function VehicleReportPage() {
                   <TableRow>
                     <TableHead className="w-10">S.No</TableHead>
                     <TableHead>Vehicle No.</TableHead>
+                    <TableHead>Vendor</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
                     <TableHead>Days</TableHead>
@@ -273,6 +297,7 @@ export default function VehicleReportPage() {
                           {r.vehicle_number || "—"}
                         </span>
                       </TableCell>
+                      <TableCell className="text-sm">{r.vendor_name || "—"}</TableCell>
                       <TableCell>{r.item_name}</TableCell>
                       <TableCell className="text-right tabular-nums">{fmtMts(r.total_quantity_in_mts)}</TableCell>
                       <TableCell className="tabular-nums">
@@ -298,7 +323,7 @@ export default function VehicleReportPage() {
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
-                    <td colSpan={3} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
+                    <td colSpan={4} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalMts)}</td>
                     <td colSpan={2} />
                   </tr>

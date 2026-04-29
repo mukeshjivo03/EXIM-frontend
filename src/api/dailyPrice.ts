@@ -64,7 +64,10 @@ export interface PriceTrendsResponse {
   datasets: TrendDataset[];
 }
 
-export async function getPriceTrends(): Promise<PriceTrendsResponse> {
-  const { data } = await api.get<PriceTrendsResponse>("/daily-price/trends/");
+export async function getPriceTrends(startDate?: string, endDate?: string): Promise<PriceTrendsResponse> {
+  const params: Record<string, string> = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const { data } = await api.get<PriceTrendsResponse>("/daily-price/trends/", { params });
   return data;
 }
