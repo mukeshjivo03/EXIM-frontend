@@ -141,6 +141,15 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             job_work_vendor: eJobWorkVendor.trim(),
           });
           toast.success("Stock arrived (Arrive Batch).");
+        } else if (eStatus === "IN_TANK") {
+          await patchStockStatus(data.id, {
+            status: eStatus,
+            bility_number: eBilityNumber.trim(),
+            grpo_number: eGrpoNumber.trim(),
+            quantity: String(newQty),
+            created_by: email,
+          });
+          toast.success("Stock moved to In Tank.");
         } else if (eTransferType === "bulk") {
           await moveStock({
             stock_id: data.id,
@@ -150,13 +159,6 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             created_by: email,
           });
           toast.success("Stock moved (Bulk).");
-          
-          if (eStatus === "IN_TANK") {
-             await patchStockStatus(data.id, {
-               bility_number: eBilityNumber.trim(),
-               grpo_number: eGrpoNumber.trim(),
-             });
-          }
         } else if (eTransferType === "batch") {
           await dispatchStock({
             stock_id: data.id,
