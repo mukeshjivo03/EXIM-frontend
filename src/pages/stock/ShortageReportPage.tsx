@@ -35,7 +35,10 @@ type SortKey =
   | "deducted_shortage_qty"
   | "deduction_amount"
   | "transporter"
-  | "vehicle_number";
+  | "vehicle_number"
+  | "grpo_number"
+  | "grop_number"
+  | "bility_number";
 
 type SortDir = "asc" | "desc";
 
@@ -84,7 +87,7 @@ function fmt3(n: number | string): string {
 
 /* ── Page ─────────────────────────────────────────────────────── */
 
-const COLS = 11;
+const COLS = 13;
 
 export default function StockVariancePage() {
   const [entries, setEntries] = useState<DebitEntry[]>([]);
@@ -104,7 +107,7 @@ export default function StockVariancePage() {
         const data = await getDebitEntries();
         setEntries(data);
       } catch (err) {
-        setError(getErrorMessage(err, "Failed to load variance entries"));
+        setError(getErrorMessage(err, "Failed to load Shortage Entries"));
       } finally {
         setLoading(false);
       }
@@ -152,7 +155,7 @@ export default function StockVariancePage() {
 
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <CardTitle>Variance Entries</CardTitle>
+          <CardTitle>Shortage Entries</CardTitle>
           <CardDescription>{sorted.length} entr{sorted.length !== 1 ? "ies" : "y"} found</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -161,6 +164,8 @@ export default function StockVariancePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>S.No</TableHead>
+                  <SortHead col="grpo_number" label="GRPO No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="bility_number" label="Bility No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="supplier" label="Supplier" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="item_name" label="Item Name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="load_qty" label="Load Qty (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
@@ -185,7 +190,7 @@ export default function StockVariancePage() {
                 ) : paginated.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={COLS} className="py-16 text-center text-muted-foreground">
-                      No variance entries found.
+                      No Shortage Entries found.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -194,6 +199,8 @@ export default function StockVariancePage() {
                       <TableCell className="font-medium text-muted-foreground">
                         {(page - 1) * perPage + i + 1}
                       </TableCell>
+                      <TableCell>{entry.grpo_number || entry.grop_number || "—"}</TableCell>
+                      <TableCell>{entry.bility_number || "—"}</TableCell>
                       <TableCell>{entry.supplier || "—"}</TableCell>
                       <TableCell>{entry.item_name || "—"}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.load_qty)}</TableCell>
