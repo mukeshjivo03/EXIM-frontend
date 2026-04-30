@@ -163,11 +163,25 @@ export default function DailyPricePage() {
 
   async function loadPrevDayPrices() {
     try {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const iso = yesterday.toISOString().slice(0, 10);
-      const data = await getDailyPricesByDate(iso);
-      setPrevDayPrices(data);
+      const yesterdayIso = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      const yesterdayData = await getDailyPricesByDate(yesterdayIso);
+
+      if (yesterdayData.length > 0) {
+        setPrevDayPrices(yesterdayData);
+        return;
+      }
+
+      // Fallback: if yesterday is missing, use nearest previous available entry per commodity.
+      const fromIso = format(subDays(new Date(), 30), "yyyy-MM-dd");
+      const history = await getDailyPricesByRange(fromIso, yesterdayIso);
+      const nearestByCommodity = new Map<string, DbDailyPrice>();
+      for (const row of history) {
+        const existing = nearestByCommodity.get(row.commodity_name);
+        if (!existing || row.date > existing.date) {
+          nearestByCommodity.set(row.commodity_name, row);
+        }
+      }
+      setPrevDayPrices(Array.from(nearestByCommodity.values()));
     } catch { /* non-critical */ }
   }
 
@@ -224,8 +238,15 @@ export default function DailyPricePage() {
   /* ── derived data ──────────────────────────────────────── */
 
   const prevPriceMap = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of prevDayPrices) map.set(p.commodity_name, Number(p.factory_price));
+    const map = new Map<string, { factory: number; packing: number; gstKg: number; gstLtr: number }>();
+    for (const p of prevDayPrices) {
+      map.set(p.commodity_name, {
+        factory: Number(p.factory_price),
+        packing: Number(p.packing_cost_kg),
+        gstKg: Number(p.with_gst_kg),
+        gstLtr: Number(p.with_gst_ltr),
+      });
+    }
     return map;
   }, [prevDayPrices]);
 
@@ -446,7 +467,7 @@ export default function DailyPricePage() {
                           <TableCell className="text-center border border-black" style={{ backgroundColor: heatmapBg(factoryVal, priceRange.min, priceRange.max) }}>
                             <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                               <span className="font-semibold">{fmtPrice(item.factory_kg)}</span>
-                              <DeltaBadge current={factoryVal} previous={prevVal} />
+                              <DeltaBadge current={factoryVal} previous={prevVal?.factory ?? null} />
                             </div>
                           </TableCell>
                           <TableCell className="text-center border border-black">{fmtPrice(item.packing_kg)}</TableCell>
@@ -500,7 +521,7 @@ export default function DailyPricePage() {
                           >
                             <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                               <span className="font-bold">{fmtPrice(item.factory_kg)}</span>
-                              <DeltaBadge current={factoryVal} previous={prevVal} />
+                              <DeltaBadge current={factoryVal} previous={prevVal?.factory ?? null} />
                             </div>
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground">{fmtPrice(item.packing_kg)}</TableCell>
