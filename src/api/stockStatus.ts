@@ -40,6 +40,8 @@ export interface StockStatus {
   job_work_vendor?: string;
   bility_number?: string;
   grpo_number?: string;
+  contract_start?: string;
+  contract_end?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -58,6 +60,8 @@ export interface StockStatusPayload {
   transporter?: string;
   bility_number?: string;
   grpo_number?: string;
+  contract_start?: string;
+  contract_end?: string;
 }
 
 export interface StockStatusFilters {
@@ -284,4 +288,15 @@ export interface DebitEntry {
 export async function getDebitEntries(): Promise<DebitEntry[]> {
   const res = await api.get<DebitEntry[]>("/stock-status/debit-entries/");
   return res.data ?? [];
+}
+
+export interface DebitInsights {
+  total_deduction_shortager: number;
+  total_records: number;
+  total_deduction_amount: number;
+}
+
+export async function getDebitInsights(): Promise<DebitInsights> {
+  const res = await api.get<DebitInsights>("/stock-status/debit-insights/");
+  return res.data;
 }

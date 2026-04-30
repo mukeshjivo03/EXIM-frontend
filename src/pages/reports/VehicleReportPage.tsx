@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown } from "lucide-react";
 
 import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
 
@@ -62,8 +62,11 @@ function flattenVehicles(vehicles: VehicleReport[]): FlatRow[] {
 
 function daysRemaining(eta: string | null): number | null {
   if (!eta) return null;
-  const diff = new Date(eta).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
-  return Math.round(diff / 86400000);
+  const [y, m, d] = eta.split("-").map(Number);
+  const etaDate = new Date(y, m - 1, d);  // local midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((etaDate.getTime() - today.getTime()) / 86400000);
 }
 
 function fmtDate(dateStr: string | null | undefined): string {
@@ -80,6 +83,16 @@ function fmtDate(dateStr: string | null | undefined): string {
 
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpand(vehicleNumber: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(vehicleNumber)) next.delete(vehicleNumber);
+      else next.add(vehicleNumber);
+      return next;
+    });
+  }
   const [data, setData] = useState<Record<StatusKey, VehicleReport[]>>({
     ON_THE_WAY: [],
     OUT_SIDE_FACTORY: [],
@@ -133,8 +146,21 @@ export default function VehicleReportPage() {
   }
 
   const tab = TABS.find((t) => t.key === activeTab)!;
-  const vehicles = data[activeTab];
-  const rows = flattenVehicles(vehicles);
+  const rawVehicles = data[activeTab];
+  const rows = flattenVehicles(rawVehicles);
+
+  /** Sort vehicles by their worst (most-overdue) ETA item, descending */
+  const sortedVehicles = useMemo(() => {
+    return [...rawVehicles].sort((a, b) => {
+      const worstA = Math.min(...a.items.map((i) => daysRemaining(i.eta) ?? Infinity));
+      const worstB = Math.min(...b.items.map((i) => daysRemaining(i.eta) ?? Infinity));
+      if (worstA === Infinity && worstB === Infinity) return 0;
+      if (worstA === Infinity) return 1;
+      if (worstB === Infinity) return -1;
+      return worstA - worstB;
+    });
+  }, [rawVehicles]);
+
   const isLoading = loading[activeTab];
   const totalMts = rows.reduce((s, r) => s + r.total_quantity_in_mts, 0);
 
@@ -256,7 +282,7 @@ export default function VehicleReportPage() {
             <div>
               <CardTitle className="text-base">{tab.label}</CardTitle>
               <CardDescription>
-                {isLoading ? "Loading..." : `${vehicles.length} vehicles · ${fmtMts(totalMts)} MTS`}
+                {isLoading ? "Loading..." : `${sortedVehicles.length} vehicles · ${fmtMts(totalMts)} MTS`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchStatus(activeTab)} disabled={isLoading}>
@@ -269,7 +295,7 @@ export default function VehicleReportPage() {
             <div className="p-4 space-y-2">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}
             </div>
-          ) : rows.length === 0 ? (
+          ) : sortedVehicles.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
               <PackageOpen className="h-10 w-10 stroke-1" />
               <p className="text-sm font-medium">No vehicles in this status</p>
@@ -289,37 +315,122 @@ export default function VehicleReportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r, idx) => (
-                    <TableRow key={idx} className={idx % 2 === 0 ? "" : "bg-muted/20"}>
-                      <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                      <TableCell>
-                        <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
-                          {r.vehicle_number || "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">{r.vendor_name || "—"}</TableCell>
-                      <TableCell>{r.item_name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmtMts(r.total_quantity_in_mts)}</TableCell>
+                  {sortedVehicles.map((v, vIdx) => {
+                    const isMulti = v.items.length > 1;
+                    const isOpen = expanded.has(v.vehicle_number);
+                    const vehicleTotalMts = v.items.reduce((s, i) => s + i.total_quantity_in_mts, 0);
+                    const worstEta = v.items.reduce<string | null>((worst, i) => {
+                      if (!i.eta) return worst;
+                      if (!worst) return i.eta;
+                      return new Date(i.eta) < new Date(worst) ? i.eta : worst;
+                    }, null);
+                    const worstDays = daysRemaining(worstEta);
+
+                    const daysCell = (
                       <TableCell className="tabular-nums">
                         {(() => {
-                          const d = daysRemaining(r.eta);
-                          if (d === null) return <span className="text-sm text-muted-foreground">—</span>;
+                          if (worstDays === null) return <span className="text-sm text-muted-foreground">—</span>;
                           return (
                             <span className={cn(
                               "text-sm font-medium",
-                              d < 0 ? "text-red-600 dark:text-red-400" :
-                              d <= 2 ? "text-orange-600 dark:text-orange-400" :
-                              d <= 5 ? "text-yellow-600 dark:text-yellow-500" :
+                              worstDays < 0 ? "text-red-600 dark:text-red-400" :
+                              worstDays <= 2 ? "text-orange-600 dark:text-orange-400" :
+                              worstDays <= 5 ? "text-yellow-600 dark:text-yellow-500" :
                               "text-green-600 dark:text-green-400"
                             )}>
-                              {d < 0 ? `${Math.abs(d)}d overdue` : `${d}d`}
+                              {worstDays < 0 ? `${Math.abs(worstDays)}d overdue` : `${worstDays}d`}
                             </span>
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{fmtDate(r.eta)}</TableCell>
-                    </TableRow>
-                  ))}
+                    );
+
+                    if (!isMulti) {
+                      // Single item — render flat row
+                      const item = v.items[0];
+                      return (
+                        <TableRow key={v.vehicle_number} className={vIdx % 2 === 0 ? "" : "bg-muted/20"}>
+                          <TableCell className="text-muted-foreground">{vIdx + 1}</TableCell>
+                          <TableCell>
+                            <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
+                              {v.vehicle_number || "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm">{item.vendor_name || "—"}</TableCell>
+                          <TableCell>{item.item_name}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmtMts(item.total_quantity_in_mts)}</TableCell>
+                          {daysCell}
+                          <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    // Multi-item — accordion row
+                    return (
+                      <>
+                        <TableRow
+                          key={v.vehicle_number}
+                          className={cn(
+                            "cursor-pointer transition-colors hover:bg-muted/40",
+                            vIdx % 2 === 0 ? "" : "bg-muted/20",
+                            isOpen && "bg-muted/30"
+                          )}
+                          onClick={() => toggleExpand(v.vehicle_number)}
+                        >
+                          <TableCell className="text-muted-foreground">{vIdx + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <ChevronDown className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                isOpen && "rotate-180"
+                              )} />
+                              <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
+                                {v.vehicle_number || "—"}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                                {v.items.length} items
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{v.items.length} vendors</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">Mixed</TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">{fmtMts(vehicleTotalMts)}</TableCell>
+                          {daysCell}
+                          <TableCell className="text-sm text-muted-foreground">{fmtDate(worstEta)}</TableCell>
+                        </TableRow>
+                        {isOpen && v.items.map((item, iIdx) => (
+                          <TableRow
+                            key={`${v.vehicle_number}-${iIdx}`}
+                            className="bg-muted/10 border-l-4 border-l-primary/30 animate-in fade-in slide-in-from-top-1 duration-200"
+                          >
+                            <TableCell />
+                            <TableCell className="pl-10 text-xs text-muted-foreground">↳</TableCell>
+                            <TableCell className="text-sm">{item.vendor_name || "—"}</TableCell>
+                            <TableCell className="text-sm">{item.item_name}</TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">{fmtMts(item.total_quantity_in_mts)}</TableCell>
+                            <TableCell className="tabular-nums">
+                              {(() => {
+                                const d = daysRemaining(item.eta);
+                                if (d === null) return <span className="text-sm text-muted-foreground">—</span>;
+                                return (
+                                  <span className={cn(
+                                    "text-sm font-medium",
+                                    d < 0 ? "text-red-600 dark:text-red-400" :
+                                    d <= 2 ? "text-orange-600 dark:text-orange-400" :
+                                    d <= 5 ? "text-yellow-600 dark:text-yellow-500" :
+                                    "text-green-600 dark:text-green-400"
+                                  )}>
+                                    {d < 0 ? `${Math.abs(d)}d overdue` : `${d}d`}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    );
+                  })}
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">

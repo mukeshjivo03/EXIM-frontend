@@ -310,6 +310,11 @@ export default function StockDashboardPage() {
 
   /* ── Print ───────────────────────────────────────────────── */
 
+  /** Strip RM prefix for cleaner print display: RM000 → , RM00 → , RM0 → , RM → */
+  function printRmCode(code: string): string {
+    return code.replace(/^RM0{0,3}/, "");
+  }
+
   function handlePrint() {
     if (!data) return;
 
@@ -343,13 +348,36 @@ export default function StockDashboardPage() {
     }
     row1Cells += th("", "background:#B6D7A8;");
 
-    // Data rows
-    const dataRowsHtml = displayItems.map((item) => {
+    // Data rows — custom fixed order with separator gaps for print
+    const PRINT_ORDER: (string | "__GAP__")[] = [
+      "RM0CDRO", "RM00C01", "RM00CPC", "RM00C02",
+      "RM00SBR", "RM00SBD", "RM0SB02",
+      "RMMKG01", "RM0GNCP",
+      "RM000SF", "RM00SF2", "RM00MDO", "RM000MR",
+      "RMMKG02", "RM00GNR", "RMGNR02", "RM00GD",
+      "RM00RBR", "RM00RBD", "RM0RB02",
+      "RM00CSR", "RMCSR02", "RM00VNP", "RM0CCNT",
+      "RM0SESM", "RMSESMT",
+      "__GAP__",
+      "RM00P02", "RM00P03", "RM0EV02", "RM0EL02", "RMSOLIVE",
+      "__GAP__",
+      "RM00P01", "RM0EL01", "RM0EV01", "RM0HOSF",
+    ];
+
+    const itemMap = new Map(displayItems.map((item) => [item.item_code, item]));
+    const totalCols = 3 + vendorCols.length + 1; // name + infactory + outside + vendors + total
+
+    // Build ordered list: items from PRINT_ORDER first, then any remaining items
+    const orderedCodes = PRINT_ORDER.filter((c) => c === "__GAP__" || itemMap.has(c));
+    const orderedSet = new Set(PRINT_ORDER.filter((c) => c !== "__GAP__"));
+    const extraItems = displayItems.filter((item) => !orderedSet.has(item.item_code));
+
+    function buildItemRow(item: typeof displayItems[0]) {
       const tankVal  = tankQtyMap.get(item.item_code) ?? 0;
       const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
       const rowTotal = convertFromLiters(tankVal, EU) + convertUnit(item.outside_factory + statusKg, EU);
 
-      let cells = td(item.item_code, "font-weight:bold;") +
+      let cells = td(printRmCode(item.item_code), "font-weight:bold;text-align:left;") +
         td(fmt(convertFromLiters(tankVal, EU))) +
         td(fmt(convertUnit(item.outside_factory, EU)));
       for (const { key } of vendorCols) {
@@ -357,7 +385,20 @@ export default function StockDashboardPage() {
       }
       cells += td(fmt(rowTotal), "font-weight:bold;");
       return `<tr>${cells}</tr>`;
+    }
+
+    const gapRow = `<tr><td colspan="${totalCols}" style="border:none;height:12px;"></td></tr>`;
+
+    let dataRowsHtml = orderedCodes.map((code) => {
+      if (code === "__GAP__") return gapRow;
+      const item = itemMap.get(code);
+      return item ? buildItemRow(item) : "";
     }).join("");
+
+    // Append any items not in the predefined order
+    if (extraItems.length > 0) {
+      dataRowsHtml += gapRow + extraItems.map(buildItemRow).join("");
+    }
 
     // Grand total row
     const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
@@ -725,7 +766,7 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 text-sm text-center border border-foreground/30 transition-colors",
+                          "sticky left-0 z-20 px-4 py-3 text-sm text-left border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_name || tankNameMap.get(item.item_code) || item.item_code}
