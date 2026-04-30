@@ -289,3 +289,14 @@ export async function getDebitEntries(): Promise<DebitEntry[]> {
   const res = await api.get<DebitEntry[]>("/stock-status/debit-entries/");
   return res.data ?? [];
 }
+
+export interface DebitInsights {
+  total_deduction_shortager: number;
+  total_records: number;
+  total_deduction_amount: number;
+}
+
+export async function getDebitInsights(): Promise<DebitInsights> {
+  const res = await api.get<DebitInsights>("/stock-status/debit-insights/");
+  return res.data;
+}

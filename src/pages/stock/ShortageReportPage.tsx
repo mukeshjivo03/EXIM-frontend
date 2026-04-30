@@ -4,11 +4,16 @@ import {
   ArrowUp,
   ArrowUpDown,
   Activity,
+  Scale,
+  Hash,
+  IndianRupee,
 } from "lucide-react";
 
 import {
   getDebitEntries,
+  getDebitInsights,
   type DebitEntry,
+  type DebitInsights,
 } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
 import { Pagination } from "@/components/Pagination";
@@ -91,6 +96,7 @@ const COLS = 13;
 
 export default function StockVariancePage() {
   const [entries, setEntries] = useState<DebitEntry[]>([]);
+  const [insights, setInsights] = useState<DebitInsights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -104,8 +110,12 @@ export default function StockVariancePage() {
       setLoading(true);
       setError("");
       try {
-        const data = await getDebitEntries();
+        const [data, insightsData] = await Promise.all([
+          getDebitEntries(),
+          getDebitInsights(),
+        ]);
         setEntries(data);
+        setInsights(insightsData);
       } catch (err) {
         setError(getErrorMessage(err, "Failed to load Shortage Entries"));
       } finally {
@@ -144,7 +154,7 @@ export default function StockVariancePage() {
       <div>
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-xl sm:text-2xl font-bold">Stock Variance</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Shortage Report</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-0.5">
           Shortage entries recorded during stock transitions
@@ -152,6 +162,48 @@ export default function StockVariancePage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Insight Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Records</p>
+              <Hash className="h-4 w-4 text-blue-500" />
+            </div>
+            {loading
+              ? <div className="h-8 w-12 bg-blue-200/50 dark:bg-blue-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold">{insights?.total_records ?? 0}</h3>
+            }
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-red-50/60 dark:bg-red-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-red-600 dark:text-red-400">Total Shortage</p>
+              <Scale className="h-4 w-4 text-red-500" />
+            </div>
+            {loading
+              ? <div className="h-8 w-24 bg-red-200/50 dark:bg-red-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
+            }
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-orange-50/60 dark:bg-orange-950/20 shadow-sm">
+          <CardContent className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Deduction</p>
+              <IndianRupee className="h-4 w-4 text-orange-500" />
+            </div>
+            {loading
+              ? <div className="h-8 w-28 bg-orange-200/50 dark:bg-orange-800/30 animate-pulse rounded mt-1" />
+              : <h3 className="text-2xl font-bold tabular-nums">₹ {Number(insights?.total_deduction_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            }
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="card-hover shimmer-hover">
         <CardHeader>
