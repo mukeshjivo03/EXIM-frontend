@@ -1,4 +1,4 @@
-import { Eye, Package, Truck, IndianRupee, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Eye, Package, Truck, IndianRupee, MapPin, Pencil, Trash2, CalendarClock } from "lucide-react";
 
 import type { StockStatus } from "@/api/stockStatus";
 import type { TankItem } from "@/api/tank";
@@ -174,6 +174,53 @@ export function ViewStockSheet({ data, loading, tankItems, vendors, onClose, onE
                 </div>
               </div>
             </div>
+
+            {/* Contract Period (IN_CONTRACT only) */}
+            {data.status === "IN_CONTRACT" && (data.contract_start || data.contract_end) && (() => {
+              const start = data.contract_start ? new Date(data.contract_start) : null;
+              const end = data.contract_end ? new Date(data.contract_end) : null;
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const periodDays = start && end ? Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : null;
+              const daysLeft = end ? Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
+              const isExpired = daysLeft !== null && daysLeft < 0;
+              return (
+                <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-5 space-y-4">
+                  <div className="flex items-center gap-2 border-b border-blue-200 dark:border-blue-700 pb-2">
+                    <CalendarClock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">Contract Period</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Start Date</p>
+                      <p className="text-sm font-semibold">{data.contract_start ? new Date(data.contract_start).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">End Date</p>
+                      <p className="text-sm font-semibold">{data.contract_end ? new Date(data.contract_end).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-lg bg-white/60 dark:bg-black/20 px-3 py-2.5">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Period</p>
+                      <p className="text-sm font-bold">{periodDays !== null && periodDays > 0 ? `${periodDays} days` : "—"}</p>
+                    </div>
+                    <div className={cn(
+                      "rounded-lg px-3 py-2.5",
+                      isExpired ? "bg-red-100 dark:bg-red-900/30" : daysLeft !== null && daysLeft <= 7 ? "bg-orange-100 dark:bg-orange-900/30" : "bg-white/60 dark:bg-black/20"
+                    )}>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Days Left</p>
+                      <p className={cn(
+                        "text-sm font-bold",
+                        isExpired ? "text-red-600 dark:text-red-400" : daysLeft !== null && daysLeft <= 7 ? "text-orange-600 dark:text-orange-400" : ""
+                      )}>
+                        {daysLeft === null ? "—" : isExpired ? `Expired ${Math.abs(daysLeft)} days ago` : `${daysLeft} days`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <Separator />
 

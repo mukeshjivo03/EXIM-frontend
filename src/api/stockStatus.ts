@@ -40,6 +40,8 @@ export interface StockStatus {
   job_work_vendor?: string;
   bility_number?: string;
   grpo_number?: string;
+  contract_start?: string;
+  contract_end?: string;
   created_at: string;
   created_by: string;
   deleted: boolean;
@@ -58,6 +60,8 @@ export interface StockStatusPayload {
   transporter?: string;
   bility_number?: string;
   grpo_number?: string;
+  contract_start?: string;
+  contract_end?: string;
 }
 
 export interface StockStatusFilters {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Pencil, Trash2, Search, Lock } from "lucide-react";
+import { Pencil, Trash2, Search, Lock, CalendarClock } from "lucide-react";
 
 import {
   updateStockStatus,
@@ -22,6 +22,7 @@ import { formatStatus } from "../stock-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -71,6 +72,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [eGrpoNumber, setEGrpoNumber] = useState("");
   const [jobWorkSearch, setJobWorkSearch] = useState("");
   const [jobWorkOpen, setJobWorkOpen] = useState(false);
+  const [eContractStart, setEContractStart] = useState("");
+  const [eContractEnd, setEContractEnd] = useState("");
   const [editing, setEditing] = useState(false);
 
   // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
@@ -103,6 +106,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEBilityNumber(data.bility_number ?? "");
       setEGrpoNumber(data.grpo_number ?? "");
       setJobWorkSearch("");
+      setEContractStart(data.contract_start ?? "");
+      setEContractEnd(data.contract_end ?? "");
     }
   }, [data]);
 
@@ -184,6 +189,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           created_by: email,
           bility_number: eBilityNumber.trim() || undefined,
           grpo_number: eGrpoNumber.trim() || undefined,
+          contract_start: eStatus === "IN_CONTRACT" ? eContractStart || undefined : undefined,
+          contract_end: eStatus === "IN_CONTRACT" ? eContractEnd || undefined : undefined,
         });
         toast.success("Stock status metadata updated.");
       }
@@ -422,6 +429,57 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             </>
           )}
 
+          {/* Contract Period (IN_CONTRACT only) */}
+          {eStatus === "IN_CONTRACT" && (
+            <>
+              <Separator />
+              <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <CalendarClock className="h-4 w-4" />
+                  Contract Period
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Contract Start *</Label>
+                    <DatePicker
+                      value={eContractStart}
+                      onChange={(v) => setEContractStart(v)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Contract End *</Label>
+                    <DatePicker
+                      value={eContractEnd}
+                      onChange={(v) => setEContractEnd(v)}
+                    />
+                  </div>
+                </div>
+                {eContractStart && eContractEnd && (() => {
+                  const start = new Date(eContractStart);
+                  const end = new Date(eContractEnd);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const periodDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                  const daysLeft = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  const isExpired = daysLeft < 0;
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-md bg-white/60 dark:bg-black/20 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Period: </span>
+                        <span className="font-semibold">{periodDays > 0 ? `${periodDays} days` : "Invalid"}</span>
+                      </div>
+                      <div className={`rounded-md px-3 py-2 text-sm ${isExpired ? "bg-red-100 dark:bg-red-900/30" : "bg-white/60 dark:bg-black/20"}`}>
+                        <span className="text-muted-foreground">Days Left: </span>
+                        <span className={`font-semibold ${isExpired ? "text-red-600 dark:text-red-400" : daysLeft <= 7 ? "text-orange-600 dark:text-orange-400" : ""}`}>
+                          {isExpired ? `Expired ${Math.abs(daysLeft)} days ago` : `${daysLeft} days`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
           <Separator />
           <div className="space-y-2">
             <Label htmlFor="e-rate">Rate (&#8377;) *</Label>

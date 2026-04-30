@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, X } from "lucide-react";
+import { ClipboardList, X, CalendarClock } from "lucide-react";
 
 import { createStockStatus, STATUS_CHOICES, type StockStatusChoice } from "@/api/stockStatus";
 import type { TankItem } from "@/api/tank";
@@ -12,6 +12,7 @@ import { formatStatus } from "../stock-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -56,7 +57,11 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
   const [cLocation, setCLocation] = useState("");
   const [cEta, setCEta] = useState("");
   const [cTransporterName, setCTransporterName] = useState("");
+  const [cContractStart, setCContractStart] = useState("");
+  const [cContractEnd, setCContractEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const isContract = cStatus === "IN_CONTRACT";
 
   // Reset form when opened
   useEffect(() => {
@@ -74,6 +79,8 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
       setCLocation("");
       setCEta("");
       setCTransporterName("");
+      setCContractStart("");
+      setCContractEnd("");
     }
   }, [open]);
 
@@ -121,6 +128,8 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
         location: cLocation.trim() || undefined,
         eta: cEta.trim() || undefined,
         transporter: cTransporterName.trim() || undefined,
+        contract_start: isContract ? cContractStart || undefined : undefined,
+        contract_end: isContract ? cContractEnd || undefined : undefined,
       });
       toast.success("Stock status created.");
       onOpenChange(false);
@@ -292,6 +301,57 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
               <span className="font-semibold">&#8377; {(Number(cRate) * Number(cQuantity)).toFixed(2)}</span>
             </div>
           )}
+          {/* ── Contract Date Fields (IN_CONTRACT only) ── */}
+          {isContract && (
+            <>
+              <Separator />
+              <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <CalendarClock className="h-4 w-4" />
+                  Contract Period
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="c-contract-start">Contract Start *</Label>
+                    <DatePicker
+                      value={cContractStart}
+                      onChange={(v) => setCContractStart(v)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="c-contract-end">Contract End *</Label>
+                    <DatePicker
+                      value={cContractEnd}
+                      onChange={(v) => setCContractEnd(v)}
+                    />
+                  </div>
+                </div>
+                {cContractStart && cContractEnd && (() => {
+                  const start = new Date(cContractStart);
+                  const end = new Date(cContractEnd);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const periodDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                  const daysLeft = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  const isExpired = daysLeft < 0;
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-md bg-white/60 dark:bg-black/20 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Period: </span>
+                        <span className="font-semibold">{periodDays > 0 ? `${periodDays} days` : "Invalid"}</span>
+                      </div>
+                      <div className={`rounded-md px-3 py-2 text-sm ${isExpired ? "bg-red-100 dark:bg-red-900/30" : "bg-white/60 dark:bg-black/20"}`}>
+                        <span className="text-muted-foreground">Days Left: </span>
+                        <span className={`font-semibold ${isExpired ? "text-red-600 dark:text-red-400" : daysLeft <= 7 ? "text-orange-600 dark:text-orange-400" : ""}`}>
+                          {isExpired ? `Expired ${Math.abs(daysLeft)} days ago` : `${daysLeft} days`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
           <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -340,7 +400,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
             </Button>
             <Button
               type="submit"
-              disabled={submitting || !cItemCode || !cVendorCode || !cRate.trim() || !cQuantity.trim()}
+              disabled={submitting || !cItemCode || !cVendorCode || !cRate.trim() || !cQuantity.trim() || (isContract && (!cContractStart || !cContractEnd))}
             >
               {submitting ? "Creating..." : "Create"}
             </Button>
