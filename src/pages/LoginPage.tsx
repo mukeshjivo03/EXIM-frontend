@@ -356,6 +356,8 @@ export default function LoginPage() {
       }
 
       setAuth(name, permissions, email);
+      // Trigger install prompt/banner after successful login.
+      sessionStorage.setItem("pwa-show-after-login", "true");
       navigate("/");
     } catch (err) {
       if (err instanceof AxiosError) {

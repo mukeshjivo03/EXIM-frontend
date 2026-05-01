@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
+
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,6 +23,13 @@ export default function Layout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar onMenuToggle={() => setMobileOpen((prev) => !prev)} />
@@ -40,7 +48,7 @@ export default function Layout() {
         mobileOpen={mobileOpen}
       />
       <main
-        className={`relative z-[1] flex-1 pt-14 pb-12 transition-all duration-300 pl-0 ${
+        className={`relative z-[1] flex-1 pt-14 pb-[calc(3rem+env(safe-area-inset-bottom))] transition-all duration-300 pl-0 ${
           sidebarCollapsed ? "md:pl-16" : "md:pl-56"
         }`}
       >
