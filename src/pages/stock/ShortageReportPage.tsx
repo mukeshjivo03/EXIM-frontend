@@ -216,8 +216,6 @@ export default function ShortageReportPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>S.No</TableHead>
-                  <SortHead col="grpo_number" label="GRPO No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortHead col="bility_number" label="Bility No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="supplier" label="Supplier" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="item_name" label="Item Name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="load_qty" label="Load Qty (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
@@ -225,9 +223,11 @@ export default function ShortageReportPage() {
                   <SortHead col="shortage_qty" label="Shortage (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="allowed_shortage_qty" label="Allowed Shortage (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="deducted_shortage_qty" label="Deduction Qty (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
-                  <SortHead col="deduction_amount" label="Deduction Amount (₹)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
+                  <SortHead col="deduction_amount" label="Deduction Amount (Rs)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="transporter" label="Transporter" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="vehicle_number" label="Vehicle No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="bility_number" label="Bility No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="grpo_number" label="GRPO No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -251,10 +251,8 @@ export default function ShortageReportPage() {
                       <TableCell className="font-medium text-muted-foreground">
                         {(page - 1) * perPage + i + 1}
                       </TableCell>
-                      <TableCell>{entry.grpo_number || entry.grop_number || "—"}</TableCell>
-                      <TableCell>{entry.bility_number || "—"}</TableCell>
-                      <TableCell>{entry.supplier || "—"}</TableCell>
-                      <TableCell>{entry.item_name || "—"}</TableCell>
+                      <TableCell>{entry.supplier || "-"}</TableCell>
+                      <TableCell>{entry.item_name || "-"}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.load_qty)}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.unload_qty)}</TableCell>
                       <TableCell className="text-right text-red-600 dark:text-red-400 font-medium">
@@ -265,10 +263,12 @@ export default function ShortageReportPage() {
                         {fmt3(entry.deducted_shortage_qty)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ₹ {fmt3(entry.deduction_amount)}
+                        Rs {fmt3(entry.deduction_amount)}
                       </TableCell>
-                      <TableCell>{entry.transporter || "—"}</TableCell>
-                      <TableCell className="font-mono text-sm">{entry.vehicle_number || "—"}</TableCell>
+                      <TableCell>{entry.transporter || "-"}</TableCell>
+                      <TableCell className="font-mono text-sm">{entry.vehicle_number || "-"}</TableCell>
+                      <TableCell>{entry.bility_number || "-"}</TableCell>
+                      <TableCell>{entry.grpo_number || entry.grop_number || "-"}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -290,3 +290,4 @@ export default function ShortageReportPage() {
     </div>
   );
 }
+
