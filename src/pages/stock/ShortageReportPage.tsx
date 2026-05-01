@@ -94,7 +94,7 @@ function fmt3(n: number | string): string {
 
 const COLS = 13;
 
-export default function StockVariancePage() {
+export default function ShortageReportPage() {
   const [entries, setEntries] = useState<DebitEntry[]>([]);
   const [insights, setInsights] = useState<DebitInsights | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,7 +186,7 @@ export default function StockVariancePage() {
             </div>
             {loading
               ? <div className="h-8 w-24 bg-red-200/50 dark:bg-red-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
+              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortage ?? insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
             }
           </CardContent>
         </Card>
@@ -216,8 +216,6 @@ export default function StockVariancePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>S.No</TableHead>
-                  <SortHead col="grpo_number" label="GRPO No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortHead col="bility_number" label="Bility No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="supplier" label="Supplier" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="item_name" label="Item Name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="load_qty" label="Load Qty (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
@@ -225,9 +223,11 @@ export default function StockVariancePage() {
                   <SortHead col="shortage_qty" label="Shortage (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="allowed_shortage_qty" label="Allowed Shortage (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="deducted_shortage_qty" label="Deduction Qty (MTS)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
-                  <SortHead col="deduction_amount" label="Deduction Amount (₹)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
+                  <SortHead col="deduction_amount" label="Deduction Amount (Rs)" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} right />
                   <SortHead col="transporter" label="Transporter" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortHead col="vehicle_number" label="Vehicle No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="bility_number" label="Bility No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="grpo_number" label="GRPO No" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -251,10 +251,8 @@ export default function StockVariancePage() {
                       <TableCell className="font-medium text-muted-foreground">
                         {(page - 1) * perPage + i + 1}
                       </TableCell>
-                      <TableCell>{entry.grpo_number || entry.grop_number || "—"}</TableCell>
-                      <TableCell>{entry.bility_number || "—"}</TableCell>
-                      <TableCell>{entry.supplier || "—"}</TableCell>
-                      <TableCell>{entry.item_name || "—"}</TableCell>
+                      <TableCell>{entry.supplier || "-"}</TableCell>
+                      <TableCell>{entry.item_name || "-"}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.load_qty)}</TableCell>
                       <TableCell className="text-right">{fmt3(entry.unload_qty)}</TableCell>
                       <TableCell className="text-right text-red-600 dark:text-red-400 font-medium">
@@ -265,10 +263,12 @@ export default function StockVariancePage() {
                         {fmt3(entry.deducted_shortage_qty)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ₹ {fmt3(entry.deduction_amount)}
+                        Rs {fmt3(entry.deduction_amount)}
                       </TableCell>
-                      <TableCell>{entry.transporter || "—"}</TableCell>
-                      <TableCell className="font-mono text-sm">{entry.vehicle_number || "—"}</TableCell>
+                      <TableCell>{entry.transporter || "-"}</TableCell>
+                      <TableCell className="font-mono text-sm">{entry.vehicle_number || "-"}</TableCell>
+                      <TableCell>{entry.bility_number || "-"}</TableCell>
+                      <TableCell>{entry.grpo_number || entry.grop_number || "-"}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -290,3 +290,4 @@ export default function StockVariancePage() {
     </div>
   );
 }
+

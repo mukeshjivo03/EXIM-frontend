@@ -149,8 +149,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
         } else if (eStatus === "IN_TANK") {
           await patchStockStatus(data.id, {
             status: eStatus,
-            bility_number: eBilityNumber.trim(),
-            grpo_number: eGrpoNumber.trim(),
+            bility_number: eBilityNumber.trim() || undefined,
+            grpo_number: eGrpoNumber.trim() || undefined,
             quantity: String(newQty),
             created_by: email,
           });
@@ -407,7 +407,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               {eStatus === "IN_TANK" && (
                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="space-y-2">
-                    <Label htmlFor="e-bility">Bility Number *</Label>
+                    <Label htmlFor="e-bility">Bility Number</Label>
                     <Input
                       id="e-bility"
                       placeholder="e.g. BIL100"
@@ -416,7 +416,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="e-grpo">GRPO Number *</Label>
+                    <Label htmlFor="e-grpo">GRPO Number</Label>
                     <Input
                       id="e-grpo"
                       placeholder="e.g. 123"

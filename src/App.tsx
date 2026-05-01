@@ -22,7 +22,7 @@ import TankDataPage from "@/pages/stock/TankDataPage";
 import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
-import StockVariancePage from "@/pages/stock/ShortageReportPage";
+import ShortageReportPage from "@/pages/stock/ShortageReportPage";
 import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
 
@@ -32,6 +32,7 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
+import OpenApsPage from "@/pages/accounts/OpenApsPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -163,7 +164,7 @@ function App() {
               path="/stock/variance"
               element={
                 <ProtectedRoute requiredModules={["stockstatus"]}>
-                  <StockVariancePage />
+                  <ShortageReportPage />
                 </ProtectedRoute>
               }
             />
@@ -228,6 +229,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["debitentry", "party"]}>
                   <EximAccountPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/open-aps"
+              element={
+                <ProtectedRoute>
+                  <OpenApsPage />
                 </ProtectedRoute>
               }
             />
