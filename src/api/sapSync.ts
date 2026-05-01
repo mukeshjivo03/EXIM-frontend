@@ -281,3 +281,45 @@ export async function getSyncLogs(): Promise<SyncLog[]> {
   const res = await api.get<SyncLog[]>("/sync_logs/");
   return res.data ?? [];
 }
+
+// Open APs
+
+export interface OpenApEntry {
+  "DB Primary Key": number;
+  "Invoice Number": number;
+  "Status (O=Open C=Closed)": string;
+  "Invoice Date": string | null;
+  "Payment Due Date": string | null;
+  "Tax Posting Date": string | null;
+  "Vendor Code": string;
+  "Vendor Name": string;
+  "Vendor GST Number": string | null;
+  "Vendor Invoice Reference No": string | null;
+  "Total Invoice Amount (INR)": number;
+  "Total Invoice Amount (Foreign Currency)": number;
+  "GST / VAT Amount": number;
+  "Discount Amount": number;
+  "Amount Paid So Far": number;
+  "Reference 1": string | null;
+  "Remarks / Notes": string | null;
+  "Journal Entry Memo": string | null;
+  "Journal Entry Number": number | null;
+  "Bilty / LR Number": string | null;
+  "Bilty / LR Date": string | null;
+  "Transporter Name": string | null;
+  "Vehicle Number": string | null;
+  "Goods Received Date": string | null;
+  "Linked GRN Doc Entry": number | null;
+  "GRN Vendor Code": string | null;
+  "GRN Warehouse Code": string | null;
+}
+
+export async function getOpenAps(): Promise<OpenApEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/open-ap/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.["Open APs"])) return d["Open APs"];
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}

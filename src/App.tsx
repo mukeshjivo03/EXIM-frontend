@@ -32,6 +32,7 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
+import OpenApsPage from "@/pages/accounts/OpenApsPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -228,6 +229,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["debitentry", "party"]}>
                   <EximAccountPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/open-aps"
+              element={
+                <ProtectedRoute>
+                  <OpenApsPage />
                 </ProtectedRoute>
               }
             />

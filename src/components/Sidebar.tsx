@@ -30,6 +30,7 @@ import {
   Globe,
   Warehouse,
   Activity,
+  ReceiptText,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +104,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Accounts",
     links: [
       { to: "/exim-account",        label: "Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
+      { to: "/accounts/open-aps",   label: "Open APs",          icon: ReceiptText },
       { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: Receipt, modules: ["open_grpos"] },
     ],
   },
