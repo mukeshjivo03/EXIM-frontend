@@ -701,3 +701,30 @@
   max-width: 100% !important;
   width: 100% !important;
 }
+
+/* PWA + Mobile Compatibility */
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img, svg, canvas, video {
+  max-width: 100%;
+}
+
+input, select, textarea, button {
+  font-size: 16px;
+}
+
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}

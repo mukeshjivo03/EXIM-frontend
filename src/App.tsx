@@ -55,6 +55,7 @@ import SyncVendorDataPage from "@/pages/administration/SyncVendorDataPage";
 import SyncLogsPage from "@/pages/administration/SyncLogsPage";
 import StockUpdationLogsPage from "@/pages/administration/StockUpdationLogsPage";
 import { Toaster } from "@/components/ui/sonner";
+import InstallPWA from "@/components/InstallPWA";
 
 function App() {
   return (
@@ -316,6 +317,7 @@ function App() {
             />
           </Route>
         </Routes>
+        <InstallPWA />
         </OpenGrpoProvider>
         </JivoRateProvider>
         </DailyPriceProvider>

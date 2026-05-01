@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowRightLeft,
@@ -46,14 +46,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 /* ── helpers ─────────────────────────────────────────── */
 
 
 function formatArrival(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "-";
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
@@ -147,6 +148,8 @@ export default function TankLogsPage() {
         const q = search.toLowerCase();
         if (
           !(log.vehicle_number?.toLowerCase().includes(q)) &&
+          !(log.item_name?.toLowerCase().includes(q)) &&
+          !(log.item_code?.toLowerCase().includes(q)) &&
           !(log.party?.toLowerCase().includes(q)) &&
           !log.created_by.toLowerCase().includes(q)
         )
@@ -247,17 +250,15 @@ export default function TankLogsPage() {
           {/* Custom date inputs */}
           {dateRange === "custom" && (
             <div className="flex items-center gap-2 mt-3">
-              <Input
-                type="date"
+              <DatePicker
                 value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
+                onChange={(v) => setCustomFrom(v || "")}
                 className="h-9 w-40"
               />
               <span className="text-sm text-muted-foreground">to</span>
-              <Input
-                type="date"
+              <DatePicker
                 value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
+                onChange={(v) => setCustomTo(v || "")}
                 className="h-9 w-40"
               />
             </div>
@@ -339,6 +340,8 @@ export default function TankLogsPage() {
                               onClick={() => {
                                 setSearch("");
                                 setDateRange("all");
+                                setCustomFrom("");
+                                setCustomTo("");
                               }}
                             >
                               Clear all filters
@@ -349,9 +352,12 @@ export default function TankLogsPage() {
                     </TableRow>
                   ) : (
                     paginatedLogs.map((log) => {
-                      const rate = Number(log.rate ?? 0);
-                      const qty = Number(log.quantity);
-                      const value = rate * qty;
+                      const hasRate = log.rate != null && log.rate !== "";
+                      const hasQty = log.quantity != null && log.quantity !== "";
+                      const rate = hasRate ? Number(log.rate) : null;
+                      const qty = hasQty ? Number(log.quantity) : null;
+                      const hasValue = rate != null && qty != null;
+                      const value = hasValue ? rate * qty : null;
 
                       return (
                         <TableRow key={log.id}>
@@ -365,22 +371,22 @@ export default function TankLogsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium font-mono text-sm">
-                            {log.vehicle_number || "—"}
+                            {log.vehicle_number || "-"}
                           </TableCell>
                           <TableCell>
-                            {log.item_name || log.item_code || "—"}
+                            {log.item_name || log.item_code || "-"}
                           </TableCell>
                           <TableCell>
-                            {log.party || "—"}
+                            {log.party || "-"}
                           </TableCell>
                           <TableCell className="tabular-nums">
-                            {log.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
+                            {hasRate && rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "-"}
                           </TableCell>
                           <TableCell className="tabular-nums">
-                            {qty.toLocaleString("en-IN")}
+                            {hasQty && qty != null ? qty.toLocaleString("en-IN") : "-"}
                           </TableCell>
                           <TableCell className="tabular-nums font-medium">
-                            {log.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
+                            {hasValue && value != null ? `₹ ${value.toLocaleString("en-IN")}` : "-"}
                           </TableCell>
                           <TableCell>
                             {formatArrival(log.arrival)}
@@ -433,9 +439,12 @@ export default function TankLogsPage() {
           </DialogHeader>
 
           {viewTarget && (() => {
-            const rate = Number(viewTarget.rate ?? 0);
-            const qty = Number(viewTarget.quantity);
-            const value = rate * qty;
+            const hasRate = viewTarget.rate != null && viewTarget.rate !== "";
+            const hasQty = viewTarget.quantity != null && viewTarget.quantity !== "";
+            const rate = hasRate ? Number(viewTarget.rate) : null;
+            const qty = hasQty ? Number(viewTarget.quantity) : null;
+            const hasValue = rate != null && qty != null;
+            const value = hasValue ? rate * qty : null;
 
             return (
               <div className="space-y-4">
@@ -455,15 +464,15 @@ export default function TankLogsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Vehicle Number</p>
-                    <p className="font-mono font-medium">{viewTarget.vehicle_number || "—"}</p>
+                    <p className="font-mono font-medium">{viewTarget.vehicle_number || "-"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Item Name</p>
-                    <p className="font-medium">{viewTarget.item_name || viewTarget.item_code || "—"}</p>
+                    <p className="font-medium">{viewTarget.item_name || viewTarget.item_code || "-"}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">Party</p>
-                    <p className="font-medium">{viewTarget.party || "—"}</p>
+                    <p className="font-medium">{viewTarget.party || "-"}</p>
                   </div>
 
                   <Separator className="col-span-2" />
@@ -471,17 +480,19 @@ export default function TankLogsPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Rate</p>
                     <p className="font-medium tabular-nums">
-                      {viewTarget.rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "—"}
+                      {hasRate && rate != null ? `₹ ${rate.toLocaleString("en-IN")}` : "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Quantity</p>
-                    <p className="font-medium tabular-nums">{qty.toLocaleString("en-IN")} L</p>
+                    <p className="font-medium tabular-nums">
+                      {hasQty && qty != null ? `${qty.toLocaleString("en-IN")} L` : "-"}
+                    </p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Value (Rate × Qty)</p>
+                    <p className="text-xs text-muted-foreground">Value (Rate x Qty)</p>
                     <p className="font-bold tabular-nums text-base">
-                      {viewTarget.rate != null ? `₹ ${value.toLocaleString("en-IN")}` : "—"}
+                      {hasValue && value != null ? `₹ ${value.toLocaleString("en-IN")}` : "-"}
                     </p>
                   </div>
 
