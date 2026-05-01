@@ -291,7 +291,8 @@ export async function getDebitEntries(): Promise<DebitEntry[]> {
 }
 
 export interface DebitInsights {
-  total_deduction_shortager: number;
+  total_deduction_shortage?: number;
+  total_deduction_shortager?: number;
   total_records: number;
   total_deduction_amount: number;
 }

@@ -94,7 +94,7 @@ function fmt3(n: number | string): string {
 
 const COLS = 13;
 
-export default function StockVariancePage() {
+export default function ShortageReportPage() {
   const [entries, setEntries] = useState<DebitEntry[]>([]);
   const [insights, setInsights] = useState<DebitInsights | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,7 +186,7 @@ export default function StockVariancePage() {
             </div>
             {loading
               ? <div className="h-8 w-24 bg-red-200/50 dark:bg-red-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
+              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortage ?? insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
             }
           </CardContent>
         </Card>

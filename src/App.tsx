@@ -22,7 +22,7 @@ import TankDataPage from "@/pages/stock/TankDataPage";
 import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
-import StockVariancePage from "@/pages/stock/ShortageReportPage";
+import ShortageReportPage from "@/pages/stock/ShortageReportPage";
 import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
 
@@ -163,7 +163,7 @@ function App() {
               path="/stock/variance"
               element={
                 <ProtectedRoute requiredModules={["stockstatus"]}>
-                  <StockVariancePage />
+                  <ShortageReportPage />
                 </ProtectedRoute>
               }
             />

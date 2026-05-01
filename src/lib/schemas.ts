@@ -49,14 +49,6 @@ export const stockEditSchema = z
     grpoNumber: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.newStatus === "IN_TANK") {
-      if (!data.bilityNumber?.trim()) {
-        ctx.addIssue({ code: "custom", path: ["bilityNumber"], message: "Bility number is required for In Tank status." });
-      }
-      if (!data.grpoNumber?.trim()) {
-        ctx.addIssue({ code: "custom", path: ["grpoNumber"], message: "GRPO number is required for In Tank status." });
-      }
-    }
     if (data.newStatus === data.oldStatus) return;
     if (data.newStatus !== "AT_REFINERY" && !data.transferType) {
       ctx.addIssue({ code: "custom", path: ["transferType"], message: "Please select a Transfer Type." });

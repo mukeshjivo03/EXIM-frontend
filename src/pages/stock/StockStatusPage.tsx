@@ -122,6 +122,7 @@ export default function StockStatusPage() {
   const uniqueVendors = useMemo(() => [...new Set(allRows.map((r) => r.vendor_code))].sort(), [allRows]);
   const uniqueItems = useMemo(() => [...new Set(allRows.map((r) => r.item_code))].sort(), [allRows]);
   const itemNameMap = useMemo(() => new Map(tankItems.map((t) => [t.tank_item_code, t.tank_item_name])), [tankItems]);
+  const vendorNameMap = useMemo(() => new Map(vendors.map((v) => [v.card_code, v.card_name])), [vendors]);
 
   // search
   const [search, setSearch] = useState("");
@@ -131,7 +132,7 @@ export default function StockStatusPage() {
     if (!q) return rows;
     return rows.filter((row) => {
       const itemName = (itemNameMap.get(row.item_code) ?? row.item_code).toLowerCase();
-      const vendorName = (vendors.find((v) => v.card_code === row.vendor_code)?.card_name ?? row.vendor_code).toLowerCase();
+      const vendorName = (vendorNameMap.get(row.vendor_code) ?? row.vendor_code).toLowerCase();
       return (
         itemName.includes(q) ||
         formatStatus(row.status).toLowerCase().includes(q) ||
@@ -143,7 +144,7 @@ export default function StockStatusPage() {
         (row.arrival_date ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, itemNameMap, vendors]);
+  }, [rows, search, itemNameMap, vendorNameMap]);
 
   // pagination
   const [page, setPage] = useState(1);
@@ -723,7 +724,7 @@ export default function StockStatusPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell font-medium">
-                            {vendors.find(v => v.card_code === row.vendor_code)?.card_name || row.vendor_code}
+                            {vendorNameMap.get(row.vendor_code) ?? row.vendor_code}
                           </TableCell>
                           <TableCell className="hidden md:table-cell font-medium">
                             {row.vehicle_number || "—"}
