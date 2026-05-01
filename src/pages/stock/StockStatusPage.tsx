@@ -458,16 +458,7 @@ export default function StockStatusPage() {
         <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Stock Status Summary
         </h2>
-        <Card className="md:hidden">
-          <CardContent className="p-3 space-y-2 text-sm">
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Count</span><span className="font-semibold">{overallSummary?.total_count ?? 0}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Value</span><span className="font-semibold">₹ {fmtNum(Number(overallSummary?.total_value ?? 0))}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Quantity</span><span className="font-semibold">{fmtNum(Number(overallSummary?.total_qty ?? 0))} KG</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Price / KG</span><span className="font-semibold">₹ {fmtNum(Number(overallSummary?.avg_price_per_kg ?? 0))}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Price / LTR</span><span className="font-semibold">₹ {fmtNum(Number(overallSummary?.avg_price_per_ltr ?? 0))}</span></div>
-          </CardContent>
-        </Card>
-        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={overallSummary?.total_count ?? 0} loading={!overallSummary} />
           <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(overallSummary?.total_value ?? 0))}`} loading={!overallSummary} />
           <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(overallSummary?.total_qty ?? 0))} KG`} loading={!overallSummary} />
@@ -616,16 +607,7 @@ export default function StockStatusPage() {
         <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Filtered Summary
         </h2>
-        <Card className="md:hidden">
-          <CardContent className="p-3 space-y-2 text-sm">
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Count</span><span className="font-semibold">{summary?.total_count ?? 0}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Value</span><span className="font-semibold">₹ {fmtNum(Number(summary?.total_value ?? 0))}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Total Quantity</span><span className="font-semibold">{fmtNum(Number(summary?.total_qty ?? 0))} KG</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Price / KG</span><span className="font-semibold">₹ {fmtNum(Number(summary?.avg_price_per_kg ?? 0))}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Price / LTR</span><span className="font-semibold">₹ {fmtNum(Number(summary?.avg_price_per_ltr ?? 0))}</span></div>
-          </CardContent>
-        </Card>
-        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={loading} />
           <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(summary?.total_value ?? 0))}`} loading={loading} />
           <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(summary?.total_qty ?? 0))} KG`} loading={loading} />
@@ -657,31 +639,20 @@ export default function StockStatusPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
-            <>
-            <div className="md:hidden space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border p-4 space-y-3">
-                  <Skeleton className="h-5 w-2/3" />
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              ))}
-            </div>
-            <div className="hidden md:block rounded-md border overflow-x-auto">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     {canBulk && <TableHead className="w-10"></TableHead>}
-                    <TableHead className="w-12 hidden sm:table-cell">S.No</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>RM Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Party Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
                     <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">Actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -697,72 +668,8 @@ export default function StockStatusPage() {
                 </TableBody>
               </Table>
             </div>
-            </>
           ) : (
-            <>
-            <div className="md:hidden space-y-3">
-              {paginated.length === 0 ? (
-                <div className="rounded-xl border py-12 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <ClipboardList className="h-10 w-10 stroke-1" />
-                    <p className="text-sm font-medium">No stock statuses found</p>
-                    <p className="text-xs">Add a stock status to get started.</p>
-                  </div>
-                </div>
-              ) : (
-                paginated.map((row, idx) => {
-                  const etaText = row.arrival_date
-                    ? fmtDateTime(row.arrival_date).split(",")[0]
-                    : row.eta
-                    ? fmtDateTime(row.eta).split(",")[0]
-                    : "-";
-                  return (
-                    <div key={row.id} className={cn("rounded-xl border p-3 space-y-2", selectedIds.has(row.id) && "bg-primary/5")}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground">#{(page - 1) * perPage + idx + 1}</p>
-                          <p className="font-semibold truncate">{itemNameMap.get(row.item_code) ?? row.item_code}</p>
-                        </div>
-                        <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
-                          {formatStatus(row.status).toLowerCase()}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                        <p className="text-muted-foreground">Party</p><p className="truncate">{vendorNameMap.get(row.vendor_code) ?? row.vendor_code}</p>
-                        <p className="text-muted-foreground">Vehicle</p><p>{row.vehicle_number || "-"}</p>
-                        <p className="text-muted-foreground">Rate</p><p>₹{Number(row.rate).toLocaleString("en-IN")}</p>
-                        <p className="text-muted-foreground">Qty</p><p>{Number(row.quantity).toLocaleString("en-IN")} KG</p>
-                        <p className="text-muted-foreground">ETA/Arrival</p><p>{etaText}</p>
-                      </div>
-                      {canBulk && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <Checkbox checked={selectedIds.has(row.id)} onCheckedChange={() => toggleSelect(row.id)} />
-                          <span className="text-xs text-muted-foreground">Select</span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-end gap-1 pt-1">
-                        {row.location && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600" asChild>
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}`} target="_blank" rel="noopener noreferrer">
-                              <MapPin className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(row.id)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {canEdit && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="hidden md:block rounded-md border overflow-x-auto">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -772,15 +679,15 @@ export default function StockStatusPage() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>}
-                    <TableHead className="w-12 hidden sm:table-cell">S.No</TableHead>
+                    <TableHead className="w-12">S.No</TableHead>
                     <TableHead>RM Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Party Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
                     <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">Actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -807,21 +714,10 @@ export default function StockStatusPage() {
                               onCheckedChange={() => toggleSelect(row.id)}
                             />
                           </TableCell>}
-                          <TableCell className="text-muted-foreground hidden sm:table-cell">
+                          <TableCell className="text-muted-foreground">
                             {(page - 1) * perPage + idx + 1}
                           </TableCell>
-                          <TableCell className="min-w-[220px]">
-                            <div className="font-medium">{itemNameMap.get(row.item_code) ?? row.item_code}</div>
-                            <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground md:hidden">
-                              <div>Party: {vendorNameMap.get(row.vendor_code) ?? row.vendor_code}</div>
-                              <div>Vehicle: {row.vehicle_number || "-"}</div>
-                              <div>Rate: ₹{Number(row.rate).toLocaleString("en-IN")}</div>
-                              <div>Qty: {Number(row.quantity).toLocaleString("en-IN")} KG</div>
-                              <div>
-                                ETA/Arrival: {row.arrival_date ? fmtDateTime(row.arrival_date).split(",")[0] : row.eta ? fmtDateTime(row.eta).split(",")[0] : "-"}
-                              </div>
-                            </div>
-                          </TableCell>
+                          <TableCell>{itemNameMap.get(row.item_code) ?? row.item_code}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
                               {formatStatus(row.status).toLowerCase()}
@@ -870,7 +766,7 @@ export default function StockStatusPage() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right hidden sm:table-cell">
+                          <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               {row.location && (
                                 <Button
@@ -915,7 +811,6 @@ export default function StockStatusPage() {
                 </TableBody>
               </Table>
             </div>
-            </>
           )}
 
           {/* Pagination */}
