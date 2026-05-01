@@ -29,6 +29,7 @@ import {
   CartesianGrid,
   LabelList,
   type PieLabelRenderProps,
+  type TooltipProps,
 } from "recharts";
 
 import { fmtNum } from "@/lib/formatters";
@@ -41,6 +42,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { KPICard } from "./components/KPICard";
+import { DatePicker } from "@/components/ui/date-picker";
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
@@ -75,7 +77,7 @@ function CustomPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }:
   );
 }
 
-function PieTooltip({ active, payload }: any) {
+function PieTooltip({ active, payload }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   const e = payload[0];
   return (
@@ -86,9 +88,9 @@ function PieTooltip({ active, payload }: any) {
   );
 }
 
-function BarTooltip({ active, payload }: any) {
+function BarTooltip({ active, payload }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
+  const d = payload[0].payload as { fullName: string; balance: number };
   const isPos = d.balance >= 0;
   return (
     <div className="rounded-lg border bg-card shadow-lg px-4 py-3 text-sm max-w-xs">
@@ -125,29 +127,32 @@ export default function DashboardPage() {
   const [trends, setTrends] = useState<PriceTrendsResponse | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
+  const [trendsStartDate, setTrendsStartDate] = useState("");
+  const [trendsEndDate, setTrendsEndDate] = useState("");
 
   const [contractsCount, setContractsCount] = useState(0);
   const [contractsLoading, setContractsLoading] = useState(true);
 
-  async function fetchAll() {
+  async function fetchAll(startDate?: string, endDate?: string) {
     setCapacityLoading(true);
     setBalanceLoading(true);
     setTrendsLoading(true);
     setContractsLoading(true);
 
+    const errors: string[] = [];
     const [capResult, balResult, trendResult, stockResult] = await Promise.allSettled([
       getCapacityInsights(),
       syncBalanceSheet(),
-      getPriceTrends(),
+      getPriceTrends(startDate ?? trendsStartDate, endDate ?? trendsEndDate),
       getStockStatuses({ status: "IN_CONTRACT" }),
     ]);
 
     if (capResult.status === "fulfilled") setCapacity(capResult.value);
-    else toast.error(getErrorMessage(capResult.reason, "Capacity error"));
+    else errors.push(getErrorMessage(capResult.reason, "Capacity error"));
     setCapacityLoading(false);
 
     if (balResult.status === "fulfilled") setBalanceEntries(balResult.value);
-    else toast.error(getErrorMessage(balResult.reason, "Balance error"));
+    else errors.push(getErrorMessage(balResult.reason, "Balance error"));
     setBalanceLoading(false);
 
     if (trendResult.status === "fulfilled") {
@@ -155,15 +160,35 @@ export default function DashboardPage() {
       setTrends(data);
       const defaultLabel = data.datasets.find((d) => d.label.toLowerCase().includes("soya refined") && d.label.toLowerCase().includes("resale"));
       setSelectedLabels(new Set(defaultLabel ? [defaultLabel.label] : [data.datasets[0]?.label].filter(Boolean)));
-    } else toast.error(getErrorMessage(trendResult.reason, "Trends error"));
+    } else errors.push(getErrorMessage(trendResult.reason, "Trends error"));
     setTrendsLoading(false);
 
     if (stockResult.status === "fulfilled") setContractsCount(stockResult.value.length);
+    else errors.push(getErrorMessage(stockResult.reason, "Contracts error"));
     setContractsLoading(false);
+
+    if (errors.length > 0) {
+      toast.error(errors[0]);
+    }
   }
 
   useEffect(() => {
-    fetchAll();
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    const toYmd = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const start = toYmd(sevenDaysAgo);
+    const end = toYmd(today);
+    setTrendsStartDate(start);
+    setTrendsEndDate(end);
+    fetchAll(start, end);
   }, []);
 
   /* ── Calculations for KPIs ── */
@@ -224,6 +249,15 @@ export default function DashboardPage() {
   }, [trends, selectedLabels]);
 
   const activeDatasets = trends?.datasets.filter((ds) => selectedLabels.has(ds.label)) ?? [];
+  const densePriceChartData = useMemo(
+    () => priceChartData.filter((row) => activeDatasets.some((ds) => row[ds.label] !== null && row[ds.label] !== undefined)),
+    [priceChartData, activeDatasets]
+  );
+  const axisExtent = useMemo(() => {
+    const largestAbs = barData.reduce((max, e) => Math.max(max, Math.abs(e.balance)), 0);
+    const padded = largestAbs + 2 * 10000000;
+    return padded > 0 ? padded : 10000000;
+  }, [barData]);
 
   const loading = capacityLoading || balanceLoading || trendsLoading || contractsLoading;
 
@@ -421,8 +455,22 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {!trendsLoading && trends && (
-              <div className="flex items-center gap-2 flex-wrap mt-6 pt-4 border-t border-border/50">
+              {!trendsLoading && trends && (
+              <div className="space-y-3 mt-6 pt-4 border-t border-border/50">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-xl">
+                  <DatePicker value={trendsStartDate} onChange={(v) => setTrendsStartDate(v || "")} placeholder="Start date" />
+                  <DatePicker value={trendsEndDate} onChange={(v) => setTrendsEndDate(v || "")} placeholder="End date" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9"
+                    disabled={!trendsStartDate || !trendsEndDate}
+                    onClick={() => fetchAll(trendsStartDate, trendsEndDate)}
+                  >
+                    Apply Range
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -456,13 +504,14 @@ export default function DashboardPage() {
                     </button>
                   );
                 })}
+                </div>
               </div>
             )}
           </CardHeader>
           <CardContent className="pt-6">
             {trendsLoading ? (
               <div className="flex items-center justify-center h-[450px] animate-pulse font-bold text-muted-foreground tracking-widest">ANALYZING TRENDS…</div>
-            ) : priceChartData.length === 0 ? (
+            ) : densePriceChartData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[450px] text-muted-foreground gap-4">
                 <Inbox className="h-12 w-12 opacity-10" />
                 <p className="font-bold uppercase tracking-widest text-sm">No price data synced</p>
@@ -470,7 +519,7 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={450}>
                 <BarChart
-                  data={priceChartData}
+                  data={densePriceChartData}
                   margin={{ top: 20, right: 20, left: 0, bottom: 40 }}
                   barCategoryGap="20%"
                   barGap={4}
@@ -576,8 +625,7 @@ export default function DashboardPage() {
                 margin={{ top: 5, right: 80, left: 20, bottom: 20 }}
                 barCategoryGap="25%"
                 onClick={(data) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const payload = (data as any)?.activePayload?.[0]?.payload;
+                  const payload = (data as { activePayload?: Array<{ payload?: { code?: string } }> })?.activePayload?.[0]?.payload;
                   if (payload?.code) navigate(`/exim-account?cardCode=${payload.code}`);
                 }}
               >
@@ -588,8 +636,7 @@ export default function DashboardPage() {
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `₹${Math.abs(v) >= 10000000 ? (v / 10000000).toFixed(0) + "Cr" : fmtNum(v)}`}
-                  domain={[-100000000, 100000000]}
-                  ticks={[-100000000, -80000000, -60000000, -40000000, -20000000, 0, 20000000, 40000000, 60000000, 80000000, 100000000]}
+                  domain={[-axisExtent, axisExtent]}
                 />
                 <YAxis
                   type="category"
@@ -617,7 +664,8 @@ export default function DashboardPage() {
                   ))}
                   <LabelList
                     dataKey="balance"
-                    content={({ x, y, width, height, value }: any) => {
+                    content={({ x, y, width, height, value }: { x?: number; y?: number; width?: number; height?: number; value?: number }) => {
+                      if (x === undefined || y === undefined || width === undefined || height === undefined || value === undefined) return null;
                       const val = value as number;
                       const isPos = val >= 0;
                       const label = `₹${fmtNum(Math.abs(val), 0)}`;
@@ -644,3 +692,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
