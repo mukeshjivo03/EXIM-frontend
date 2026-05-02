@@ -51,14 +51,6 @@ import {
 
 /* ── helpers ──────────────────────────────────────────────── */
 
-function completedLabel(c: number) {
-  return c === 1 ? "Completed" : "Pending";
-}
-
-function completedVariant(c: number): "default" | "secondary" {
-  return c === 1 ? "secondary" : "default";
-}
-
 /* ── component ────────────────────────────────────────────── */
 
 export default function DomesticContracts2526Page() {
@@ -70,7 +62,7 @@ export default function DomesticContracts2526Page() {
   const [search, setSearch] = useState("");
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterVendor, setFilterVendor] = useState("all");
-  const [filterCompleted, setFilterCompleted] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [filterPoDateFrom, setFilterPoDateFrom] = useState("");
   const [filterPoDateTo, setFilterPoDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -103,13 +95,17 @@ export default function DomesticContracts2526Page() {
   // unique filter options
   const productOptions = useMemo(() => [...new Set(rows.map((r) => r.product_code).filter(Boolean))].sort(), [rows]);
   const vendorOptions = useMemo(() => [...new Set(rows.map((r) => r.vendor_code).filter(Boolean))].sort(), [rows]);
+  const statusOptions = useMemo(
+    () => [...new Set(rows.map((r) => r.status).filter(Boolean))].sort(),
+    [rows]
+  );
 
   const filteredRows = useMemo(() => {
     let result = rows;
 
     if (filterProduct !== "all") result = result.filter((r) => r.product_code === filterProduct);
     if (filterVendor !== "all") result = result.filter((r) => r.vendor_code === filterVendor);
-    if (filterCompleted !== "all") result = result.filter((r) => String(r.Completed) === filterCompleted);
+    if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
     if (filterPoDateFrom) result = result.filter((r) => (r.po_date ?? "") >= filterPoDateFrom);
     if (filterPoDateTo) result = result.filter((r) => (r.po_date ?? "") <= filterPoDateTo);
 
@@ -120,7 +116,7 @@ export default function DomesticContracts2526Page() {
     });
 
     return result;
-  }, [rows, searchIndex, search, filterProduct, filterVendor, filterCompleted, filterPoDateFrom, filterPoDateTo]);
+  }, [rows, searchIndex, search, filterProduct, filterVendor, filterStatus, filterPoDateFrom, filterPoDateTo]);
 
   // summary stats
   const summary = useMemo(() => {
@@ -275,23 +271,24 @@ export default function DomesticContracts2526Page() {
               </SelectContent>
             </Select>
 
-            <Select value={filterCompleted} onValueChange={(v) => { setFilterCompleted(v); setPage(1); }}>
+            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="1">Completed</SelectItem>
-                <SelectItem value="0">Pending</SelectItem>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            {(filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterCompleted !== "all") && (
+            {(filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
-                onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterCompleted("all"); setPage(1); }}
+                onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear filters
@@ -326,7 +323,7 @@ export default function DomesticContracts2526Page() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>PO Number</TableHead>
+                    <TableHead>PO/GRPO Number</TableHead>
                     <TableHead>PO Date</TableHead>
                     <TableHead>Product Code</TableHead>
                     <TableHead>Vendor Code</TableHead>
@@ -345,14 +342,18 @@ export default function DomesticContracts2526Page() {
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <FileCheck className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No contracts found</p>
-                          <p className="text-xs">{search.trim() || filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterCompleted !== "all" ? "No contracts match your search or filters." : "No historical contracts available."}</p>
+                          <p className="text-xs">{search.trim() || filterPoDateFrom || filterPoDateTo || filterProduct !== "all" || filterVendor !== "all" || filterStatus !== "all" ? "No contracts match your search or filters." : "No historical contracts available."}</p>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginated.map((row) => (
                       <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.po_number}</TableCell>
+                        <TableCell className="font-medium">
+                          {(row.status === "RECEIVED" || row.status === "RECIEVED") && row.grpo_number
+                            ? row.grpo_number
+                            : row.po_number}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(row.po_date)}</TableCell>
                         <TableCell>{row.product_code}</TableCell>
                         <TableCell>{row.vendor_code}</TableCell>
@@ -361,8 +362,8 @@ export default function DomesticContracts2526Page() {
                         <TableCell className="font-medium">₹{Number(row.basic_amount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</TableCell>
                         <TableCell>{row.vehicle_number || "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={completedVariant(row.Completed)}>
-                            {completedLabel(row.Completed)}
+                          <Badge variant="outline">
+                            {row.status || "—"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -420,7 +421,7 @@ export default function DomesticContracts2526Page() {
                   <div><p className="text-xs text-muted-foreground">PO Date</p><p className="text-sm font-medium">{fmtDate(viewData.po_date)}</p></div>
                   <div>
                     <p className="text-xs text-muted-foreground">Status</p>
-                    <Badge variant={completedVariant(viewData.Completed)} className="mt-0.5">{completedLabel(viewData.Completed)}</Badge>
+                    <Badge variant="outline" className="mt-0.5">{viewData.status || "—"}</Badge>
                   </div>
                   <div><p className="text-xs text-muted-foreground">Product Code</p><p className="text-sm font-medium">{viewData.product_code}</p></div>
                   <div><p className="text-xs text-muted-foreground">Vendor Code</p><p className="text-sm font-medium">{viewData.vendor_code}</p></div>
