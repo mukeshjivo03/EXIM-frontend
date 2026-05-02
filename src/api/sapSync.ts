@@ -282,6 +282,28 @@ export async function getSyncLogs(): Promise<SyncLog[]> {
   return res.data ?? [];
 }
 
+export interface ReconciliationEntry {
+  "Doc No": string;
+  "Posting Date": string | null;
+  "Due Date": string | null;
+  "Doc Type": string;
+  Debit: number;
+  Credit: number;
+  OutstandingAmount: number;
+  "Days Overdue": number;
+  "Aging Bucket": string;
+}
+
+export async function getReconciliation(vendorCode: string): Promise<ReconciliationEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/reconciliation/", { params: { vendorCode } });
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.["Internal Reconciliation"])) return d["Internal Reconciliation"];
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
+
 // Open APs
 
 export interface OpenApEntry {
