@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -68,6 +69,8 @@ let lastSyncTime: Date | null = null;
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function EximAccountPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<BalanceEntry[]>(cachedEntries);
   const [synced, setSynced] = useState(hasSynced);
   const [syncing, setSyncing] = useState(false);
@@ -83,6 +86,13 @@ export default function EximAccountPage() {
   const [blinkEnabled, setBlinkEnabled] = useState(false);
 
   useEffect(() => { if (!hasSynced) handleSync(); }, []);
+
+  useEffect(() => {
+    const cardCode = searchParams.get("cardCode")?.trim();
+    if (cardCode) {
+      setSearch(cardCode);
+    }
+  }, [searchParams]);
 
   /* ── Sync ────────────────────────────────────────────────── */
 
@@ -242,6 +252,10 @@ export default function EximAccountPage() {
   function clearFilters() {
     setSearch("");
     setTypeFilter("ALL");
+  }
+
+  function handleVendorRowClick(entry: BalanceEntry) {
+    navigate(`/exim-account/${encodeURIComponent(entry.CardCode)}`, { state: { entry } });
   }
 
   return (
@@ -551,9 +565,11 @@ export default function EximAccountPage() {
                       <TableRow
                         key={entry.CardCode}
                         className={cn(
+                          "cursor-pointer",
                           isTop5 && "bg-amber-50/50 dark:bg-amber-900/10",
                           isOld && blinkEnabled && "row-blink"
                         )}
+                        onClick={() => handleVendorRowClick(entry)}
                       >
                         <TableCell className="font-medium">
                           {idx + 1}

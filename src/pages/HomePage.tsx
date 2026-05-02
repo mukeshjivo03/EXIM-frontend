@@ -356,15 +356,15 @@ export default function HomePage() {
   }, [filteredLinks]);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-8 lg:space-y-12 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-8 lg:space-y-12 animate-page">
       {/* ── Hero & Grid Layout ── */}
-      <div className="flex flex-col xl:flex-row gap-8">
+      <div className="flex flex-col xl:flex-row gap-5 sm:gap-8">
 
         {/* Main Content (Hero + Search + Grid) */}
-        <div className="flex-1 space-y-8">
+        <div className="flex-1 space-y-5 sm:space-y-8">
 
           {/* Hero Banner */}
-          <div className="relative overflow-hidden rounded-3xl h-[220px] sm:h-[260px] border border-black/10 dark:border-white/5 shadow-2xl group/hero">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[240px] sm:h-[260px] border border-black/10 dark:border-white/5 shadow-2xl group/hero">
             <div className="absolute inset-0 banner-sky" style={{ background: timeDisplay.skyGrad }} />
             <div className="absolute inset-0 banner-horizon" style={{ background: timeDisplay.horizonGrad }} />
 
@@ -385,27 +385,27 @@ export default function HomePage() {
             <div className="banner-haze banner-haze-2" />
 
             {/* Functional Stats Overlay */}
-            <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
-              <div className="flex gap-3">
-                <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-500">
+            <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 flex flex-col items-end gap-2">
+              <div className="flex gap-2 sm:gap-3">
+                <div className="glass-morphism px-2.5 py-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 text-white animate-in zoom-in duration-500">
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Shipments</p>
-                  <p className="text-lg font-black">{stockStats.count}</p>
+                  <p className="text-base sm:text-lg font-black">{stockStats.count}</p>
                 </div>
-                <div className="glass-morphism p-3 rounded-2xl border border-white/20 text-white animate-in zoom-in duration-700">
+                <div className="glass-morphism px-2.5 py-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 text-white animate-in zoom-in duration-700">
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Utilisation</p>
-                  <p className="text-lg font-black">{tankStats.util.toFixed(1)}%</p>
+                  <p className="text-base sm:text-lg font-black">{tankStats.util.toFixed(1)}%</p>
                 </div>
               </div>
               {weather && (
-                <div className="glass-morphism px-3 py-1.5 rounded-2xl border border-white/20 text-white flex items-center gap-2 animate-in zoom-in duration-700">
-                  <weather.Icon className="h-3.5 w-3.5 shrink-0" style={{ color: weather.color }} />
-                  <span className="text-sm font-black">{weather.temp}°C</span>
-                  <span className="text-[10px] font-semibold opacity-70">{weather.condition}</span>
+                <div className="glass-morphism px-2.5 py-1.5 sm:px-3 rounded-xl sm:rounded-2xl border border-white/20 text-white flex items-center gap-1.5 sm:gap-2 animate-in zoom-in duration-700 max-w-[180px] sm:max-w-none">
+                  <weather.Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" style={{ color: weather.color }} />
+                  <span className="text-xs sm:text-sm font-black">{weather.temp}°C</span>
+                  <span className="text-[10px] font-semibold opacity-70 hidden sm:inline">{weather.condition}</span>
                   {weather.city && (
                     <>
-                      <div className="w-px h-3 bg-white/20" />
-                      <MapPin className="h-3 w-3 opacity-50 shrink-0" />
-                      <span className="text-[10px] opacity-60 max-w-[80px] truncate">{weather.city}</span>
+                      <div className="w-px h-3 bg-white/20 hidden sm:block" />
+                      <MapPin className="h-3 w-3 opacity-50 shrink-0 hidden sm:block" />
+                      <span className="text-[10px] opacity-60 max-w-[80px] truncate hidden sm:inline">{weather.city}</span>
                     </>
                   )}
                 </div>
@@ -413,21 +413,21 @@ export default function HomePage() {
             </div>
 
             {/* Welcome text */}
-            <div className="relative z-10 flex flex-col justify-center h-full px-8 sm:px-12">
+            <div className="relative z-10 flex flex-col justify-end sm:justify-center h-full px-4 pb-5 sm:px-12 sm:pb-0">
               <div className="flex items-center gap-2 mb-2">
                 <div className="h-1 w-8 bg-primary rounded-full" />
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/80">
                   JIVO EXIM PORTAL
                 </p>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-xl">
+              <h1 className="text-xl sm:text-4xl font-black tracking-tight text-white drop-shadow-xl leading-tight pr-2 sm:pr-0">
                 Welcome back, {name?.split(" ")[0] ?? "User"}
               </h1>
-              <div className="flex items-center gap-3 mt-3">
-                <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md px-3 py-1">
+              <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
+                <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md px-2.5 py-1 text-[11px] sm:text-xs">
                   {name ?? "User"}
                 </Badge>
-                <p className="text-white/60 text-xs font-medium flex items-center gap-1.5">
+                <p className="text-white/70 text-[11px] sm:text-xs font-medium flex items-center gap-1.5">
                   <Activity className="h-3 w-3 text-emerald-400" />
                   System Online
                 </p>
@@ -445,7 +445,7 @@ export default function HomePage() {
                 <path d={WAVE_MID} className="wave-fill-mid" />
               </svg>
             </div>
-            <div className="absolute z-[5] pointer-events-none" style={{ bottom: "-12%", width: "280px", height: "155px", animation: "shipSail 40s linear infinite" }}>
+            <div className="absolute z-[5] pointer-events-none hidden sm:block" style={{ bottom: "-12%", width: "280px", height: "155px", animation: "shipSail 40s linear infinite" }}>
               <div className="ship-bob w-full h-full">
                 <CargoShip />
               </div>
@@ -458,7 +458,7 @@ export default function HomePage() {
           </div>
 
           {/* Search Modules */}
-          <div className="relative max-w-md mx-auto xl:mx-0">
+          <div className="relative w-full max-w-md mx-auto xl:mx-0">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
@@ -470,36 +470,36 @@ export default function HomePage() {
           </div>
 
           {/* Grouped Links */}
-          <div className="space-y-10">
+          <div className="space-y-7 sm:space-y-10">
             {Object.entries(grouped).map(([category, links]) => {
               if (links.length === 0) return null;
               return (
-                <div key={category} className="space-y-4">
+                <div key={category} className="space-y-3 sm:space-y-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                       {category}
                     </h2>
                     <div className="h-[1px] flex-1 bg-border/50" />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {links.map((link) => (
                       <Link
                         key={link.to}
                         to={link.to}
-                        className="group relative overflow-hidden rounded-2xl border bg-card p-5 flex items-start gap-4 transition-all hover:shadow-lg hover:-translate-y-1"
+                        className="group relative overflow-hidden rounded-2xl border bg-card p-4 sm:p-5 flex items-start gap-3 sm:gap-4 transition-all hover:shadow-lg hover:-translate-y-1"
                       >
                         <div className={cn(
-                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300",
+                          "flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300",
                           CATEGORY_STYLES[link.category as keyof typeof CATEGORY_STYLES]
                         )}>
-                          <link.icon className="h-6 w-6" />
+                          <link.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="font-bold text-base text-foreground truncate">{link.label}</p>
+                            <p className="font-bold text-sm sm:text-base text-foreground truncate">{link.label}</p>
                             <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-muted-foreground" />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{link.desc}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-1">{link.desc}</p>
                         </div>
                       </Link>
                     ))}
@@ -511,11 +511,11 @@ export default function HomePage() {
         </div>
 
         {/* ── Sidebar (Activity & Alerts) ── */}
-        <div className="w-full xl:w-[320px] space-y-6">
+        <div className="w-full xl:w-[320px] space-y-4 sm:space-y-6">
 
           {/* Alerts Card */}
           <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
-            <div className="bg-red-50 dark:bg-red-950/20 px-6 py-4 flex items-center justify-between border-b border-red-100 dark:border-red-900/30">
+            <div className="bg-red-50 dark:bg-red-950/20 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-red-100 dark:border-red-900/30">
               <h3 className="text-xs font-bold uppercase tracking-widest text-red-600 flex items-center gap-2">
                 <Bell className="h-3.5 w-3.5" /> Alerts
               </h3>
@@ -552,12 +552,12 @@ export default function HomePage() {
 
           {/* Activity Feed */}
           <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
-            <div className="px-6 py-4 flex items-center justify-between border-b">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b">
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <History className="h-3.5 w-3.5" /> Recent Activity
               </h3>
             </div>
-            <div className="p-4 relative">
+            <div className="p-3 sm:p-4 relative">
               {/* Timeline Line */}
               <div className="absolute left-[27px] top-6 bottom-6 w-[1px] bg-border" />
 
@@ -595,3 +595,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+
