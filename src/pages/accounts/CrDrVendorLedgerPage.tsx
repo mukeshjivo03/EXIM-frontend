@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Filter, Search } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Search } from "lucide-react";
 
 import {
   getReconciliation,
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Card,
   CardContent,
@@ -30,8 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-type ReconBucket = "ALL" | "0_30" | "31_60" | "61_90" | "90_PLUS";
 
 type LocationState = {
   entry?: BalanceEntry;
@@ -55,25 +54,12 @@ export default function EximAccountVendorPage() {
   );
   const [reconciliationRows, setReconciliationRows] = useState<ReconciliationEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bucket, setBucket] = useState<ReconBucket>("ALL");
   const [search, setSearch] = useState("");
-
-  const bucketLabelMap: Record<Exclude<ReconBucket, "ALL">, string> = {
-    "0_30": "0-30 Days",
-    "31_60": "31-60 Days",
-    "61_90": "61-90 Days",
-    "90_PLUS": "90+ Days",
-  };
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   function getDaysOverdue(row: ReconciliationEntry): number | null {
-    const raw = row["Days Overdue"];
-    const normalized = typeof raw === "number" ? raw : Number(String(raw).trim());
-    if (Number.isFinite(normalized)) return normalized;
-
-    if (!row["Due Date"]) return null;
-    const due = new Date(row["Due Date"]);
-    const diff = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24));
-    return Number.isFinite(diff) ? diff : null;
+    return row.DaysSinceLastTrans;
   }
 
   useEffect(() => {
@@ -97,8 +83,9 @@ export default function EximAccountVendorPage() {
 
         setReconciliationRows(recon);
       } catch (err) {
-        toast.error(getErrorMessage(err, `Failed to load reconciliation for ${vendorCode}`));
+        toast.error(getErrorMessage(err, `Failed to load Ledgerfor ${vendorCode}`));
       } finally {
+        
         setLoading(false);
       }
     }
@@ -113,36 +100,35 @@ export default function EximAccountVendorPage() {
   }, [vendorEntry]);
 
   const filteredRows = useMemo(() => {
-    const bucketFiltered = bucket === "ALL"
-      ? reconciliationRows
-      : reconciliationRows.filter((r) => String(r["Aging Bucket"] ?? "").trim() === bucketLabelMap[bucket]);
+    let base = reconciliationRows;
+
+    if (startDate) {
+      const start = new Date(startDate);
+      base = base.filter((r) => new Date(r.PostingDate) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      base = base.filter((r) => new Date(r.PostingDate) <= end);
+    }
 
     const q = search.trim().toLowerCase();
-    if (!q) return bucketFiltered;
+    if (!q) return base;
 
-    return bucketFiltered.filter(
+    return base.filter(
       (r) =>
-        String(r["Doc No"] ?? "").toLowerCase().includes(q) ||
-        String(r["Doc Type"] ?? "").toLowerCase().includes(q) ||
-        String(r["Aging Bucket"] ?? "").toLowerCase().includes(q)
+        String(r.SourceDocNo ?? "").toLowerCase().includes(q) ||
+        String(r.VoucherNo ?? "").toLowerCase().includes(q) ||
+        String(r.DocType ?? "").toLowerCase().includes(q) ||
+        String(r.Narration ?? "").toLowerCase().includes(q)
     );
-  }, [bucket, reconciliationRows, search]);
-
-  const bucketCounts = useMemo(() => {
-    return {
-      ALL: reconciliationRows.length,
-      "0_30": reconciliationRows.filter((r) => String(r["Aging Bucket"] ?? "").trim() === "0-30 Days").length,
-      "31_60": reconciliationRows.filter((r) => String(r["Aging Bucket"] ?? "").trim() === "31-60 Days").length,
-      "61_90": reconciliationRows.filter((r) => String(r["Aging Bucket"] ?? "").trim() === "61-90 Days").length,
-      "90_PLUS": reconciliationRows.filter((r) => String(r["Aging Bucket"] ?? "").trim() === "90+ Days").length,
-    } satisfies Record<ReconBucket, number>;
-  }, [reconciliationRows]);
+  }, [reconciliationRows, search, startDate, endDate]);
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Internal Reconciliation</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">General Ledger</h1>
           <p className="text-sm text-muted-foreground">
             Vendor code: {vendorCode}
           </p>
@@ -205,9 +191,9 @@ export default function EximAccountVendorPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Reconciliation Entries</CardTitle>
+              <CardTitle>Ledger Entries</CardTitle>
               <CardDescription>
-                Filter by overdue bucket and search by document/type
+                Search by document/type/narration
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">
@@ -220,31 +206,36 @@ export default function EximAccountVendorPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Doc No / Type / Bucket"
+                placeholder="Search Doc No / Type / Narration"
                 className="h-9 pl-8"
               />
             </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="gap-1.5">
-              <Filter className="h-3.5 w-3.5" />
-              Aging Bucket
-            </Badge>
-            <Button size="sm" variant={bucket === "ALL" ? "default" : "outline"} onClick={() => setBucket("ALL")}>
-              All ({bucketCounts.ALL})
-            </Button>
-            <Button size="sm" variant={bucket === "0_30" ? "default" : "outline"} onClick={() => setBucket("0_30")}>
-              0-30 days ({bucketCounts["0_30"]})
-            </Button>
-            <Button size="sm" variant={bucket === "31_60" ? "default" : "outline"} onClick={() => setBucket("31_60")}>
-              31-60 days ({bucketCounts["31_60"]})
-            </Button>
-            <Button size="sm" variant={bucket === "61_90" ? "default" : "outline"} onClick={() => setBucket("61_90")}>
-              61-90 days ({bucketCounts["61_90"]})
-            </Button>
-            <Button size="sm" variant={bucket === "90_PLUS" ? "default" : "outline"} onClick={() => setBucket("90_PLUS")}>
-              90+ days ({bucketCounts["90_PLUS"]})
-            </Button>
+            <div className="flex items-center gap-2">
+              <DatePicker
+                value={startDate}
+                onChange={setStartDate}
+                placeholder="Start Date"
+              />
+              <span className="text-muted-foreground text-sm">to</span>
+              <DatePicker
+                value={endDate}
+                onChange={setEndDate}
+                placeholder="End Date"
+              />
+              {(startDate || endDate) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="h-9 text-xs"
+                >
+                  Reset Dates
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -253,53 +244,61 @@ export default function EximAccountVendorPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Doc No</TableHead>
+                  <TableHead>Voucher No</TableHead>
                   <TableHead>Posting Date</TableHead>
-                  <TableHead>Due Date</TableHead>
+                  <TableHead>Doc Date</TableHead>
                   <TableHead>Doc Type</TableHead>
+                  <TableHead>Narration</TableHead>
                   <TableHead className="text-right">Debit</TableHead>
                   <TableHead className="text-right">Credit</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead className="text-right">Days Overdue</TableHead>
-                  <TableHead>Aging Bucket</TableHead>
+                  <TableHead className="text-right">Net Amount</TableHead>
+                  <TableHead className="text-right">FC Debit</TableHead>
+                  <TableHead className="text-right">FC Credit</TableHead>
+                  <TableHead className="text-right">Days Since Trans</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                       Loading reconciliation...
                     </TableCell>
                   </TableRow>
                 ) : filteredRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9}>
+                    <TableCell colSpan={12}>
                       <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                         <CheckCircle2 className="h-4 w-4" />
-                        No reconciliation rows for this filter
+                        No Ledgerrows for this search
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredRows.map((row, idx) => (
-                    <TableRow key={`${row["Doc No"]}-${row["Due Date"]}-${row["Doc Type"]}-${row.Debit}-${row.Credit}-${row.OutstandingAmount}-${idx}`}>
-                      <TableCell>{row["Doc No"]}</TableCell>
-                      <TableCell>{fmtDate(row["Posting Date"])}</TableCell>
-                      <TableCell>{fmtDate(row["Due Date"])}</TableCell>
-                      <TableCell>{row["Doc Type"]}</TableCell>
+                    <TableRow key={`${row.VoucherNo}-${row.SourceDocNo}-${idx}`}>
+                      <TableCell className="whitespace-nowrap font-medium">{row.SourceDocNo}</TableCell>
+                      <TableCell>{row.VoucherNo}</TableCell>
+                      <TableCell className="whitespace-nowrap">{fmtDate(row.PostingDate)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{fmtDate(row.DocumentDate)}</TableCell>
+                      <TableCell>{row.DocType}</TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={row.Narration}>
+                        {row.Narration}
+                      </TableCell>
                       <TableCell className="text-right">₹ {fmtDecimal(row.Debit)}</TableCell>
                       <TableCell className="text-right">₹ {fmtDecimal(row.Credit)}</TableCell>
                       <TableCell
                         className={cn(
                           "text-right font-semibold",
-                          row.OutstandingAmount < 0
+                          row.NetAmount < 0
                             ? "text-red-600 dark:text-red-400"
                             : "text-green-600 dark:text-green-400"
                         )}
                       >
-                        ₹ {fmtDecimal(row.OutstandingAmount)}
+                        ₹ {fmtDecimal(row.NetAmount)}
                       </TableCell>
-                      <TableCell className="text-right">{getDaysOverdue(row) ?? "—"}</TableCell>
-                      <TableCell>{row["Aging Bucket"]}</TableCell>
+                      <TableCell className="text-right">{fmtDecimal(row.FCDebit)}</TableCell>
+                      <TableCell className="text-right">{fmtDecimal(row.FCCredit)}</TableCell>
+                      <TableCell className="text-right">{row.DaysSinceLastTrans}</TableCell>
                     </TableRow>
                   ))
                 )}

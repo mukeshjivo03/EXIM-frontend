@@ -3,6 +3,7 @@ import { ReceiptText, Search, Filter, CircleDollarSign, Wallet, Building2 } from
 
 import { getOpenAps, type OpenApEntry } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
+import Guard from "@/components/Guard";
 import { Pagination } from "@/components/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -126,6 +127,7 @@ export default function OpenApsPage() {
   }
 
   return (
+    <Guard resource="sync_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open APs.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-center gap-2">
         <ReceiptText className="h-5 w-5 text-muted-foreground" />
@@ -312,5 +314,6 @@ export default function OpenApsPage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }

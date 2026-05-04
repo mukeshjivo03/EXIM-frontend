@@ -283,25 +283,23 @@ export async function getSyncLogs(): Promise<SyncLog[]> {
 }
 
 export interface ReconciliationEntry {
-  "Doc No": string;
-  "Posting Date": string | null;
-  "Due Date": string | null;
-  "Doc Type": string;
+  PostingDate: string;
+  DocumentDate: string;
+  VoucherNo: number;
+  DocType: string;
+  SourceDocNo: string;
+  Narration: string;
   Debit: number;
   Credit: number;
-  OutstandingAmount: number;
-  "Days Overdue": number;
-  "Aging Bucket": string;
+  NetAmount: number;
+  FCDebit: number;
+  FCCredit: number;
+  DaysSinceLastTrans: number;
 }
 
 export async function getReconciliation(vendorCode: string): Promise<ReconciliationEntry[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await api.get<any>("/sap-sync/reconciliation/", { params: { vendorCode } });
-  const d = res.data;
-  if (Array.isArray(d)) return d;
-  if (Array.isArray(d?.["Internal Reconciliation"])) return d["Internal Reconciliation"];
-  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
-  return key ? d[key] : [];
+  const res = await api.get<any>("/sap-sync/vendor/ledger", { params: { cardCode: vendorCode } });
+  return res.data?.vendor_ledger ?? [];
 }
 
 // Open APs
@@ -370,4 +368,26 @@ export async function getCustomerOutstanding(): Promise<CustomerOutstandingEntry
   if (Array.isArray(d?.data)) return d.data;
   const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
   return key ? d[key] : [];
+}
+
+// Customer Ledger
+
+export interface CustomerLedgerEntry {
+  PostingDate: string;
+  DocumentDate: string;
+  VoucherNo: number;
+  DocType: string;
+  SourceDocNo: string;
+  Narration: string;
+  Debit: number;
+  Credit: number;
+  NetAmount: number;
+  FCDebit: number;
+  FCCredit: number;
+  DaysSinceLastTrans: number;
+}
+
+export async function getCustomerLedger(cardCode: string): Promise<CustomerLedgerEntry[]> {
+  const res = await api.get<any>("/sap-sync/customer/ledger", { params: { cardCode } });
+  return res.data?.customer_ledger ?? [];
 }
