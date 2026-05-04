@@ -245,17 +245,17 @@ export default function CustomerOutstandingPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>S.No</TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardCode")}>Customer Code<SortIcon column="CardCode" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardName")}>Customer Name<SortIcon column="CardName" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("SlpName")}>Sales Employee<SortIcon column="SlpName" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Amount")}>Outstanding<SortIcon column="Outstanding Amount" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("DocNum")}>Invoice No<SortIcon column="DocNum" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("InvoiceDate")}>Invoice Date<SortIcon column="InvoiceDate" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Invoice")}>Days (Invoice)<SortIcon column="Since_Last_Invoice" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("InvoiceAmount")}>Invoice Amount<SortIcon column="InvoiceAmount" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("Transaction_Date")}>Last Payment Date<SortIcon column="Transaction_Date" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Transaction_Amount")}>Last Payment Amount<SortIcon column="Transaction_Amount" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Transaction")}>Days (Payment)<SortIcon column="Since_Last_Transaction" /></button></TableHead>
+                  <TableHead>Customer Code</TableHead>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead>Sales Employee</TableHead>
+                  <TableHead className="text-right">Outstanding</TableHead>
+                  <TableHead>Invoice No</TableHead>
+                  <TableHead>Invoice Date</TableHead>
+                  <TableHead className="text-right">Days (Invoice)</TableHead>
+                  <TableHead className="text-right">Invoice Amount</TableHead>
+                  <TableHead>Last Payment Date</TableHead>
+                  <TableHead className="text-right">Last Payment Amount</TableHead>
+                  <TableHead className="text-right">Days (Payment)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -18,6 +18,7 @@ import {
   TrendingUp,
   LineChart,
   Scale,
+  ReceiptText,
   ShoppingCart,
   Search,
   Bell,
