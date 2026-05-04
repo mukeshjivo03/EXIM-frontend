@@ -31,10 +31,11 @@ import DailyPricePage from "@/pages/commodity/DailyPricePage";
 import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
-import EximAccountPage from "@/pages/accounts/EximAccountPage";
-import EximAccountVendorPage from "@/pages/accounts/EximAccountVendorPage";
+import EximAccountPage from "@/pages/accounts/CrDrOutstandingPage";
+import EximAccountVendorPage from "@/pages/accounts/CrDrVendorLedgerPage";
 import OpenApsPage from "@/pages/accounts/OpenApsPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
+import CustomerLedgerPage from "@/pages/accounts/CustomerLedgerPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -246,7 +247,7 @@ function App() {
             <Route
               path="/accounts/open-aps"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredModules={["sync_balance_sheet"]}>
                   <OpenApsPage />
                 </ProtectedRoute>
               }
@@ -256,6 +257,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
                   <CustomerOutstandingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/customer-outstanding/:customerCode"
+              element={
+                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                  <CustomerLedgerPage />
                 </ProtectedRoute>
               }
             />

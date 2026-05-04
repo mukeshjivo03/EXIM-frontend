@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowDown,
   ArrowUp,
@@ -68,6 +69,7 @@ export default function CustomerOutstandingPage() {
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("Outstanding Amount");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const navigate = useNavigate();
   const perPage = 20;
 
   async function loadData() {
@@ -243,17 +245,17 @@ export default function CustomerOutstandingPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>S.No</TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardCode")}>CardCode<SortIcon column="CardCode" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardName")}>CardName<SortIcon column="CardName" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("SlpName")}>SlpName<SortIcon column="SlpName" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Amount")}>Outstanding Amount<SortIcon column="Outstanding Amount" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("DocNum")}>DocNum<SortIcon column="DocNum" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("InvoiceDate")}>InvoiceDate<SortIcon column="InvoiceDate" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Invoice")}>Since_Last_Invoice<SortIcon column="Since_Last_Invoice" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("InvoiceAmount")}>InvoiceAmount<SortIcon column="InvoiceAmount" /></button></TableHead>
-                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("Transaction_Date")}>Transaction_Date<SortIcon column="Transaction_Date" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Transaction_Amount")}>Transaction_Amount<SortIcon column="Transaction_Amount" /></button></TableHead>
-                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Transaction")}>Since_Last_Transaction<SortIcon column="Since_Last_Transaction" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardCode")}>Customer Code<SortIcon column="CardCode" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardName")}>Customer Name<SortIcon column="CardName" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("SlpName")}>Sales Employee<SortIcon column="SlpName" /></button></TableHead>
+                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Amount")}>Outstanding<SortIcon column="Outstanding Amount" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("DocNum")}>Invoice No<SortIcon column="DocNum" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("InvoiceDate")}>Invoice Date<SortIcon column="InvoiceDate" /></button></TableHead>
+                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Invoice")}>Days (Invoice)<SortIcon column="Since_Last_Invoice" /></button></TableHead>
+                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("InvoiceAmount")}>Invoice Amount<SortIcon column="InvoiceAmount" /></button></TableHead>
+                  <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("Transaction_Date")}>Last Payment Date<SortIcon column="Transaction_Date" /></button></TableHead>
+                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Transaction_Amount")}>Last Payment Amount<SortIcon column="Transaction_Amount" /></button></TableHead>
+                  <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Since_Last_Transaction")}>Days (Payment)<SortIcon column="Since_Last_Transaction" /></button></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -273,7 +275,23 @@ export default function CustomerOutstandingPage() {
                   </TableRow>
                 ) : (
                   paginated.map((row, i) => (
-                    <TableRow key={`${row.CardCode}-${row.DocNum ?? "no-doc"}-${i}`} className="hover:bg-muted/40">
+                    <TableRow
+                      key={`${row.CardCode}-${row.DocNum ?? "no-doc"}-${i}`}
+                      className="hover:bg-muted/40 cursor-pointer"
+                      onClick={() =>
+                        navigate(`/accounts/customer-outstanding/${encodeURIComponent(row.CardCode)}`, {
+                          state: {
+                            entry: {
+                              CardCode: row.CardCode,
+                              CardName: row.CardName,
+                              Balance: row["Outstanding Amount"],
+                              "Last Transaction Date": row.Transaction_Date,
+                              "Last Transanction Amount": row.Transaction_Amount,
+                            },
+                          },
+                        })
+                      }
+                    >
                       <TableCell>{(page - 1) * perPage + i + 1}</TableCell>
                       <TableCell className="font-mono text-xs">{row.CardCode ?? "-"}</TableCell>
                       <TableCell>{row.CardName ?? "-"}</TableCell>
