@@ -247,7 +247,7 @@ function App() {
             <Route
               path="/accounts/open-aps"
               element={
-                <ProtectedRoute requiredModules={["sync_balance_sheet"]}>
+                <ProtectedRoute requiredModules={["balance_sheet"]}>
                   <OpenApsPage />
                 </ProtectedRoute>
               }
