@@ -31,7 +31,7 @@ import DailyPricePage from "@/pages/commodity/DailyPricePage";
 import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 
 // Accounts
-import EximAccountPage from "@/pages/accounts/EximAccountPage";
+import EximAccountPage from "@/pages/accounts/CrDrOutstandingPage";
 import EximAccountVendorPage from "@/pages/accounts/EximAccountVendorPage";
 import OpenApsPage from "@/pages/accounts/OpenApsPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
