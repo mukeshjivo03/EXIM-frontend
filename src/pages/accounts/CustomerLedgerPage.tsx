@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -65,6 +66,7 @@ export default function CustomerLedgerPage() {
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadData() {
@@ -126,6 +128,37 @@ export default function CustomerLedgerPage() {
         String(r.Narration ?? "").toLowerCase().includes(q)
     );
   }, [ledgerRows, search, startDate, endDate]);
+
+  const selectedNetSum = useMemo(() => {
+    return Array.from(selectedRows).reduce((acc, rowId) => {
+      const [voucherNo, sourceDocNo] = rowId.split("|");
+      const row = ledgerRows.find(
+        (r) => String(r.VoucherNo) === voucherNo && String(r.SourceDocNo) === sourceDocNo
+      );
+      return acc + (row?.NetAmount ?? 0);
+    }, 0);
+  }, [selectedRows, ledgerRows]);
+
+  const outstandingBalance = customerEntry?.Balance ?? 0;
+  const difference = outstandingBalance - selectedNetSum;
+
+  const toggleSelectAll = () => {
+    if (selectedRows.size === filteredRows.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(filteredRows.map((r) => `${r.VoucherNo}|${r.SourceDocNo}`)));
+    }
+  };
+
+  const toggleRow = (rowId: string) => {
+    const next = new Set(selectedRows);
+    if (next.has(rowId)) {
+      next.delete(rowId);
+    } else {
+      next.add(rowId);
+    }
+    setSelectedRows(next);
+  };
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
@@ -204,6 +237,44 @@ export default function CustomerLedgerPage() {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader className="py-4">
+            <CardTitle className="text-base">Selected Net Amount</CardTitle>
+            <CardDescription>Sum of Net Amount for selected records</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className={cn(
+              "text-2xl font-bold",
+              selectedNetSum < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+            )}>
+              ₹ {fmtDecimal(selectedNetSum)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {selectedRows.size} records selected
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-orange-50/50 dark:bg-orange-950/10 border-orange-200/50 dark:border-orange-800/50">
+          <CardHeader className="py-4">
+            <CardTitle className="text-base">Difference</CardTitle>
+            <CardDescription>Outstanding Balance - Selected Net Amount</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className={cn(
+              "text-2xl font-bold",
+              difference < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+            )}>
+              ₹ {fmtDecimal(difference)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Remaining balance after selected credits
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="card-hover shimmer-hover">
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -213,9 +284,21 @@ export default function CustomerLedgerPage() {
                 Search by document/type/narration
               </CardDescription>
             </div>
-            <Badge variant="outline" className="text-xs">
-              {loading ? "Loading..." : `${filteredRows.length} rows`}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {selectedRows.size > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSelectedRows(new Set())}
+                  className="h-8 text-xs"
+                >
+                  Clear Selection
+                </Button>
+              )}
+              <Badge variant="outline" className="text-xs">
+                {loading ? "Loading..." : `${filteredRows.length} rows`}
+              </Badge>
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative w-full sm:w-64">
@@ -260,6 +343,13 @@ export default function CustomerLedgerPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={filteredRows.length > 0 && selectedRows.size === filteredRows.length}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>Doc No</TableHead>
                   <TableHead>Voucher No</TableHead>
                   <TableHead>Posting Date</TableHead>
@@ -277,13 +367,13 @@ export default function CustomerLedgerPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                       Loading ledger...
                     </TableCell>
                   </TableRow>
                 ) : filteredRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12}>
+                    <TableCell colSpan={13}>
                       <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                         <CheckCircle2 className="h-4 w-4" />
                         No ledger rows for this search
@@ -291,43 +381,57 @@ export default function CustomerLedgerPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRows.map((row, idx) => (
-                    <TableRow key={`${row.VoucherNo}-${row.SourceDocNo}-${idx}`}>
-                      <TableCell className="whitespace-nowrap font-medium">{row.SourceDocNo}</TableCell>
-                      <TableCell>{row.VoucherNo}</TableCell>
-                      <TableCell className="whitespace-nowrap">{fmtDate(row.PostingDate)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{fmtDate(row.DocumentDate)}</TableCell>
-                      <TableCell>{row.DocType}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={row.Narration}>
-                        {row.Narration}
-                      </TableCell>
-                      <TableCell className="text-right">₹ {fmtDecimal(row.Debit)}</TableCell>
-                      <TableCell className="text-right">₹ {fmtDecimal(row.Credit)}</TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-semibold",
-                          row.NetAmount < 0
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-green-600 dark:text-green-400"
-                        )}
+                  filteredRows.map((row, idx) => {
+                    const rowId = `${row.VoucherNo}|${row.SourceDocNo}`;
+                    const isSelected = selectedRows.has(rowId);
+                    return (
+                      <TableRow 
+                        key={`${row.VoucherNo}-${row.SourceDocNo}-${idx}`}
+                        className={cn(isSelected && "bg-muted/50")}
                       >
-                        ₹ {fmtDecimal(row.NetAmount)}
-                      </TableCell>
-                      <TableCell className="text-right">{fmtDecimal(row.FCDebit)}</TableCell>
-                      <TableCell className="text-right">{fmtDecimal(row.FCCredit)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant="outline"
+                        <TableCell>
+                          <Checkbox 
+                            checked={isSelected}
+                            onCheckedChange={() => toggleRow(rowId)}
+                            aria-label={`Select row ${idx}`}
+                          />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap font-medium">{row.SourceDocNo}</TableCell>
+                        <TableCell>{row.VoucherNo}</TableCell>
+                        <TableCell className="whitespace-nowrap">{fmtDate(row.PostingDate)}</TableCell>
+                        <TableCell className="whitespace-nowrap">{fmtDate(row.DocumentDate)}</TableCell>
+                        <TableCell>{row.DocType}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={row.Narration}>
+                          {row.Narration}
+                        </TableCell>
+                        <TableCell className="text-right">₹ {fmtDecimal(row.Debit)}</TableCell>
+                        <TableCell className="text-right">₹ {fmtDecimal(row.Credit)}</TableCell>
+                        <TableCell
                           className={cn(
-                            "text-xs font-semibold tabular-nums min-w-[40px] justify-center",
-                            txAgeBadgeClass(row.DaysSinceLastTrans)
+                            "text-right font-semibold",
+                            row.NetAmount < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-green-600 dark:text-green-400"
                           )}
                         >
-                          {row.DaysSinceLastTrans ?? "-"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          ₹ {fmtDecimal(row.NetAmount)}
+                        </TableCell>
+                        <TableCell className="text-right">{fmtDecimal(row.FCDebit)}</TableCell>
+                        <TableCell className="text-right">{fmtDecimal(row.FCCredit)}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs font-semibold tabular-nums min-w-[40px] justify-center",
+                              txAgeBadgeClass(row.DaysSinceLastTrans)
+                            )}
+                          >
+                            {row.DaysSinceLastTrans ?? "-"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

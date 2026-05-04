@@ -89,7 +89,7 @@ const quickLinks: QuickLink[] = [
   { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", modules: ["exim_rates"] },
   { to: "/exim-account", label: "CR/DR Outstanding", icon: BookOpen, desc: "Account & balance", category: "Commercials", modules: ["debitentry"] },
   { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: ReceiptText, desc: "Customer balance sheet", category: "Commercials", modules: ["customer_balance_sheet"] },
-  { to: "/accounts/open-aps", label: "Open APs", icon: FileText, desc: "Open payable invoices", category: "Commercials", modules: ["sync_balance_sheet"] },
+  { to: "/accounts/open-aps", label: "Open APs", icon: FileText, desc: "Open payable invoices", category: "Commercials", modules: ["balance_sheet"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", modules: ["dailyprice"] },
   { to: "/commodity/jivo-rates", label: "Jivo Rates", icon: LineChart, desc: "Jivo commodity rates", category: "Commercials", modules: ["jivorates"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", modules: ["advancelicenseheaders"] },
