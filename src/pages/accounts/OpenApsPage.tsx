@@ -15,6 +15,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 
 const COLS = 14;
+const DEFAULT_FROM_DATE = "2026-04-01";
 
 function fmtDate(value: string | null): string {
   if (!value) return "-";
@@ -43,7 +44,7 @@ export default function OpenApsPage() {
   const [search, setSearch] = useState("");
   const [vendor, setVendor] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [fromDate, setFromDate] = useState("");
+  const [fromDate, setFromDate] = useState(DEFAULT_FROM_DATE);
   const [toDate, setToDate] = useState("");
   const perPage = 20;
 
@@ -121,7 +122,7 @@ export default function OpenApsPage() {
     setSearch("");
     setVendor("");
     setInvoiceNumber("");
-    setFromDate("");
+    setFromDate(DEFAULT_FROM_DATE);
     setToDate("");
     setPage(1);
   }
