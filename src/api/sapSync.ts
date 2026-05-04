@@ -345,3 +345,29 @@ export async function getOpenAps(): Promise<OpenApEntry[]> {
   const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
   return key ? d[key] : [];
 }
+
+// Customer Outstanding
+
+export interface CustomerOutstandingEntry {
+  CardCode: string;
+  CardName: string;
+  SlpName: string | null;
+  "Outstanding Amount": number | null;
+  DocNum: number | null;
+  InvoiceDate: string | null;
+  Since_Last_Invoice: number | null;
+  InvoiceAmount: number | null;
+  Transaction_Date: string | null;
+  Transaction_Amount: number | null;
+  Since_Last_Transaction: number | null;
+}
+
+export async function getCustomerOutstanding(): Promise<CustomerOutstandingEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/custa/balance-sheet/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
