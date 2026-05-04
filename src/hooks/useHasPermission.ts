@@ -17,6 +17,8 @@ const RESOURCE_ALIASES: Record<string, string[]> = {
   directorinventorty: ["director_inventory", "director_inventorty", "directorinventory"],
   director_report: ["directorreport"],
   directorreport: ["director_report"],
+  customer_balance_sheet: ["view_customer_balance_sheet"],
+  view_customer_balance_sheet: ["customer_balance_sheet"],
 };
 
 export function useHasPermission() {
@@ -34,6 +36,7 @@ export function useHasPermission() {
         const normalizedActions = actions.map((a) => a.toLowerCase());
         if (normalizedActions.includes(normalizedAction)) return true;
         if (normalizedAction === "view") {
+          if (normalizedActions.includes(`view_${key.toLowerCase()}`)) return true;
           return fallbackActionsForView.some((fallbackAction) =>
             normalizedActions.includes(fallbackAction)
           );

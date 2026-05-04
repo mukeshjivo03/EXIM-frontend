@@ -34,6 +34,7 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 import EximAccountPage from "@/pages/accounts/EximAccountPage";
 import EximAccountVendorPage from "@/pages/accounts/EximAccountVendorPage";
 import OpenApsPage from "@/pages/accounts/OpenApsPage";
+import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -247,6 +248,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OpenApsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/customer-outstanding"
+              element={
+                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                  <CustomerOutstandingPage />
                 </ProtectedRoute>
               }
             />
