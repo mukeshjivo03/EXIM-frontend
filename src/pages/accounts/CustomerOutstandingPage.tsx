@@ -24,12 +24,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-const COLS = 12;
+const COLS = 14;
 type SortKey =
   | "CardCode"
   | "CardName"
   | "SlpName"
   | "Outstanding Amount"
+  | "Outstanding After 1-Apr-26"
+  | "Outstanding Before 1-Apr-26"
   | "DocNum"
   | "InvoiceDate"
   | "Since_Last_Invoice"
@@ -57,6 +59,10 @@ function txAgeBadgeClass(value: number | null): string {
   if (value > 15) return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800";
   if (value > 7) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800";
   return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800";
+}
+
+function outstandingBeforeFirstApril(row: CustomerOutstandingEntry): number {
+  return Number(row["Outstanding Amount"] ?? 0) - Number(row["Outstanding After 1-Apr-26"] ?? 0);
 }
 
 export default function CustomerOutstandingPage() {
@@ -105,8 +111,8 @@ export default function CustomerOutstandingPage() {
       String(row.DocNum ?? "").includes(q)
     );
     return [...base].sort((a, b) => {
-      const va = a[sortKey];
-      const vb = b[sortKey];
+      const va = sortKey === "Outstanding Before 1-Apr-26" ? outstandingBeforeFirstApril(a) : a[sortKey];
+      const vb = sortKey === "Outstanding Before 1-Apr-26" ? outstandingBeforeFirstApril(b) : b[sortKey];
       let cmp = 0;
       if (typeof va === "number" || va === null) {
         cmp = Number(va ?? 0) - Number(vb ?? 0);
@@ -141,7 +147,7 @@ export default function CustomerOutstandingPage() {
       return;
     }
     setSortKey(key);
-    setSortDir(key === "Outstanding Amount" ? "desc" : "asc");
+    setSortDir(key === "Outstanding Amount" || key === "Outstanding After 1-Apr-26" || key === "Outstanding Before 1-Apr-26" ? "desc" : "asc");
   }
 
   function SortIcon({ column }: { column: SortKey }) {
@@ -248,7 +254,24 @@ export default function CustomerOutstandingPage() {
                   <TableHead>Customer Code</TableHead>
                   <TableHead>Customer Name</TableHead>
                   <TableHead>Sales Employee</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
+                  <TableHead className="text-right">
+                    <button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Amount")}>
+                      Total Outstanding
+                      <SortIcon column="Outstanding Amount" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding After 1-Apr-26")}>
+                      Outstanding After 1st April
+                      <SortIcon column="Outstanding After 1-Apr-26" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Before 1-Apr-26")}>
+                      Outstanding Before 1st April
+                      <SortIcon column="Outstanding Before 1-Apr-26" />
+                    </button>
+                  </TableHead>
                   <TableHead>Invoice No</TableHead>
                   <TableHead>Invoice Date</TableHead>
                   <TableHead className="text-right">Days (Invoice)</TableHead>
@@ -303,6 +326,12 @@ export default function CustomerOutstandingPage() {
                           </Badge>
                           {fmtNum(row["Outstanding Amount"])}
                         </div>
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${Number(row["Outstanding After 1-Apr-26"] ?? 0) < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                        {fmtNum(row["Outstanding After 1-Apr-26"])}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${outstandingBeforeFirstApril(row) < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                        {fmtNum(outstandingBeforeFirstApril(row))}
                       </TableCell>
                       <TableCell>{row.DocNum ?? "-"}</TableCell>
                       <TableCell>{fmtDate(row.InvoiceDate)}</TableCell>

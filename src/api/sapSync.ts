@@ -351,6 +351,7 @@ export interface CustomerOutstandingEntry {
   CardName: string;
   SlpName: string | null;
   "Outstanding Amount": number | null;
+  "Outstanding After 1-Apr-26": number | null;
   DocNum: number | null;
   InvoiceDate: string | null;
   Since_Last_Invoice: number | null;
