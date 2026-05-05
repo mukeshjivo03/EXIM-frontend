@@ -34,6 +34,7 @@ import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
 import EximAccountPage from "@/pages/accounts/CrDrOutstandingPage";
 import EximAccountVendorPage from "@/pages/accounts/CrDrVendorLedgerPage";
 import OpenApsPage from "@/pages/accounts/OpenApsPage";
+import OpenArsPage from "@/pages/accounts/OpenArsPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
 import CustomerLedgerPage from "@/pages/accounts/CustomerLedgerPage";
 
@@ -249,6 +250,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["balance_sheet"]}>
                   <OpenApsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/open-ars"
+              element={
+                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                  <OpenArsPage />
                 </ProtectedRoute>
               }
             />
