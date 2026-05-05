@@ -371,6 +371,16 @@ export async function getCustomerOutstanding(): Promise<CustomerOutstandingEntry
   return key ? d[key] : [];
 }
 
+export async function getCustomerOutstandingBalance(startDate: string, endDate: string): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/customer/balance/", { params: { startDate, endDate } });
+  const d = res.data;
+  if (typeof d?.Balance === "number") return d.Balance;
+  if (Array.isArray(d?.data) && typeof d.data[0]?.Balance === "number") return d.data[0].Balance;
+  if (typeof d?.data?.Balance === "number") return d.data.Balance;
+  return 0;
+}
+
 // Customer Ledger
 
 export interface CustomerLedgerEntry {

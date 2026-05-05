@@ -13,10 +13,12 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format, subDays } from "date-fns";
 
-import { getCustomerOutstanding, type CustomerOutstandingEntry } from "@/api/sapSync";
+import { getCustomerOutstanding, getCustomerOutstandingBalance, type CustomerOutstandingEntry } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
+import Guard from "@/components/Guard";
 import { Pagination } from "@/components/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Label } from "@/components/ui/label";
 
 const COLS = 14;
 type SortKey =
@@ -83,6 +87,11 @@ export default function CustomerOutstandingPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showAll, setShowAll] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [balanceStartDate, setBalanceStartDate] = useState(format(subDays(new Date(), 7), "yyyy-MM-dd"));
+  const [balanceEndDate, setBalanceEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [rangeBalance, setRangeBalance] = useState<number | null>(null);
+  const [rangeLoading, setRangeLoading] = useState(false);
+  const [rangeError, setRangeError] = useState("");
   const navigate = useNavigate();
   const perPage = 20;
 
@@ -212,7 +221,25 @@ export default function CustomerOutstandingPage() {
     setSelectedRows(next);
   };
 
+  async function loadRangeBalance() {
+    setRangeError("");
+    setRangeLoading(true);
+    try {
+      const balance = await getCustomerOutstandingBalance(balanceStartDate, balanceEndDate);
+      setRangeBalance(balance);
+    } catch (err) {
+      const msg = getErrorMessage(err, "Failed to fetch customer balance for selected date range");
+      setRangeError(msg);
+      toast.error(msg);
+    } finally {
+      setRangeLoading(false);
+    }
+  }
+
+  const isInvalidRange = !!balanceStartDate && !!balanceEndDate && balanceStartDate > balanceEndDate;
+
   return (
+    <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer outstanding.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
@@ -248,6 +275,43 @@ export default function CustomerOutstandingPage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {rangeError && <p className="text-sm text-destructive">{rangeError}</p>}
+
+      <Card className="card-hover">
+        <CardHeader>
+          <CardTitle>Outstanding Balance By Date Range</CardTitle>
+          <CardDescription>Find customer outstanding balance between selected dates</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+            <div className="space-y-1.5">
+              <Label>Start Date</Label>
+              <DatePicker value={balanceStartDate} onChange={(v) => setBalanceStartDate(v || "")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Date</Label>
+              <DatePicker value={balanceEndDate} onChange={(v) => setBalanceEndDate(v || "")} />
+            </div>
+            <div className="flex items-end">
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={loadRangeBalance}
+                disabled={rangeLoading || !balanceStartDate || !balanceEndDate || isInvalidRange}
+              >
+                {rangeLoading ? "Fetching..." : "Find Balance"}
+              </Button>
+            </div>
+          </div>
+          {isInvalidRange && <p className="text-sm text-destructive">Start date cannot be after end date.</p>}
+          <div className="rounded-lg border p-4 bg-muted/20 w-full max-w-2xl">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Outstanding Balance</p>
+            <p className={cn("text-2xl font-bold mt-1", (rangeBalance ?? 0) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+              {rangeBalance === null ? "—" : `₹ ${fmtNum(rangeBalance)}`}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card className={cn("card-hover transition-all duration-300", stats.isSelectionActive && "ring-2 ring-primary bg-primary/5 shadow-md")}>
@@ -484,5 +548,6 @@ export default function CustomerOutstandingPage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }
