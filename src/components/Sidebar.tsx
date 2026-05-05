@@ -163,10 +163,7 @@ function SectionLabel({
   if (collapsed) return null;
   return (
     <span
-      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive
-          ? "text-foreground"
-          : "text-muted-foreground"
-        }`}
+      className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors text-foreground/80`}
     >
       {isActive && (
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary mr-1.5 align-middle" />
