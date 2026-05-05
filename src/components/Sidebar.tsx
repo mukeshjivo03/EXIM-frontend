@@ -103,8 +103,9 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: "Accounts",
     links: [
-      { to: "/exim-account",        label: "Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
+      { to: "/exim-account",        label: "Oil Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
       { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: ReceiptText, modules: ["customer_balance_sheet"] },
+      { to: "/accounts/open-ars",   label: "Open ARs",          icon: ReceiptText, modules: ["customer_balance_sheet"] },
       { to: "/accounts/open-aps",   label: "Open APs",          icon: ReceiptText, modules: ["balance_sheet"] },
       { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: Receipt, modules: ["open_grpos"] },
     ],

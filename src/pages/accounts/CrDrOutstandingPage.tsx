@@ -264,10 +264,10 @@ export default function EximAccountPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">
-            Dr/Cr Outstanding
+             Oil Dr/Cr Outstanding
           </h1>
           <p className="text-sm text-muted-foreground">
-            Dr/Cr outstanding balances from SAP
+            Oil Dr/Cr outstanding balances from SAP
             {syncedAt && (
               <span className="text-muted-foreground/60">
                 {" "}
@@ -407,7 +407,7 @@ export default function EximAccountPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Dr/Cr Outstanding</CardTitle>
+              <CardTitle>Oil Dr/Cr Outstanding</CardTitle>
               <CardDescription>
                 {synced
                   ? hasFilters

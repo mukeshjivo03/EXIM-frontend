@@ -371,6 +371,38 @@ export async function getCustomerOutstanding(): Promise<CustomerOutstandingEntry
   return key ? d[key] : [];
 }
 
+// Open ARs
+
+export interface OpenArEntry {
+  "Invoice Num": number;
+  "Invoice Date": string | null;
+  "Invoice Due Date": string | null;
+  "Vendor Code": string;
+  "Vendor Name": string;
+  "Invoice Total": number;
+  "Days Open": number | null;
+  Comments: string | null;
+  Address: string | null;
+  Address2: string | null;
+  ShipToCode: string | null;
+  "Dispatch Date": string | null;
+  "Bilty Num": string | null;
+  "Bilty Date": string | null;
+  Transporter: string | null;
+  "Vehicle Number": string | null;
+}
+
+export async function getOpenArs(): Promise<OpenArEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/open-ar/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.["Open ARs"])) return d["Open ARs"];
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
+
 export async function getCustomerOutstandingBalance(startDate: string, endDate: string): Promise<number> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await api.get<any>("/sap-sync/customer/balance/", { params: { startDate, endDate } });
