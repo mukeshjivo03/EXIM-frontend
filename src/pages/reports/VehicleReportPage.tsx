@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown } from "lucide-react";
 
 import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
-
-// ... rest of imports unchanged
-
-// (I will provide the whole file or at least the relevant parts)
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 type StatusKey = "ON_THE_WAY" | "OUT_SIDE_FACTORY" | "UNDER_LOADING" | "IN_CONTRACT";
@@ -46,8 +40,6 @@ const TABS: { key: StatusKey; label: string; color: string; badge: string }[] = 
   },
 ];
 
-
-
 function fmtMts(n: number) {
   return n.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
@@ -63,36 +55,42 @@ function flattenVehicles(vehicles: VehicleReport[]): FlatRow[] {
 function daysRemaining(eta: string | null): number | null {
   if (!eta) return null;
   const [y, m, d] = eta.split("-").map(Number);
-  const etaDate = new Date(y, m - 1, d);  // local midnight
+  const etaDate = new Date(y, m - 1, d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.round((etaDate.getTime() - today.getTime()) / 86400000);
 }
 
 function fmtDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "-";
   const day = d.getDate();
   const ord = day === 1 || day === 21 || day === 31 ? "st"
-            : day === 2 || day === 22 ? "nd"
-            : day === 3 || day === 23 ? "rd"
-            : "th";
+    : day === 2 || day === 22 ? "nd"
+    : day === 3 || day === 23 ? "rd"
+    : "th";
   return `${day}${ord} ${d.toLocaleString("en-IN", { month: "long" })} ${d.getFullYear()}`;
+}
+
+function fmtRate(rate?: number | null): string {
+  if (rate === null || rate === undefined || Number.isNaN(Number(rate))) return "-";
+  return Number(rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  function toggleExpand(vehicleNumber: string) {
+  function toggleExpand(vehicleKey: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(vehicleNumber)) next.delete(vehicleNumber);
-      else next.add(vehicleNumber);
+      if (next.has(vehicleKey)) next.delete(vehicleKey);
+      else next.add(vehicleKey);
       return next;
     });
   }
+
   const [data, setData] = useState<Record<StatusKey, VehicleReport[]>>({
     ON_THE_WAY: [],
     OUT_SIDE_FACTORY: [],
@@ -113,20 +111,24 @@ export default function VehicleReportPage() {
       if (status === "IN_CONTRACT") {
         const stockStatuses = await getStockStatuses({ status: "IN_CONTRACT" });
         res = stockStatuses.map((s) => ({
-        vehicle_number: s.vehicle_number || "—",
-        items: [
-        {
-        item_code: s.item_code,
-        item_name: s.item_name || s.item_code,
-        vendor_name: s.vendor_name || s.vendor_code,
-        total_quantity_in_litre: parseFloat(s.quantity_in_litre || "0"),
-        total_quantity_in_mts: parseFloat(s.quantity) / 1000,
-        eta: s.eta || null,
-        status: s.status,
-        job_work: s.job_work_vendor || null,
-        },
-        ],
-        }));      } else {
+          vehicle_number: s.vehicle_number || "-",
+          transporter: s.transporter || null,
+          items: [
+            {
+              item_code: s.item_code,
+              item_name: s.item_name || s.item_code,
+              vendor_code: s.vendor_code,
+              vendor_name: s.vendor_name || s.vendor_code,
+              total_quantity_in_litre: parseFloat(s.quantity_in_litre || "0"),
+              total_quantity_in_mts: parseFloat(s.quantity) / 1000,
+              eta: s.eta || null,
+              status: s.status,
+              job_work: s.job_work_vendor || null,
+              rate: Number.parseFloat(s.rate || "0"),
+            },
+          ],
+        }));
+      } else {
         res = await getVehicleReport(status);
       }
       setData((prev) => ({ ...prev, [status]: res }));
@@ -149,7 +151,6 @@ export default function VehicleReportPage() {
   const rawVehicles = data[activeTab];
   const rows = flattenVehicles(rawVehicles);
 
-  /** Sort vehicles by their worst (most-overdue) ETA item, descending */
   const sortedVehicles = useMemo(() => {
     return [...rawVehicles].sort((a, b) => {
       const worstA = Math.min(...a.items.map((i) => daysRemaining(i.eta) ?? Infinity));
@@ -181,7 +182,6 @@ export default function VehicleReportPage() {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Vehicle Report</h1>
@@ -193,7 +193,6 @@ export default function VehicleReportPage() {
         </Button>
       </div>
 
-      {/* Insight cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
           <CardContent className="p-4 flex flex-col gap-1">
@@ -247,7 +246,6 @@ export default function VehicleReportPage() {
         </Card>
       </div>
 
-      {/* Status tabs */}
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => {
           const count = data[t.key].length;
@@ -275,7 +273,6 @@ export default function VehicleReportPage() {
         })}
       </div>
 
-      {/* Table card */}
       <Card className={cn("border-2", tab.color)}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -307,8 +304,10 @@ export default function VehicleReportPage() {
                   <TableRow>
                     <TableHead className="w-10">S.No</TableHead>
                     <TableHead>Vehicle No.</TableHead>
+                    <TableHead>Transporter</TableHead>
                     <TableHead>Vendor</TableHead>
                     <TableHead>Item</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
                     <TableHead>Days</TableHead>
                     <TableHead>ETA</TableHead>
@@ -317,7 +316,8 @@ export default function VehicleReportPage() {
                 <TableBody>
                   {sortedVehicles.map((v, vIdx) => {
                     const isMulti = v.items.length > 1;
-                    const isOpen = expanded.has(v.vehicle_number);
+                    const vehicleKey = `${v.vehicle_number}-${vIdx}`;
+                    const isOpen = expanded.has(vehicleKey);
                     const vehicleTotalMts = v.items.reduce((s, i) => s + i.total_quantity_in_mts, 0);
                     const worstEta = v.items.reduce<string | null>((worst, i) => {
                       if (!i.eta) return worst;
@@ -329,7 +329,7 @@ export default function VehicleReportPage() {
                     const daysCell = (
                       <TableCell className="tabular-nums">
                         {(() => {
-                          if (worstDays === null) return <span className="text-sm text-muted-foreground">—</span>;
+                          if (worstDays === null) return <span className="text-sm text-muted-foreground">-</span>;
                           return (
                             <span className={cn(
                               "text-sm font-medium",
@@ -346,18 +346,17 @@ export default function VehicleReportPage() {
                     );
 
                     if (!isMulti) {
-                      // Single item — render flat row
                       const item = v.items[0];
                       return (
-                        <TableRow key={v.vehicle_number} className={vIdx % 2 === 0 ? "" : "bg-muted/20"}>
+                        <TableRow key={vehicleKey} className={vIdx % 2 === 0 ? "" : "bg-muted/20"}>
                           <TableCell className="text-muted-foreground">{vIdx + 1}</TableCell>
                           <TableCell>
-                            <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
-                              {v.vehicle_number || "—"}
-                            </span>
+                            <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.vehicle_number || "-"}</span>
                           </TableCell>
-                          <TableCell className="text-sm">{item.vendor_name || "—"}</TableCell>
+                          <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
+                          <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
                           <TableCell>{item.item_name}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmtRate(item.rate)}</TableCell>
                           <TableCell className="text-right tabular-nums">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                           {daysCell}
                           <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
@@ -365,53 +364,45 @@ export default function VehicleReportPage() {
                       );
                     }
 
-                    // Multi-item — accordion row
                     return (
-                      <>
+                      <Fragment key={vehicleKey}>
                         <TableRow
-                          key={v.vehicle_number}
                           className={cn(
                             "cursor-pointer transition-colors hover:bg-muted/40",
                             vIdx % 2 === 0 ? "" : "bg-muted/20",
                             isOpen && "bg-muted/30"
                           )}
-                          onClick={() => toggleExpand(v.vehicle_number)}
+                          onClick={() => toggleExpand(vehicleKey)}
                         >
                           <TableCell className="text-muted-foreground">{vIdx + 1}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <ChevronDown className={cn(
-                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                                isOpen && "rotate-180"
-                              )} />
-                              <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
-                                {v.vehicle_number || "—"}
-                              </span>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                                {v.items.length} items
-                              </Badge>
+                              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+                              <span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.vehicle_number || "-"}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">{v.items.length} items</Badge>
                             </div>
                           </TableCell>
+                          <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{v.items.length} vendors</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">Mixed</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">Mixed Items / Rates</TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">-</TableCell>
                           <TableCell className="text-right tabular-nums font-medium">{fmtMts(vehicleTotalMts)}</TableCell>
                           {daysCell}
                           <TableCell className="text-sm text-muted-foreground">{fmtDate(worstEta)}</TableCell>
                         </TableRow>
                         {isOpen && v.items.map((item, iIdx) => (
-                          <TableRow
-                            key={`${v.vehicle_number}-${iIdx}`}
-                            className="bg-muted/10 border-l-4 border-l-primary/30 animate-in fade-in slide-in-from-top-1 duration-200"
-                          >
+                          <TableRow key={`${vehicleKey}-${iIdx}`} className="bg-muted/10 border-l-4 border-l-primary/30 animate-in fade-in slide-in-from-top-1 duration-200">
                             <TableCell />
-                            <TableCell className="pl-10 text-xs text-muted-foreground">↳</TableCell>
-                            <TableCell className="text-sm">{item.vendor_name || "—"}</TableCell>
+                            <TableCell className="pl-10 text-xs text-muted-foreground font-mono">{v.vehicle_number || "-"}</TableCell>
+                            <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
+                            <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
                             <TableCell className="text-sm">{item.item_name}</TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">{fmtRate(item.rate)}</TableCell>
                             <TableCell className="text-right tabular-nums text-sm">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                             <TableCell className="tabular-nums">
                               {(() => {
                                 const d = daysRemaining(item.eta);
-                                if (d === null) return <span className="text-sm text-muted-foreground">—</span>;
+                                if (d === null) return <span className="text-sm text-muted-foreground">-</span>;
                                 return (
                                   <span className={cn(
                                     "text-sm font-medium",
@@ -428,13 +419,13 @@ export default function VehicleReportPage() {
                             <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
                           </TableRow>
                         ))}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
-                    <td colSpan={4} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
+                    <td colSpan={6} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalMts)}</td>
                     <td colSpan={2} />
                   </tr>
@@ -447,3 +438,4 @@ export default function VehicleReportPage() {
     </div>
   );
 }
+

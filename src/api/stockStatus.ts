@@ -225,16 +225,19 @@ export async function arriveBatch(data: {
 export interface VehicleReportItem {
   item_code: string;
   item_name: string;
+  vendor_code?: string;
   vendor_name?: string;
   total_quantity_in_litre: number;
   total_quantity_in_mts: number;
   eta: string | null;
   status: string;
   job_work: string | null;
+  rate?: number | null;
 }
 
 export interface VehicleReport {
   vehicle_number: string;
+  transporter?: string | null;
   items: VehicleReportItem[];
 }
 
