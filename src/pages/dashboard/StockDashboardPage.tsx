@@ -328,7 +328,12 @@ export default function StockDashboardPage() {
     const th = (content: string | number, extra = "") =>
       `<th style="border:1px solid #999;padding:6px 8px;text-align:center;${extra}">${content}</th>`;
 
-    const fmt = (val: number) => fmtAny(val, roundingEnabled);
+    const fmt = (val: number) => {
+      const text = fmtAny(val, roundingEnabled);
+      const normalized = text.replace(/,/g, "").trim();
+      return normalized === "0" || normalized === "0.000" ? "" : text;
+    };
+    const numCellStyle = "font-weight:bold;";
 
     // Row 0 — group headers (pink)
     let row0Cells = th("In Factory", "background:#F4CCCC;font-weight:bold;") +
@@ -378,12 +383,12 @@ export default function StockDashboardPage() {
       const rowTotal = convertFromLiters(tankVal, EU) + convertUnit(item.outside_factory + statusKg, EU);
 
       let cells = td(printRmCode(item.item_code), "font-weight:bold;text-align:left;") +
-        td(fmt(convertFromLiters(tankVal, EU))) +
-        td(fmt(convertUnit(item.outside_factory, EU)));
+        td(fmt(convertFromLiters(tankVal, EU)), numCellStyle) +
+        td(fmt(convertUnit(item.outside_factory, EU)), numCellStyle);
       for (const { key } of vendorCols) {
-        cells += td(fmt(convertUnit(item.status_data[key] ?? 0, EU)));
+        cells += td(fmt(convertUnit(item.status_data[key] ?? 0, EU)), numCellStyle);
       }
-      cells += td(fmt(rowTotal), "font-weight:bold;");
+      cells += td(fmt(rowTotal), numCellStyle);
       return `<tr>${cells}</tr>`;
     }
 
