@@ -133,17 +133,26 @@ export default function DashboardPage() {
   const [contractsCount, setContractsCount] = useState(0);
   const [contractsLoading, setContractsLoading] = useState(true);
 
+  function normalizeIsoDate(value: unknown): string {
+    if (typeof value !== "string") return "";
+    const trimmed = value.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : "";
+  }
+
   async function fetchAll(startDate?: string, endDate?: string) {
     setCapacityLoading(true);
     setBalanceLoading(true);
     setTrendsLoading(true);
     setContractsLoading(true);
 
+    const resolvedStartDate = normalizeIsoDate(startDate) || normalizeIsoDate(trendsStartDate);
+    const resolvedEndDate = normalizeIsoDate(endDate) || normalizeIsoDate(trendsEndDate);
+
     const errors: string[] = [];
     const [capResult, balResult, trendResult, stockResult] = await Promise.allSettled([
       getCapacityInsights(),
       syncBalanceSheet(),
-      getPriceTrends(startDate ?? trendsStartDate, endDate ?? trendsEndDate),
+      getPriceTrends(resolvedStartDate, resolvedEndDate),
       getStockStatuses({ status: "IN_CONTRACT" }),
     ]);
 
@@ -287,7 +296,7 @@ export default function DashboardPage() {
             Live operational & financial intelligence
           </p>
         </div>
-        <Button variant="outline" className="btn-press gap-2 rounded-xl h-11 px-6 shadow-sm border-2" onClick={fetchAll} disabled={loading}>
+        <Button variant="outline" className="btn-press gap-2 rounded-xl h-11 px-6 shadow-sm border-2" onClick={() => fetchAll()} disabled={loading}>
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           Sync Live Data
         </Button>
