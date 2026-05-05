@@ -390,6 +390,7 @@ export interface OpenArEntry {
   "Bilty Date": string | null;
   Transporter: string | null;
   "Vehicle Number": string | null;
+  Balance: number;
 }
 
 export async function getOpenArs(): Promise<OpenArEntry[]> {
