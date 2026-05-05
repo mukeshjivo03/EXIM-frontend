@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-const COLS = 15;
+const COLS = 16;
 
 function fmtDate(value: string | null): string {
   if (!value) return "-";
@@ -70,6 +70,10 @@ export default function OpenArsPage() {
     () => filtered.reduce((sum, row) => sum + Number(row["Invoice Total"] ?? 0), 0),
     [filtered]
   );
+  const totalBalance = useMemo(
+    () => filtered.reduce((sum, row) => sum + Number(row.Balance ?? 0), 0),
+    [filtered]
+  );
   const avgDaysOpen = useMemo(() => {
     if (!filtered.length) return 0;
     const totalDays = filtered.reduce((sum, row) => sum + Number(row["Days Open"] ?? 0), 0);
@@ -93,7 +97,7 @@ export default function OpenArsPage() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
@@ -101,6 +105,15 @@ export default function OpenArsPage() {
                 <p className="text-xl font-bold mt-1">{fmtInr(totalInvoice)}</p>
               </div>
               <CircleDollarSign className="h-5 w-5 text-emerald-600" />
+            </CardContent>
+          </Card>
+          <Card className="border-none bg-rose-50/60 dark:bg-rose-950/20 shadow-sm">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300">Total Balance</p>
+                <p className="text-xl font-bold mt-1">{fmtInr(totalBalance)}</p>
+              </div>
+              <ReceiptText className="h-5 w-5 text-rose-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
@@ -159,6 +172,7 @@ export default function OpenArsPage() {
                     <TableHead>Customer Code</TableHead>
                     <TableHead>Customer Name</TableHead>
                     <TableHead className="text-right">Invoice Total</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-right">Days Open</TableHead>
                     <TableHead>Comments</TableHead>
                     <TableHead>Address</TableHead>
@@ -194,6 +208,7 @@ export default function OpenArsPage() {
                         <TableCell className="font-mono text-xs">{row["Vendor Code"] ?? "-"}</TableCell>
                         <TableCell>{row["Vendor Name"] ?? "-"}</TableCell>
                         <TableCell className="text-right font-semibold">{fmtInr(row["Invoice Total"] ?? 0)}</TableCell>
+                        <TableCell className="text-right font-bold text-rose-600 dark:text-rose-400">{fmtInr(row.Balance ?? 0)}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline">{row["Days Open"] ?? "-"}</Badge>
                         </TableCell>
