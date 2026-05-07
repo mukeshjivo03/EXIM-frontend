@@ -5,8 +5,8 @@ import { ArrowLeft, CheckCircle2, Search } from "lucide-react";
 
 import {
   getReconciliation,
-  syncBalanceSheet,
-  type BalanceEntry,
+  getVendorOutstanding,
+  type VendorOutstandingEntry,
   type ReconciliationEntry,
 } from "@/api/sapSync";
 import { fmtDate, fmtDecimal } from "@/lib/formatters";
@@ -33,10 +33,10 @@ import {
 } from "@/components/ui/table";
 
 type LocationState = {
-  entry?: BalanceEntry;
+  entry?: VendorOutstandingEntry;
 };
 
-export default function EximAccountVendorPage() {
+export default function VendorLedgerPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { vendorCode: vendorCodeParam = "" } = useParams();
@@ -49,7 +49,7 @@ export default function EximAccountVendorPage() {
   }, [vendorCodeParam]);
   const locationState = location.state as LocationState | null;
 
-  const [vendorEntry, setVendorEntry] = useState<BalanceEntry | null>(
+  const [vendorEntry, setVendorEntry] = useState<VendorOutstandingEntry | null>(
     locationState?.entry ?? null
   );
   const [reconciliationRows, setReconciliationRows] = useState<ReconciliationEntry[]>([]);
@@ -69,7 +69,7 @@ export default function EximAccountVendorPage() {
       try {
         const [recon, balances] = await Promise.all([
           getReconciliation(vendorCode),
-          vendorEntry ? Promise.resolve<BalanceEntry[] | null>(null) : syncBalanceSheet(),
+          vendorEntry ? Promise.resolve<VendorOutstandingEntry[] | null>(null) : getVendorOutstanding(),
         ]);
 
         if (!vendorEntry && balances) {
@@ -79,9 +79,8 @@ export default function EximAccountVendorPage() {
 
         setReconciliationRows(recon);
       } catch (err) {
-        toast.error(getErrorMessage(err, `Failed to load Ledgerfor ${vendorCode}`));
+        toast.error(getErrorMessage(err, `Failed to load Ledger for ${vendorCode}`));
       } finally {
-        
         setLoading(false);
       }
     }
@@ -124,14 +123,14 @@ export default function EximAccountVendorPage() {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">General Ledger</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Vendor Ledger</h1>
           <p className="text-sm text-muted-foreground">
             Vendor code: {vendorCode}
           </p>
         </div>
-        <Button variant="outline" className="btn-press" onClick={() => navigate("/exim-account")}>
+        <Button variant="outline" className="btn-press" onClick={() => navigate("/accounts/vendor-outstanding")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dr/Cr Outstanding
+          Back to Vendor Outstanding
         </Button>
       </div>
 
@@ -257,7 +256,7 @@ export default function EximAccountVendorPage() {
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
-                      Loading reconciliation...
+                      Loading ledger...
                     </TableCell>
                   </TableRow>
                 ) : filteredRows.length === 0 ? (
@@ -265,7 +264,7 @@ export default function EximAccountVendorPage() {
                     <TableCell colSpan={12}>
                       <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                         <CheckCircle2 className="h-4 w-4" />
-                        No Ledgerrows for this search
+                        No ledger rows for this search
                       </div>
                     </TableCell>
                   </TableRow>

@@ -404,6 +404,26 @@ export async function getOpenArs(): Promise<OpenArEntry[]> {
   return key ? d[key] : [];
 }
 
+// Vendor Outstanding
+
+export interface VendorOutstandingEntry {
+  CardCode: string;
+  CardName: string;
+  Balance: number;
+  "Last Transaction Date": string | null;
+  "Last Transanction Amount": number;
+}
+
+export async function getVendorOutstanding(): Promise<VendorOutstandingEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/vendor/balance-sheet/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
+
 export async function getCustomerOutstandingBalance(startDate: string, endDate: string): Promise<number> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await api.get<any>("/sap-sync/customer/balance/", { params: { startDate, endDate } });

@@ -26,11 +26,15 @@ import {
   FileText,
   FileCheck,
   ShieldCheck,
-  Receipt,
   Globe,
   Warehouse,
   Activity,
-  ReceiptText,
+  Handshake,
+  UserCheck,
+  ArrowUpRight,
+  ArrowDownLeft,
+  PackageSearch,
+  History as HistoryIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +91,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     links: [
       { to: "/stock/stock-status",   label: "Stock Status",    icon: ClipboardList, modules: ["stockstatus"] },
       { to: "/stock/variance",       label: "Shortage Report",  icon: Activity,      modules: ["stockstatus"] },
+      { to: "/stock/contractual-history", label: "Contractual History", icon: HistoryIcon,    modules: ["stockstatus"] },
       { to: "/stock/tank-items",     label: "Tank Items",      icon: Droplets,      modules: ["tankitem"] },
       { to: "/stock/tank-monitoring",label: "Tank Monitoring",  icon: Gauge,         modules: ["tankdata", "tanklayer"] },
       { to: "/stock/tank-data",      label: "Tank Data",       icon: Container,     modules: ["tankdata"] },
@@ -104,10 +109,11 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Accounts",
     links: [
       { to: "/exim-account",        label: "Oil Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
-      { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: ReceiptText, modules: ["customer_balance_sheet"] },
-      { to: "/accounts/open-ars",   label: "Open ARs",          icon: ReceiptText, modules: ["customer_balance_sheet"] },
-      { to: "/accounts/open-aps",   label: "Open APs",          icon: ReceiptText, modules: ["balance_sheet"] },
-      { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: Receipt, modules: ["open_grpos"] },
+      { to: "/accounts/vendor-outstanding", label: "Vendor Outstanding", icon: Handshake,   modules: ["debitentry", "party"] },
+      { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: UserCheck, modules: ["customer_balance_sheet"] },
+      { to: "/accounts/open-ars",   label: "Open ARs",          icon: ArrowUpRight, modules: ["customer_balance_sheet"] },
+      { to: "/accounts/open-aps",   label: "Open APs",          icon: ArrowDownLeft, modules: ["balance_sheet"] },
+      { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: PackageSearch, modules: ["open_grpos"] },
     ],
   },
   {
