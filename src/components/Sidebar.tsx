@@ -35,6 +35,8 @@ import {
   ArrowDownLeft,
   PackageSearch,
   History as HistoryIcon,
+  FileStack,
+  FileClock,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -101,8 +103,8 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: "Domestic Contracts",
     links: [
-      { to: "/domestic-contracts",       label: "FY 2025-2026", icon: FileCheck, modules: ["domesticcontract"] },
-      { to: "/contracts/domestic-2627",  label: "FY 2026-2027", icon: FileCheck, modules: ["domesticcontract"] },
+      { to: "/domestic-contracts",       label: "FY 2025-2026", icon: FileStack, modules: ["domesticcontract"] },
+      { to: "/contracts/domestic-2627",  label: "FY 2026-2027", icon: FileClock, modules: ["domesticcontract"] },
     ],
   },
   {
