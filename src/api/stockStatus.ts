@@ -304,3 +304,23 @@ export async function getDebitInsights(): Promise<DebitInsights> {
   const res = await api.get<DebitInsights>("/stock-status/debit-insights/");
   return res.data;
 }
+
+// ── Contractual History ──────────────────────────────────────
+
+export interface ContractualHistoryEntry {
+  id: number;
+  item_code: string;
+  item_name: string;
+  vendor_code: string;
+  vendor_name: string;
+  rate: string;
+  contract_start: string;
+  contract_end: string;
+  created_at: string;
+  created_by: string;
+}
+
+export async function getContractualHistory(): Promise<ContractualHistoryEntry[]> {
+  const res = await api.get<ContractualHistoryEntry[]>("/stock-status/contractual-history/");
+  return res.data ?? [];
+}

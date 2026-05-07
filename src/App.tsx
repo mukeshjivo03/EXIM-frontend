@@ -23,6 +23,7 @@ import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
 import ShortageReportPage from "@/pages/stock/ShortageReportPage";
+import ContractualHistoryPage from "@/pages/stock/ContractualHistoryPage";
 import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
 
@@ -37,6 +38,8 @@ import OpenApsPage from "@/pages/accounts/OpenApsPage";
 import OpenArsPage from "@/pages/accounts/OpenArsPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
 import CustomerLedgerPage from "@/pages/accounts/CustomerLedgerPage";
+import VendorOutstandingPage from "@/pages/accounts/VendorOutstandingPage";
+import VendorLedgerPage from "@/pages/accounts/VendorLedgerPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -174,6 +177,14 @@ function App() {
               }
             />
             <Route
+              path="/stock/contractual-history"
+              element={
+                <ProtectedRoute requiredModules={["stockstatus"]}>
+                  <ContractualHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/contracts/open-grpos"
               element={
                 <ProtectedRoute requiredModules={["open_grpos"]}>
@@ -274,6 +285,22 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
                   <CustomerLedgerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/vendor-outstanding"
+              element={
+                <ProtectedRoute requiredModules={["debitentry", "party"]}>
+                  <VendorOutstandingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/vendor-outstanding/:vendorCode"
+              element={
+                <ProtectedRoute requiredModules={["debitentry", "party"]}>
+                  <VendorLedgerPage />
                 </ProtectedRoute>
               }
             />

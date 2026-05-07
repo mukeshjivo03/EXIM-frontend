@@ -77,7 +77,7 @@ function CustomPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }:
   );
 }
 
-function PieTooltip({ active, payload }: TooltipProps<number, string>) {
+function PieTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const e = payload[0];
   return (
@@ -88,7 +88,7 @@ function PieTooltip({ active, payload }: TooltipProps<number, string>) {
   );
 }
 
-function BarTooltip({ active, payload }: TooltipProps<number, string>) {
+function BarTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as { fullName: string; balance: number };
   const isPos = d.balance >= 0;
