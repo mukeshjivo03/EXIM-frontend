@@ -191,7 +191,7 @@ function SectionLabel({
 }
 
 const linkClass = (isActive: boolean, collapsed: boolean) =>
-  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive
+  `flex items-center gap-3 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ${isActive
     ? "bg-accent text-accent-foreground shadow-sm sidebar-link-active"
     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
   } ${collapsed ? "justify-center px-0" : ""}`;
