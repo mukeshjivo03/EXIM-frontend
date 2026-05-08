@@ -170,14 +170,23 @@ function SectionLabel({
 }) {
   if (collapsed) return null;
   return (
-    <span
-      className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors text-foreground/80`}
-    >
-      {isActive && (
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary mr-1.5 align-middle" />
-      )}
-      {label}
-    </span>
+    <div className="px-1 pb-1 pt-0.5">
+      <div
+        className={`rounded-md border-l-2 px-2.5 py-1.5 transition-colors ${
+          isActive
+            ? "border-l-primary bg-accent/30"
+            : "border-l-border bg-muted/25"
+        }`}
+      >
+        <span
+          className={`text-[13px] font-extrabold uppercase tracking-[0.16em] leading-none ${
+            isActive ? "text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
+    </div>
   );
 }
 
