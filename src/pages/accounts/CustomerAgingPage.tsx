@@ -8,6 +8,7 @@ import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,11 @@ import { getErrorMessage } from "@/lib/errors";
 type SortKey = "CardCode" | "CardName" | "DocNum" | "DocDate" | "Days_Difference" | "DocTotal" | "PaidToDate" | "Balance" | "Outstanding Amount";
 type SortDir = "asc" | "desc";
 
-const COLS = 14;
+const COLS = 15;
+
+function getRowId(row: CustomerAgingEntry): string {
+  return `${row.CardCode}|${row.DocNum}|${row.DocDate}|${row.ShipToCode}`;
+}
 
 function fmtNum(v: number | null | undefined) {
   if (v === null || v === undefined) return "-";
@@ -44,6 +49,7 @@ export default function CustomerAgingPage() {
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("Days_Difference");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const perPage = 20;
 
   async function loadData() {
@@ -129,10 +135,18 @@ export default function CustomerAgingPage() {
   }, [page, totalPages]);
 
   const stats = useMemo(() => {
-    const receivable = filteredBase.reduce((s, r) => s + Number(r.Balance ?? 0), 0);
-    const stale = filteredBase.filter((r) => Number(r.Days_Difference ?? 0) > 120).length;
-    return { total: filteredBase.length, receivable, stale };
-  }, [filteredBase]);
+    const useSelected = selectedRows.size > 0;
+    const target = useSelected ? filteredBase.filter((r) => selectedRows.has(getRowId(r))) : filteredBase;
+    const receivable = target.reduce((s, r) => s + Number(r.Balance ?? 0), 0);
+    const stale = target.filter((r) => Number(r.Days_Difference ?? 0) > 120).length;
+    return { total: target.length, receivable, stale, useSelected };
+  }, [filteredBase, selectedRows]);
+
+  const selectedVisibleCount = useMemo(
+    () => filtered.filter((r) => selectedRows.has(getRowId(r))).length,
+    [filtered, selectedRows]
+  );
+  const allVisibleSelected = filtered.length > 0 && selectedVisibleCount === filtered.length;
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -146,6 +160,23 @@ export default function CustomerAgingPage() {
   function SortIcon({ column }: { column: SortKey }) {
     if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />;
     return sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
+  }
+
+  function toggleRow(rowId: string) {
+    const next = new Set(selectedRows);
+    if (next.has(rowId)) next.delete(rowId);
+    else next.add(rowId);
+    setSelectedRows(next);
+  }
+
+  function toggleSelectAll() {
+    const next = new Set(selectedRows);
+    if (allVisibleSelected) {
+      filtered.forEach((r) => next.delete(getRowId(r)));
+    } else {
+      filtered.forEach((r) => next.add(getRowId(r)));
+    }
+    setSelectedRows(next);
   }
 
   return (
@@ -185,6 +216,11 @@ export default function CustomerAgingPage() {
                 <CardTitle>Customer Aging Details</CardTitle>
                 <CardDescription>{filtered.length} record{filtered.length !== 1 ? "s" : ""}</CardDescription>
               </div>
+              {selectedRows.size > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setSelectedRows(new Set())}>
+                  Clear Selection ({selectedVisibleCount || selectedRows.size})
+                </Button>
+              )}
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -239,6 +275,13 @@ export default function CustomerAgingPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={allVisibleSelected ? true : selectedVisibleCount > 0 ? "indeterminate" : false}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all rows"
+                      />
+                    </TableHead>
                     <TableHead>S.No</TableHead>
                     <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardCode")}>Code<SortIcon column="CardCode" /></button></TableHead>
                     <TableHead><button type="button" className="flex items-center gap-1" onClick={() => handleSort("CardName")}>Name<SortIcon column="CardName" /></button></TableHead>
@@ -269,6 +312,13 @@ export default function CustomerAgingPage() {
                   ) : (
                     paginated.map((row, i) => (
                       <TableRow key={`${row.CardCode}-${row.DocNum ?? "no-doc"}-${i}`}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedRows.has(getRowId(row))}
+                            onCheckedChange={() => toggleRow(getRowId(row))}
+                            aria-label={`Select row ${i + 1}`}
+                          />
+                        </TableCell>
                         <TableCell>{(page - 1) * perPage + i + 1}</TableCell>
                         <TableCell className="font-mono text-xs">{row.CardCode ?? "-"}</TableCell>
                         <TableCell className="font-medium">{row.CardName ?? "-"}</TableCell>
