@@ -18,7 +18,7 @@ import { getErrorMessage } from "@/lib/errors";
 type SortKey = "CardCode" | "CardName" | "DocNum" | "DocDate" | "Days_Difference" | "DocTotal" | "PaidToDate" | "Balance" | "Outstanding Amount";
 type SortDir = "asc" | "desc";
 
-const COLS = 15;
+const COLS = 14;
 
 function getRowId(row: CustomerAgingEntry): string {
   return `${row.CardCode}|${row.DocNum}|${row.DocDate}|${row.ShipToCode}`;
@@ -295,7 +295,6 @@ export default function CustomerAgingPage() {
                     <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Balance")}>Balance<SortIcon column="Balance" /></button></TableHead>
                     <TableHead className="text-right"><button type="button" className="flex items-center gap-1 ml-auto" onClick={() => handleSort("Outstanding Amount")}>Outstanding<SortIcon column="Outstanding Amount" /></button></TableHead>
                     <TableHead>Ship To</TableHead>
-                    <TableHead>Address</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -334,7 +333,6 @@ export default function CustomerAgingPage() {
                           {fmtNum(row["Outstanding Amount"])}
                         </TableCell>
                         <TableCell className="max-w-[260px] truncate" title={row.ShipToCode ?? ""}>{row.ShipToCode ?? "-"}</TableCell>
-                        <TableCell className="max-w-[320px] truncate" title={row.Address2 ?? ""}>{row.Address2 ?? "-"}</TableCell>
                       </TableRow>
                     ))
                   )}
