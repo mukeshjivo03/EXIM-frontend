@@ -18,6 +18,7 @@ import {
   TrendingUp,
   LineChart,
   Scale,
+  Clock,
   ReceiptText,
   ShoppingCart,
   Search,
@@ -89,6 +90,7 @@ const quickLinks: QuickLink[] = [
   { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", modules: ["exim_rates"] },
   { to: "/exim-account", label: "Oil  CR/DR Outstanding", icon: BookOpen, desc: "Account & balance", category: "Commercials", modules: ["debitentry"] },
   { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: ReceiptText, desc: "Customer balance sheet", category: "Commercials", modules: ["customer_balance_sheet"] },
+  { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, desc: "Customer aging balance", category: "Commercials", modules: ["customer_balance_sheet"] },
   { to: "/accounts/open-ars", label: "Open ARs", icon: FileText, desc: "Open receivable invoices", category: "Commercials", modules: ["customer_balance_sheet"] },
   { to: "/accounts/open-aps", label: "Open APs", icon: FileText, desc: "Open payable invoices", category: "Commercials", modules: ["balance_sheet"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", modules: ["dailyprice"] },
@@ -598,5 +600,4 @@ export default function HomePage() {
     </div>
   );
 }
-
 

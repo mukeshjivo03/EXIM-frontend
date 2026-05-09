@@ -455,3 +455,30 @@ export async function getCustomerLedger(cardCode: string): Promise<CustomerLedge
   const res = await api.get<any>("/sap-sync/customer/ledger", { params: { cardCode } });
   return res.data?.customer_ledger ?? [];
 }
+
+// Customer Aging Balance
+export interface CustomerAgingEntry {
+  DocNum: number | null;
+  DocDate: string | null;
+  Days_Difference: number | null;
+  Aging: string | null;
+  CardCode: string;
+  CardName: string;
+  SlpName: string | null;
+  ShipToCode: string | null;
+  Address2: string | null;
+  DocTotal: number | null;
+  PaidToDate: number | null;
+  Balance: number | null;
+  "Outstanding Amount": number | null;
+}
+
+export async function getCustomerAgingBalance(): Promise<CustomerAgingEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/customer-aging-balance/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}

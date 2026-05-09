@@ -38,6 +38,7 @@ import OpenApsPage from "@/pages/accounts/OpenApsPage";
 import OpenArsPage from "@/pages/accounts/OpenArsPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
 import CustomerLedgerPage from "@/pages/accounts/CustomerLedgerPage";
+import CustomerAgingPage from "@/pages/accounts/CustomerAgingPage";
 import VendorOutstandingPage from "@/pages/accounts/VendorOutstandingPage";
 import VendorLedgerPage from "@/pages/accounts/VendorLedgerPage";
 
@@ -285,6 +286,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
                   <CustomerLedgerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/customer-aging"
+              element={
+                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                  <CustomerAgingPage />
                 </ProtectedRoute>
               }
             />
