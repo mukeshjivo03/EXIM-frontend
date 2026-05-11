@@ -466,7 +466,6 @@ export interface CustomerAgingEntry {
   CardName: string;
   SlpName: string | null;
   ShipToCode: string | null;
-  Address2: string | null;
   DocTotal: number | null;
   PaidToDate: number | null;
   Balance: number | null;
