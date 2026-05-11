@@ -71,7 +71,7 @@ export interface StockStatusFilters {
 }
 
 export interface StockInsightsFilters {
-  status?: string;
+  status?: string | string[];
   vendor?: string;
   item?: string;
 }
@@ -94,10 +94,11 @@ export async function getStockSummary(): Promise<StockInsights> {
 }
 
 export async function getStockInsights(filters?: StockInsightsFilters): Promise<StockInsights> {
-  const params: Record<string, string> = {};
-  if (filters?.status) params.status = filters.status;
-  if (filters?.vendor) params.vendor = filters.vendor;
-  if (filters?.item) params.item = filters.item;
+  const params = new URLSearchParams();
+  const statuses = Array.isArray(filters?.status) ? filters.status : filters?.status ? [filters.status] : [];
+  statuses.forEach((status) => params.append("status", status));
+  if (filters?.vendor) params.set("vendor", filters.vendor);
+  if (filters?.item) params.set("item", filters.item);
   const res = await api.get<StockInsights>("/stock-status/stock-insights/", { params });
   return res.data;
 }
