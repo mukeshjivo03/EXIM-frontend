@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Droplets,
@@ -12,6 +12,7 @@ import {
   Minimize2,
   AlertTriangle,
   Filter,
+  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -49,6 +50,7 @@ import { toast } from "sonner";
 
 type Unit = "L" | "MT";
 const L_PER_MT = 1098.9;
+const KG_PER_MT = 1000;
 
 function conv(liters: number, unit: Unit): string {
   if (unit === "MT") {
@@ -59,6 +61,26 @@ function conv(liters: number, unit: Unit): string {
 
 function formatCapacity(value: string | number, unit: Unit): string {
   return conv(Number(value), unit);
+}
+
+function fmtMoney(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(Number(value))) return "-";
+  return `Rs ${Number(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function fmtQty(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(Number(value))) return "-";
+  return Number(value).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+function getUnitAverage(avg: ItemWiseAverage | undefined, unit: Unit): number | null {
+  if (!avg) return null;
+  if (unit === "MT") {
+    const kgRate = avg["adjusted_average_kg(STO)"];
+    return kgRate == null ? null : Number(kgRate) * KG_PER_MT;
+  }
+  const litreRate = avg["adjusted_average(STO)"];
+  return litreRate == null ? null : Number(litreRate);
 }
 
 function fillPercent(tank: Tank): number {
@@ -256,6 +278,7 @@ export default function TankMonitoringPage() {
   const [tankSummary, setTankSummary] = useState<TankSummary | null>(null);
   const [openingRates, setOpeningRates] = useState<Record<string, string>>({});
   const [openingSubmitMap, setOpeningSubmitMap] = useState<Record<string, boolean>>({});
+  const [expandedSummaryItems, setExpandedSummaryItems] = useState<Set<string>>(new Set());
 
   // Persist unit
   const [unit, setUnit] = useState<Unit>(() => {
@@ -314,6 +337,8 @@ export default function TankMonitoringPage() {
           if (r.status === "fulfilled" && r.value) avgMap.set(r.value.item_code, r.value);
         });
         setItemAverages(avgMap);
+      } else {
+        setItemAverages(new Map());
       }
     } catch { /* non-critical */ }
     finally { setItemSummaryLoading(false); }
@@ -368,7 +393,7 @@ export default function TankMonitoringPage() {
     } finally {
       setOpeningSubmitMap((prev) => ({ ...prev, [itemCode]: false }));
     }
-  }, [openingRates, fetchItemSummary, itemAverages]);
+  }, [canAddOpeningRate, openingRates, fetchItemSummary, itemAverages]);
 
   useEffect(() => {
     fetchTanks();
@@ -428,6 +453,15 @@ export default function TankMonitoringPage() {
     if (itemSummary.length === 0) return 0;
     return Math.max(...itemSummary.map((i) => i.quantity_in_liters));
   }, [itemSummary]);
+
+  function toggleSummaryBreakdown(itemCode: string) {
+    setExpandedSummaryItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemCode)) next.delete(itemCode);
+      else next.add(itemCode);
+      return next;
+    });
+  }
 
   /* ── kiosk toggle ──────────────────────────────────────── */
 
@@ -772,6 +806,7 @@ export default function TankMonitoringPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10"></TableHead>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Item Name</TableHead>
@@ -787,6 +822,7 @@ export default function TankMonitoringPage() {
                   <TableBody>
                     {Array.from({ length: 3 }).map((_, i) => (
                       <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
@@ -797,7 +833,7 @@ export default function TankMonitoringPage() {
                         <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-9 w-44" /></TableCell>
-                      </TableRow>
+                    </TableRow>
                     ))}
                   </TableBody>
                 </Table>
@@ -812,13 +848,13 @@ export default function TankMonitoringPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10"></TableHead>
                       <TableHead>Color</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Item Name</TableHead>
                       <TableHead>Quantity ({unit})</TableHead>
                       <TableHead>Capacity ({unit})</TableHead>
-                      {/* <TableHead>Avg Price</TableHead> */}
-                      <TableHead>Avg Price</TableHead>
+                      <TableHead>Avg Price / {unit === "MT" ? "MTS" : "LTR"}</TableHead>
                       <TableHead>Tank Count</TableHead>
                       <TableHead>Tank Numbers</TableHead>
                       <TableHead>Opening Rate</TableHead>
@@ -828,11 +864,34 @@ export default function TankMonitoringPage() {
                     {itemSummary.map((item) => {
                       const fillPct = maxItemQty > 0 ? (item.quantity_in_liters / maxItemQty) * 100 : 0;
                       const avg = itemAverages.get(item.tank_item_code);
+                      const breakdown = avg?.breakdown ?? [];
+                      const isExpanded = expandedSummaryItems.has(item.tank_item_code);
+                      const hasBreakdown = breakdown.length > 0;
                       const hasAvgRate = avg?.["average_rate(IN_TANK)"] != null;
                       const hasAdjustedAvgRate = avg?.["adjusted_average(STO)"] != null;
                       const canAddOpeningStock = !hasAvgRate && !hasAdjustedAvgRate;
+                      const displayedQuantity = unit === "MT" && avg?.quantity_matched_kg != null
+                        ? Number(avg.quantity_matched_kg) / KG_PER_MT
+                        : item.quantity_in_liters;
+                      const displayedCapacity = unit === "MT" && avg?.tank_total_capacity_kg != null
+                        ? Number(avg.tank_total_capacity_kg) / KG_PER_MT
+                        : item.total_capacity;
+                      const avgRate = getUnitAverage(avg, unit);
                       return (
-                        <TableRow key={item.tank_item_code}>
+                        <Fragment key={item.tank_item_code}>
+                        <TableRow>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => toggleSummaryBreakdown(item.tank_item_code)}
+                              disabled={!hasBreakdown}
+                              title={hasBreakdown ? "Toggle breakdown" : "No breakdown available"}
+                            >
+                              <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+                            </Button>
+                          </TableCell>
                           <TableCell>
                             <div
                               className="h-5 w-5 rounded-full border border-border"
@@ -844,7 +903,9 @@ export default function TankMonitoringPage() {
                           <TableCell>{nameMap.get(item.tank_item_code) ?? "—"}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <span className="font-medium">{conv(item.quantity_in_liters, unit)}</span>
+                              <span className="font-medium">
+                                {unit === "MT" ? fmtQty(displayedQuantity) : conv(displayedQuantity, unit)}
+                              </span>
                               <div className="h-1.5 w-full max-w-[120px] rounded-full bg-muted overflow-hidden">
                                 <div
                                   className="h-full rounded-full transition-all duration-700"
@@ -853,17 +914,8 @@ export default function TankMonitoringPage() {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{conv(item.total_capacity, unit)}</TableCell>
-                          {/* <TableCell>
-                            {avg?.["average_rate(IN_TANK)"] != null
-                              ? `₹ ${Number(avg["average_rate(IN_TANK)"]).toLocaleString("en-IN")}`
-                              : "—"}
-                          </TableCell> */}
-                          <TableCell>
-                            {avg?.["adjusted_average(STO)"] != null
-                              ? `₹ ${Number(avg["adjusted_average(STO)"]).toLocaleString("en-IN")}`
-                              : "—"}
-                          </TableCell>
+                          <TableCell>{unit === "MT" ? fmtQty(displayedCapacity) : conv(displayedCapacity, unit)}</TableCell>
+                          <TableCell>{fmtMoney(avgRate)}</TableCell>
                           <TableCell>{item.tank_count}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
@@ -914,6 +966,62 @@ export default function TankMonitoringPage() {
                             )}
                           </TableCell>
                         </TableRow>
+                        {isExpanded && (
+                          <TableRow key={`${item.tank_item_code}-breakdown`} className="bg-muted/25 hover:bg-muted/25">
+                            <TableCell colSpan={10} className="p-0">
+                              <div className="px-4 py-3">
+                                <div className="rounded-md border bg-background overflow-x-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="bg-muted/50">
+                                        <TableHead className="w-12">S.No</TableHead>
+                                        <TableHead>Stock ID</TableHead>
+                                        <TableHead>Party</TableHead>
+                                        <TableHead>Vehicle</TableHead>
+                                        <TableHead>Transporter</TableHead>
+                                        <TableHead className="text-right">Rate / {unit === "MT" ? "MTS" : "LTR"}</TableHead>
+                                        <TableHead className="text-right">Qty ({unit})</TableHead>
+                                        <TableHead className="text-right">Cost</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {breakdown.map((line, index) => {
+                                        const lineRate = unit === "MT"
+                                          ? Number(line.rate_in_kg ?? 0) * KG_PER_MT
+                                          : Number(line.rate_in_litres ?? 0);
+                                        const lineQty = unit === "MT"
+                                          ? Number(line.quantity_consumed_kg ?? 0) / KG_PER_MT
+                                          : Number(line.quantity_consumed ?? 0);
+                                        const lineCost = unit === "MT"
+                                          ? Number(line.batch_total_kg ?? line.batch_total ?? 0)
+                                          : Number(line.batch_total ?? line.batch_total_kg ?? 0);
+                                        return (
+                                          <TableRow key={`${item.tank_item_code}-${line.stock_id}-${index}`}>
+                                            <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                                            <TableCell className="font-medium">{line.stock_id}</TableCell>
+                                            <TableCell className="min-w-[180px]">{line.party || "-"}</TableCell>
+                                            <TableCell>{line.vehicle || "-"}</TableCell>
+                                            <TableCell>{line.transporter || "-"}</TableCell>
+                                            <TableCell className="text-right tabular-nums">{fmtMoney(lineRate)}</TableCell>
+                                            <TableCell className="text-right tabular-nums">{fmtQty(lineQty)}</TableCell>
+                                            <TableCell className="text-right tabular-nums">{fmtMoney(lineCost)}</TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                {avg?.warning && (
+                                  <div className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    {avg.warning}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        </Fragment>
                       );
                     })}
                   </TableBody>

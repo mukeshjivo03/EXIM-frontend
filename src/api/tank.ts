@@ -125,14 +125,44 @@ export async function getItemWiseTankSummary(): Promise<ItemWiseTankSummary> {
 
 // ── Item-wise Average ──────────────────────────────────────────
 
+export interface InTankItem {
+  item_code: string;
+}
+
+export async function getInTankItems(): Promise<InTankItem[]> {
+  const res = await api.get<InTankItem[]>("/tank/in-tank-items/");
+  return res.data ?? [];
+}
+
 export interface ItemWiseAverage {
   item_code: string;
   tank_total_capacity: number;
+  tank_total_capacity_kg: number;
   quantity_matched: number;
+  quantity_matched_kg: number;
   quantity_unmatched: number;
   "average_rate(IN_TANK)": number;
   "adjusted_average(STO)": number;
+  "average_rate_kg(IN_TANK)": number;
+  "adjusted_average_kg(STO)": number;
+  breakdown?: ItemWiseAverageBreakdown[];
   warning?: string;
+}
+
+export interface ItemWiseAverageBreakdown {
+  stock_id: number;
+  created_at: string;
+  party: string;
+  vehicle: string;
+  transporter: string;
+  rate_in_litres: number;
+  rate_in_kg: number;
+  batch_quantity: number;
+  batch_quantity_kg: number;
+  quantity_consumed: number;
+  quantity_consumed_kg: number;
+  batch_total: number;
+  batch_total_kg: number;
 }
 
 export async function getItemWiseAverage(itemCode: string): Promise<ItemWiseAverage> {

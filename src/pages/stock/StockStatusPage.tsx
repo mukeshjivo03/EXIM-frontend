@@ -9,6 +9,7 @@ import {
   IndianRupee,
   Filter,
   X,
+  ChevronDown,
   Hash,
   Scale,
   Weight,
@@ -60,12 +61,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 import { CreateStockDialog } from "./components/CreateStockDialog";
 import { ViewStockSheet } from "./components/ViewStockSheet";
 import { EditStockDialog } from "./components/EditStockDialog";
 import { DeleteStockDialog } from "./components/DeleteStockDialog";
+
+type StockStatusPageFilters = Omit<StockStatusFilters, "status"> & {
+  status?: string[];
+};
 
 /* ── component ────────────────────────────────────────────── */
 
@@ -93,10 +99,10 @@ export default function StockStatusPage() {
   const [summary, setSummary] = useState<StockInsightsSummary | null>(null);
 
   // filters
-  const [fStatus, setFStatus] = useState("");
+  const [fStatuses, setFStatuses] = useState<string[]>([]);
   const [fVendor, setFVendor] = useState("");
   const [fItem, setFItem] = useState("");
-  const hasFilters = !!(fStatus || fVendor || fItem);
+  const hasFilters = !!(fStatuses.length || fVendor || fItem);
 
   // Heatmap helper
   const maxQty = useMemo(() => {
@@ -154,14 +160,52 @@ export default function StockStatusPage() {
 
   /* ── fetch list ──────────────────────────────────────────── */
 
-  async function fetchList(filters?: StockStatusFilters) {
+  async function fetchList(filters?: StockStatusPageFilters) {
     setLoading(true);
     setError("");
     try {
+      const statuses = filters?.status ?? [];
+      if (statuses.length > 1) {
+        const [results, insights] = await Promise.all([
+          Promise.all(
+            statuses.map((status) =>
+              getStockStatuses({
+                status,
+                vendor: filters?.vendor,
+                item: filters?.item,
+              })
+            )
+          ),
+          getStockInsights({
+            status: statuses,
+            vendor: filters?.vendor,
+            item: filters?.item,
+          }),
+        ]);
+        const data = results.flat();
+        setRows(
+          data
+            .filter((r) => !r.deleted)
+            .sort((a, b) => {
+              const oa = STATUS_ORDER[a.status] ?? 99;
+              const ob = STATUS_ORDER[b.status] ?? 99;
+              return oa !== ob ? oa - ob : b.id - a.id;
+            })
+        );
+        setSummary(insights.summary);
+        setSelectedIds(new Set());
+        return;
+      }
+
+      const status = statuses[0];
       const [data, insights] = await Promise.all([
-        getStockStatuses(filters),
+        getStockStatuses({
+          status,
+          vendor: filters?.vendor,
+          item: filters?.item,
+        }),
         getStockInsights({
-          status: filters?.status,
+          status,
           vendor: filters?.vendor,
           item: filters?.item,
         }),
@@ -347,10 +391,10 @@ export default function StockStatusPage() {
 
   /* ── filters ─────────────────────────────────────────────── */
 
-  function currentFilters(): StockStatusFilters | undefined {
+  function currentFilters(): StockStatusPageFilters | undefined {
     if (!hasFilters) return undefined;
-    const f: StockStatusFilters = {};
-    if (fStatus) f.status = fStatus;
+    const f: StockStatusPageFilters = {};
+    if (fStatuses.length) f.status = fStatuses;
     if (fVendor) f.vendor = fVendor;
     if (fItem) f.item = fItem;
     return f;
@@ -362,11 +406,21 @@ export default function StockStatusPage() {
   }
 
   function clearFilters() {
-    setFStatus("");
+    setFStatuses([]);
     setFVendor("");
     setFItem("");
     setPage(1);
     fetchList();
+  }
+
+  function toggleStatusFilter(status: string) {
+    setFStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  }
+
+  function setSingleStatusFilter(status: string) {
+    setFStatuses([status]);
   }
 
   /* ── render ──────────────────────────────────────────────── */
@@ -470,7 +524,7 @@ export default function StockStatusPage() {
       {/* Presets */}
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={!fStatus && !fVendor && !fItem ? "default" : "outline"}
+          variant={!fStatuses.length && !fVendor && !fItem ? "default" : "outline"}
           size="sm"
           className="rounded-full"
           onClick={clearFilters}
@@ -478,42 +532,42 @@ export default function StockStatusPage() {
           All
         </Button>
         <Button
-          variant={fStatus === "MUNDRA_PORT" ? "default" : "outline"}
+          variant={fStatuses.length === 1 && fStatuses[0] === "MUNDRA_PORT" ? "default" : "outline"}
           size="sm"
           className="rounded-full gap-1.5"
           onClick={() => {
-            setFStatus("MUNDRA_PORT");
+            setSingleStatusFilter("MUNDRA_PORT");
             setFItem("");
             setFVendor("");
-            fetchList({ status: "MUNDRA_PORT" });
+            fetchList({ status: ["MUNDRA_PORT"] });
           }}
         >
           <Anchor className="h-3.5 w-3.5" />
           At Port
         </Button>
         <Button
-          variant={fStatus === "ON_THE_SEA" ? "default" : "outline"}
+          variant={fStatuses.length === 1 && fStatuses[0] === "ON_THE_SEA" ? "default" : "outline"}
           size="sm"
           className="rounded-full gap-1.5"
           onClick={() => {
-            setFStatus("ON_THE_SEA");
+            setSingleStatusFilter("ON_THE_SEA");
             setFItem("");
             setFVendor("");
-            fetchList({ status: "ON_THE_SEA" });
+            fetchList({ status: ["ON_THE_SEA"] });
           }}
         >
           <Ship className="h-3.5 w-3.5" />
           On Sea
         </Button>
         <Button
-          variant={fStatus === "ON_THE_WAY" ? "default" : "outline"}
+          variant={fStatuses.length === 1 && fStatuses[0] === "ON_THE_WAY" ? "default" : "outline"}
           size="sm"
           className="rounded-full gap-1.5"
           onClick={() => {
-            setFStatus("ON_THE_WAY");
+            setSingleStatusFilter("ON_THE_WAY");
             setFItem("");
             setFVendor("");
-            fetchList({ status: "ON_THE_WAY" });
+            fetchList({ status: ["ON_THE_WAY"] });
           }}
         >
           <Truck className="h-3.5 w-3.5" />
@@ -533,19 +587,51 @@ export default function StockStatusPage() {
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 <Filter className="h-3 w-3" /> Status
               </Label>
-              <Select value={fStatus || "__all__"} onValueChange={(v) => setFStatus(v === "__all__" ? "" : v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All Statuses</SelectItem>
-                  {uniqueStatuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {formatStatus(s)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {fStatuses.length === 0
+                        ? "All Statuses"
+                        : fStatuses.length === 1
+                          ? formatStatus(fStatuses[0])
+                          : `${fStatuses.length} statuses selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-2">
+                  <div className="space-y-1">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                      onClick={() => setFStatuses([])}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setFStatuses([]);
+                      }}
+                    >
+                      <Checkbox checked={fStatuses.length === 0} className="cursor-pointer" />
+                      All Statuses
+                    </div>
+                    {uniqueStatuses.map((s) => (
+                      <div
+                        key={s}
+                        role="button"
+                        tabIndex={0}
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                        onClick={() => toggleStatusFilter(s)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") toggleStatusFilter(s);
+                        }}
+                      >
+                        <Checkbox checked={fStatuses.includes(s)} className="cursor-pointer" />
+                        {formatStatus(s)}
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5 min-w-[180px] flex-1">
               <Label className="text-xs text-muted-foreground">Vendor</Label>

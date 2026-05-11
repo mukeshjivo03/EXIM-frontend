@@ -21,6 +21,7 @@ import TankItemsPage from "@/pages/stock/TankItemsPage";
 import TankDataPage from "@/pages/stock/TankDataPage";
 import TankMonitoringPage from "@/pages/stock/TankMonitoringPage";
 import TankLogsPage from "@/pages/stock/TankLogsPage";
+import InTankBreakdownPage from "@/pages/stock/InTankBreakdownPage";
 import WarehouseInventoryPage from "@/pages/stock/WarehouseInventoryPage";
 import ShortageReportPage from "@/pages/stock/ShortageReportPage";
 import ContractualHistoryPage from "@/pages/stock/ContractualHistoryPage";
@@ -132,6 +133,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["tanklog"]}>
                   <TankLogsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock/in-tank-breakdown"
+              element={
+                <ProtectedRoute requiredModules={["stockstatus", "tankdata", "tanklayer"]}>
+                  <InTankBreakdownPage />
                 </ProtectedRoute>
               }
             />

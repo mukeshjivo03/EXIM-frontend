@@ -98,6 +98,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { to: "/stock/tank-items",     label: "Tank Items",      icon: Droplets,      modules: ["tankitem"] },
       { to: "/stock/tank-monitoring",label: "Tank Monitoring",  icon: Gauge,         modules: ["tankdata", "tanklayer"] },
       { to: "/stock/tank-data",      label: "Tank Data",       icon: Container,     modules: ["tankdata"] },
+      { to: "/stock/in-tank-breakdown", label: "In Tank Breakdown", icon: Droplets, modules: ["stockstatus", "tankdata", "tanklayer"] },
       { to: "/stock/tank-logs",      label: "Tank Logs",       icon: ScrollText,    modules: ["tanklog"] },
     ],
   },
