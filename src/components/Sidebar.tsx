@@ -118,6 +118,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, modules: ["customer_balance_sheet"] },
       { to: "/accounts/open-ars",   label: "Open ARs",          icon: ArrowUpRight, modules: ["customer_balance_sheet"] },
       { to: "/accounts/open-aps",   label: "Open APs",          icon: ArrowDownLeft, modules: ["balance_sheet"] },
+      { to: "/accounts/open-pos",   label: "Open POs",          icon: FileText, modules: ["balance_sheet"] },
       { to: "/contracts/open-grpos", label: "Open GRPOs",        icon: PackageSearch, modules: ["open_grpos"] },
     ],
   },
