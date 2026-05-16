@@ -481,3 +481,33 @@ export async function getCustomerAgingBalance(): Promise<CustomerAgingEntry[]> {
   const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
   return key ? d[key] : [];
 }
+
+// Open POs
+
+export interface OpenPosEntry {
+  PO_NUMBER: number;
+  PO_DATE: string | null;
+  DUE_DATE: string | null;
+  VENDOR_CODE: string;
+  VENDOR_NAME: string;
+  ItemCode: string;
+  UserSign: number | null;
+  ITEM_NAME: string;
+  ORDERED_QTY: number;
+  PENDING_QTY: number;
+  RECEIVED_QTY: number;
+  UNIT_PRICE: number;
+  OPEN_VALUE: number;
+  WAREHOUSE: string;
+  UOM: string;
+}
+
+export async function getOpenPos(): Promise<OpenPosEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/open-pos/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.open_pos)) return d.open_pos;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}

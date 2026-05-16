@@ -37,6 +37,7 @@ import EximAccountPage from "@/pages/accounts/CrDrOutstandingPage";
 import EximAccountVendorPage from "@/pages/accounts/CrDrVendorLedgerPage";
 import OpenApsPage from "@/pages/accounts/OpenApsPage";
 import OpenArsPage from "@/pages/accounts/OpenArsPage";
+import OpenPosPage from "@/pages/accounts/OpenPosPage";
 import CustomerOutstandingPage from "@/pages/accounts/CustomerOutstandingPage";
 import CustomerLedgerPage from "@/pages/accounts/CustomerLedgerPage";
 import CustomerAgingPage from "@/pages/accounts/CustomerAgingPage";
@@ -279,6 +280,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
                   <OpenArsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/open-pos"
+              element={
+                <ProtectedRoute requiredModules={["balance_sheet"]}>
+                  <OpenPosPage />
                 </ProtectedRoute>
               }
             />
