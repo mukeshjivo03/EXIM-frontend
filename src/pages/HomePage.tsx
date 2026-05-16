@@ -94,6 +94,7 @@ const quickLinks: QuickLink[] = [
   { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, desc: "Customer aging balance", category: "Commercials", modules: ["customer_balance_sheet"] },
   { to: "/accounts/open-ars", label: "Open ARs", icon: FileText, desc: "Open receivable invoices", category: "Commercials", modules: ["customer_balance_sheet"] },
   { to: "/accounts/open-aps", label: "Open APs", icon: FileText, desc: "Open payable invoices", category: "Commercials", modules: ["balance_sheet"] },
+  { to: "/accounts/open-pos", label: "Open POS", icon: FileText, desc: "Open purchase orders from SAP", category: "Commercials", modules: ["balance_sheet"] },
   { to: "/commodity/daily-price", label: "Daily Price", icon: TrendingUp, desc: "Commodity prices", category: "Commercials", modules: ["dailyprice"] },
   { to: "/commodity/jivo-rates", label: "Jivo Rates", icon: LineChart, desc: "Jivo commodity rates", category: "Commercials", modules: ["jivorates"] },
   { to: "/license/advance-license", label: "Advance License", icon: FileText, desc: "License management", category: "Commercials", modules: ["advancelicenseheaders"] },
