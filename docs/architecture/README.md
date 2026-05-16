@@ -65,7 +65,7 @@ src/
  |   |- dashboard/             # Dashboard & stock dashboard
  |   |- stock/                 # Stock status, tank items, tank data, tank monitoring
  |   |- commodity/             # Daily price + Jivo rates pages
- |   |- accounts/              # EXIM account page
+ |   |- accounts/              # EXIM accounts suite (outstanding, ledgers, open AP/AR/PO)
  |   |- contracts/             # Domestic contracts + Open GRPOs pages
  |   |- license/               # Advance license + DFIA license (list + detail)
  |   |- administration/        # Users, SAP sync pages, sync logs, stock logs

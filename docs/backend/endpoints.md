@@ -1,455 +1,170 @@
-# Backend API Endpoints
+# Backend Endpoints (Frontend-Used)
 
-All endpoints are served from the Django backend at `http://103.89.45.75:9000` (production) or `http://localhost:9000` (development).
+This file lists endpoints currently consumed by the frontend codebase.
 
-Auto-generated API docs are available at:
-- Swagger UI: `/api/docs/`
-- ReDoc: `/api/redoc/`
+Source of truth: `src/api/*.ts`.
 
 ---
 
-## Authentication (`/account/`)
+## Authentication
 
-| Method | Endpoint | View | Permission | Description |
-|--------|----------|------|------------|-------------|
-| POST | `/account/login/` | MyTokenObtainPairView | Public | Login, returns JWT tokens + role + name |
-| POST | `/account/login/refresh/` | TokenRefreshView | Public | Refresh access token |
-| POST | `/account/logout/` | Logout | Authenticated | Blacklist refresh token |
-| POST | `/account/register/` | RegisterView | ADM | Create new user |
-| GET | `/account/users/` | ListUservView | ADM | List all users |
-| GET/PATCH/DELETE | `/account/user/{id}/` | GetDeleteUpdate | ADM | Get, update, or delete user |
-
-### Login Response
-
-```json
-{
-  "access": "eyJ...",
-  "refresh": "eyJ...",
-  "role": "ADM",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "id": 1
-}
-```
+- `POST /account/login/`
+- `POST /account/login/refresh/`
+- `POST /account/logout/`
+- `GET /account/users/`
+- `POST /account/register/`
+- `PATCH /account/user/{id}/`
+- `DELETE /account/user/{id}/`
 
 ---
 
-## SAP Sync - Raw Materials (`/sap_sync/rm/`, `/items/rm/`, `/item/rm/`)
+## SAP Sync / Accounts / Contracts
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap_sync/rm/items/` | ADM | Sync ALL raw material items from SAP |
-| GET | `/sap_sync/rm/item/{itemCode}/` | ADM | Sync single RM item from SAP |
-| GET | `/items/rm/` | ADM, MNG | List RM items (filter: `?variety=X&variety=Y`) |
-| GET | `/items/rm/summary/` | ADM, MNG | Summary stats (filter: `?variety=X`) |
-| GET | `/items/rm/varieties/` | ADM, MNG | List distinct varieties |
-| GET | `/item/rm/{itemCode}/` | ADM, MNG | Get single RM item |
-| DELETE | `/item/rm/{itemCode}/` | ADM | Delete RM item |
+- `GET /sap-sync/items/`
+- `GET /sap-sync/po/`
+- `GET /sap-sync/po/{grpoNo}/`
+- `GET /sap-sync/balance-sheet/`
+- `GET /sap-sync/inventory/`
+- `GET /sap-sync/finished-inventory/`
+- `GET /sap-sync/vendor/ledger`
+- `GET /sap-sync/open-ap/`
+- `GET /sap-sync/open-ar/`
+- `GET /sap-sync/open-pos/`
+- `GET /sap-sync/custa/balance-sheet/`
+- `GET /sap-sync/vendor/balance-sheet/`
+- `GET /sap-sync/customer/balance/`
+- `GET /sap-sync/customer/ledger`
+- `GET /sap-sync/customer-aging-balance/`
 
-### RM Summary Response
+- `GET /pos/`
+- `PATCH /po/{id}/`
+- `DELETE /po/{id}/`
 
-```json
-{
-  "summary": {
-    "total_count": 42,
-    "total_qty": "15000.00",
-    "avg_rate": "85.50",
-    "total_trans_value": "1282500.00"
-  }
-}
-```
+- `GET /parties/`
+- `GET /party/{cardCode}/`
+- `DELETE /party/{cardCode}/`
+- `GET /sap_sync/party/{cardCode}/`
 
----
+- `GET /items/rm/`
+- `GET /items/rm/summary/`
+- `GET /items/rm/varieties/`
+- `GET /item/rm/{itemCode}/`
+- `DELETE /item/rm/{itemCode}/`
+- `GET /sap_sync/rm/items/`
+- `GET /sap_sync/rm/item/{itemCode}/`
 
-## SAP Sync - Finished Goods (`/sap_sync/fg/`, `/items/fg/`, `/item/fg/`)
+- `GET /items/fg/`
+- `GET /item/fg/{itemCode}/`
+- `DELETE /item/fg/{itemCode}/`
+- `GET /sap_sync/fg/items/`
+- `GET /sap_sync/fg/item/{itemCode}/`
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap_sync/fg/items/` | ADM | Sync ALL FG items from SAP |
-| GET | `/sap_sync/fg/item/{itemCode}/` | ADM | Sync single FG item from SAP |
-| GET | `/items/fg/` | ADM, MNG | List FG items |
-| GET | `/item/fg/{itemCode}/` | ADM, MNG | Get single FG item |
-| DELETE | `/item/fg/{itemCode}/` | ADM | Delete FG item |
-
----
-
-## SAP Sync - Vendors/Parties (`/sap_sync/party/`, `/parties/`, `/party/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap_sync/party/{cardCode}/` | ADM | Sync single vendor from SAP |
-| GET | `/parties/` | ADM, MNG | List all vendors |
-| GET/DELETE | `/party/{cardCode}/` | ADM, MNG / ADM | Get or delete vendor |
+- `GET /sync_logs/`
 
 ---
 
-## SAP Sync - Purchase Orders (`/sap-sync/po/`, `/pos/`, `/po/`)
+## Stock
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap-sync/po/` | ADM, MNG | Sync ALL purchase orders from SAP |
-| GET | `/sap-sync/po/{grpoNo}/` | ADM, MNG | Sync single PO by GRPO number |
-| GET | `/pos/` | ADM, MNG | List all purchase orders |
-| GET/PATCH/DELETE | `/po/{id}/` | ADM, MNG | Get, update, or delete PO |
-
----
-
-## SAP Sync - Balance Sheet (`/sap-sync/balance-sheet/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap-sync/balance-sheet/` | ADM, MNG | Fetch vendor balance sheet from SAP |
-
----
-
-## Sync Logs (`/sync_logs/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sync_logs/` | ADM | List all sync operation logs |
+- `GET /stock-status/`
+- `GET /stock-status/{id}/`
+- `POST /stock-status/`
+- `PUT /stock-status/{id}/`
+- `PATCH /stock-status/{id}/`
+- `GET /stock-status/stock-summary/`
+- `GET /stock-status/stock-insights/`
+- `GET /stock-status/stock-logs/`
+- `GET /stock-status/out/`
+- `GET /stock-status/get-unique-rm/`
+- `GET /stock-status/get-stock-entry-by-rm/`
+- `POST /stock-status/move/`
+- `POST /stock-status/dispatch/`
+- `POST /stock-status/arrive-batch/`
+- `POST /stock-status/opening-stock/`
+- `GET /stock-status/vehicle-report/`
+- `GET /stock-status/debit-entries/`
+- `GET /stock-status/debit-insights/`
+- `GET /stock-status/contractual-history/`
+- `GET /stock-status/stock-dashboard/`
 
 ---
 
-## Domestic Contracts — Form-based (`contracts` app)
+## Tanks
 
-Multi-step form workflow for manually created contracts. Three sequential PUT calls build up a single `DomesticReports` record.
+- `GET /tank/items/`
+- `POST /tank/items/`
+- `GET /tank/item/{tankItemCode}/`
+- `DELETE /tank/item/{tankItemCode}/`
+- `PUT /tank/item/update-color/{tankItemCode}/`
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/old-contracts/all/` | ADM, MNG | List all manually-created domestic contracts |
-| POST | `/dc/contract/create/` | ADM, MNG | Step 1: Create contract (product, vendor, PO, qty, rate) |
-| PUT | `/dc/loading/create/{id}/` | ADM, MNG | Step 2: Add loading info (load_qty, unload_qty — auto-calculates shortage, deductions) |
-| PUT | `/dc/freight/create/{id}/` | ADM, MNG | Step 3: Add freight info (transporter, vehicle, GRPO, invoice — auto-calculates amounts) |
+- `GET /tank/`
+- `POST /tank/`
+- `DELETE /tank/{tankCode}/`
+- `PUT /tank/update-capacity/{tankCode}/`
 
----
+- `GET /tank/tank-summary/`
+- `GET /tank/item-wise-summary/`
+- `GET /tank/item-wise-average/`
+- `GET /tank/in-tank-items/`
+- `GET /tank/layers/{tankCode}/`
+- `GET /tank/log/`
 
-## Stock Status (`/stock-status/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/stock-status/` | ADM, MNG | List stock entries (filters: `?status=X&vendor=X&item=X`) |
-| POST | `/stock-status/` | ADM, MNG | Create stock entry |
-| GET/PUT/PATCH/DELETE | `/stock-status/{id}/` | ADM, MNG | Get, update, soft-delete (`PATCH {deleted:true}`), or delete stock entry |
-| GET | `/stock-status/stock-logs/` | ADM, MNG | List stock update audit logs |
-| GET | `/stock-status/stock-insights/` | ADM, MNG | Aggregate insights (filterable) |
-| GET | `/stock-status/stock-summary/` | ADM, MNG | Overall summary |
-| GET | `/stock-status/stock-dashboard/` | ADM, MNG | Full dashboard data |
-| GET | `/stock-status/get-unique-rm/` | ADM, MNG | List unique RM item codes with COMPLETED status |
-| GET | `/stock-status/get-stock-entry-by-rm/` | ADM, MNG | COMPLETED stock entries for an item (`?item_code=X`), includes `quantity_in_litre` |
-| GET | `/stock-status/out/` | ADM, MNG | List OUT_SIDE_FACTORY stock entries |
-| POST | `/stock-status/arrive-batch/` | — | Record batch arrival; FIFO remainder handling (RETAIN/TOLERATE/DEBIT) |
-| POST | `/stock-status/dispatch/` | — | Dispatch quantity to new status with remainder action |
-| POST | `/stock-status/move/` | — | Move stock to new status and adjust quantity |
-
-### Stock Insights Response
-
-```json
-{
-  "summary": {
-    "total_value": 1500000,
-    "total_qty": 25000,
-    "total_count": 150,
-    "avg_price_per_kg": 60.0,
-    "avg_price_per_ltr": 55.2
-  }
-}
-```
-
-### Stock Dashboard Response
-
-```json
-{
-  "summary": {
-    "in_factory_total": 50000,
-    "outside_factory_total": 12000,
-    "active_items": 8
-  },
-  "status_vendors": {
-    "ON_THE_SEA": ["Vendor A", "Vendor B"],
-    "MUNDRA_PORT": ["Vendor C"]
-  },
-  "items": [
-    {
-      "item_code": "RM001",
-      "in_factory": 5000,
-      "outside_factory": 1200,
-      "status_data": { "ON_THE_SEA__Vendor A": 500 },
-      "total": 6700
-    }
-  ],
-  "totals": { "in_factory": 50000, "outside_factory": 12000, "grand_total": 62000 }
-}
-```
-
-**Note:** `IN_FACTORY` data comes from TankData (sum of `current_capacity` grouped by `item_code`), not from StockStatus records.
+- `POST /tank/inward/`
+- `POST /tank/outward/`
 
 ---
 
-## Tanks (`/tank/`)
+## Commodity / Rates
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/tank/` | Authenticated | List all tanks |
-| POST | `/tank/` | ADM, MNG | Create a tank |
-| GET/DELETE | `/tank/{tankCode}/` | ADM, MNG | Get or delete tank |
-| PUT | `/tank/update-capacity/{tankCode}/` | ADM, FTR | Update tank capacity + item |
-| GET | `/tank/items/` | Authenticated | List all tank items |
-| POST | `/tank/items/` | ADM, MNG | Create tank item |
-| GET/DELETE | `/tank/item/{tankItemCode}/` | ADM, MNG | Get or delete tank item |
-| PUT | `/tank/item/update-color/{tankItemCode}/` | ADM, MNG | Update item color + name |
-| GET | `/tank/tank-summary/` | Authenticated | Tank summary stats |
-| GET | `/tank/item-wise-summary/` | Authenticated | Per-item summary (returns `{ total_quantity, items[] }`) |
-| GET | `/tank/capacity-insights/` | ADM, MNG | Capacity utilization |
-| GET | `/tank/tank-rates/` | ADM, MNG | FIFO rate breakdown per tank |
-| GET | `/tank/layers/{tankCode}/` | Authenticated | Active FIFO layers with cost breakdown for a specific tank |
-| GET | `/tank/logs/{tankCode}/` | Authenticated | All logs for a specific tank |
-| GET | `/tank/log/` | Authenticated | All tank logs across all tanks (with consumptions) |
-| GET | `/tank/consumption/` | Authenticated | All TankLogConsumption records |
-| GET | `/tank/item-wise-average/` | — | Weighted average cost per commodity item |
-| GET | `/tank/get-same-tanks/` | — | Tanks with same item or empty (for transfer target selection, `?item_code=X`) |
-| POST | `/tank/inward/` | ADM, FTR | Add stock to tank (requires COMPLETED stock; creates TankLayer; status → IN_TANK) |
-| POST | `/tank/outward/` | ADM, FTR | Remove stock from tank (FIFO consumption across layers) |
-| POST | `/tank/transfer/` | ADM, FTR | Transfer stock between tanks (FIFO on source; new layers on destination) |
+- `GET /daily-price/fetch/`
+- `POST /daily-price/fetch/`
+- `GET /daily-price/db-list/`
+- `GET /daily-price/range/`
+- `GET /daily-price/trends/`
 
-### Tank Summary Response
+- `GET /jivo-rate/fetch`
+- `POST /jivo-rate/fetch`
+- `GET /jivo-rate/range/`
+- `GET /jivo-rate/trends/`
 
-```json
-{
-  "summary": {
-    "total_tank_capacity": 100000,
-    "current_stock": 75000,
-    "utilisation_rate": 75.0,
-    "tank_count": 10,
-    "item_count": 5
-  }
-}
-```
-
-### Item-Wise Summary Response
-
-```json
-{
-  "total_quantity": 19217.41,
-  "items": [
-    {
-      "color": "#f8b90d",
-      "tank_item_code": "RM000SF",
-      "tank_item_name": "Sunflower Oil",
-      "quantity_in_liters": 9608.71,
-      "total_capacity": 50000.0,
-      "tank_count": 1,
-      "tank_numbers": ["TNK001"]
-    }
-  ]
-}
-```
-
-### Tank Inward Request
-
-```json
-{
-  "tank_code": "TNK001",
-  "stock_status_id": "86",
-  "quantity": "5000.00",
-  "user": "admin@exim.com"
-}
-```
-
-### Tank Outward Request
-
-```json
-{
-  "tank_code": "TNK001",
-  "quantity": "2000.00",
-  "remarks": "Used for Production",
-  "user": "admin@exim.com"
-}
-```
-
-### Tank Log Response
-
-```json
-[
-  {
-    "id": 1,
-    "tank_code": "TNK001",
-    "log_type": "INWARD",
-    "quantity": "5000.00",
-    "stock_status_id": 86,
-    "tank_layer_id": null,
-    "remarks": "",
-    "created_at": "2026-03-17T07:35:00Z",
-    "created_by": "admin@exim.com",
-    "consumptions": []
-  },
-  {
-    "id": 2,
-    "tank_code": "TNK001",
-    "log_type": "OUTWARD",
-    "quantity": "2000.00",
-    "stock_status_id": null,
-    "tank_layer_id": 1,
-    "remarks": "Used for Production",
-    "created_at": "2026-03-17T08:00:00Z",
-    "created_by": "admin@exim.com",
-    "consumptions": [
-      {
-        "id": 1,
-        "layer_id": 1,
-        "stock_status_id": 86,
-        "vendor_name": "VENDA000020",
-        "quantity_consumed": "2000.00",
-        "rate": "100.00",
-        "created_at": "2026-03-17T08:00:00Z"
-      }
-    ]
-  }
-]
-```
-
-### Tank Rates Response
-
-```json
-[
-  {
-    "tank_code": "TNK001",
-    "item_code": "RM001",
-    "item_name": "Sunflower Oil",
-    "color": "#FF5733",
-    "tank_capacity": 10000,
-    "current_capacity": 7500,
-    "rate_breakdown": [
-      { "rate": 85.0, "qty": 5000, "percentage": 66.7, "vendor": "Vendor A" },
-      { "rate": 90.0, "qty": 2500, "percentage": 33.3, "vendor": "Vendor B" }
-    ],
-    "weighted_avg_rate": 86.67
-  }
-]
-```
+- `GET /custom-exchange-rates/`
+- `GET /custom-exchange-rates/external/`
 
 ---
 
-## Daily Price (`/daily-price/`)
+## Open GRPO
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/daily-price/fetch/` | ADM, MNG | Fetch today's prices from Google Sheets (preview) |
-| POST | `/daily-price/fetch/` | ADM, MNG | Save fetched prices to database |
-| GET | `/daily-price/db-list/` | ADM, MNG | List saved prices (filter: `?date=YYYY-MM-DD`) |
-| GET | `/daily-price/range/` | ADM, MNG | List saved prices by range (`?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`) |
-| GET | `/daily-price/trends/` | ADM, MNG | 7-day price trend data for charts |
-
-### Trends Response
-
-```json
-{
-  "labels": ["2024-01-01", "2024-01-02", "..."],
-  "datasets": [
-    { "label": "Sunflower Oil", "data": [85.0, 86.5, 84.0] },
-    { "label": "Palm Oil", "data": [72.0, 71.5, 73.0] }
-  ]
-}
-```
+- `GET /sap_sync/open-grpos/`
 
 ---
 
-## Jivo Rates (`/jivo-rate/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/jivo-rate/fetch` | AllowAny | Fetch latest Jivo rates (preview, not saved) |
-| POST | `/jivo-rate/fetch` | AllowAny | Save fetched Jivo rates to DB (`{ created_by: string }`) |
-| GET | `/jivo-rate/range/` | AllowAny | List saved rates by range (`?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`) |
-| GET | `/jivo-rate/trends/` | AllowAny | Trend data for charts |
-
-### Fetch Response
-
-```json
-{
-  "status": "ok",
-  "count": 24,
-  "preview_data": [
-    { "pack_type": "1kg", "commodity": "Soya Refined", "rate": 142.50, "date": "2026-03-31", "created_by": "" }
-  ]
-}
-```
-
-### Range Response
-
-```json
-[
-  { "id": 1, "pack_type": "1kg", "commodity": "Soya Refined", "rate": 142.50, "date": "2026-03-31", "created_by": "admin@exim.com" }
-]
-```
-
----
-
-## Open GRPOs (`/sap_sync/open-grpos/`)
-
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/sap_sync/open-grpos/` | ADM, MNG | Fetch open GRPOs pending invoice from SAP |
-
-### Response
-
-```json
-{
-  "open_grpos": [
-    {
-      "GRPO Number": 1234,
-      "Vendor Ref No": "REF001",
-      "User Name": "John Doe",
-      "Vendor Name": "Vendor Co. Ltd",
-      "Warehouse": "WH001",
-      "Pending Days": 8
-    }
-  ]
-}
-```
-
----
-
-## Licenses (`/license/`)
+## Licenses
 
 ### Advance License
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/license/advance-license-headers/` | ADM, MNG | List all headers |
-| POST | `/license/advance-license-headers/` | ADM, MNG | Create header |
-| GET/PUT/DELETE | `/license/advance-license-header/{licenseNo}/` | ADM, MNG | CRUD single header |
-| GET | `/license/advance-license-lines/` | ADM, MNG | List all lines |
-| POST | `/license/advance-license-lines/` | ADM, MNG | Create line |
-| GET/PUT/DELETE | `/license/advance-license-lines/{id}/` | ADM, MNG | CRUD single line |
-| GET | `/license/advance-license-lines/insight/{licenseNo}/` | — | Aggregated insight: sum of BOE value, SB value, import/export MTS, balance |
+- `GET /license/advance-license-headers/`
+- `POST /license/advance-license-headers/`
+- `GET /license/advance-license-header/{licenseNo}/`
+- `PUT /license/advance-license-header/{licenseNo}/`
+- `DELETE /license/advance-license-header/{licenseNo}/`
+- `GET /license/advance-license-import-lines/dropdown/{licenseNo}/`
+- `POST /license/advance-license-import-lines/`
+- `PUT /license/advance-license-import-lines/{id}/`
+- `DELETE /license/advance-license-import-lines/{id}/`
+- `POST /license/advance-license-export-lines/`
+- `PUT /license/advance-license-export-lines/{id}/`
+- `DELETE /license/advance-license-export-lines/{id}/`
 
 ### DFIA License
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/license/dfia-license-header/list/` | ADM, MNG | List all headers |
-| POST | `/license/dfia-license-header/create/` | ADM, MNG | Create header |
-| GET/PUT/DELETE | `/license/dfia-license-header/{fileNo}/` | ADM, MNG | CRUD single header |
-| GET | `/license/dfia-license-lines/list/` | ADM, MNG | List all lines |
-| POST | `/license/dfia-license-lines/create/` | ADM, MNG | Create line |
-| GET/PUT/DELETE | `/license/dfia-license-lines/{id}/` | ADM, MNG | CRUD single line |
-| GET | `/license/dfia-license-lines/insight/{fileNo}/` | — | Aggregated insight: sum of balance, import/export MTS, SB value INR |
-
-**Note:** DFIA endpoints use `/list/` and `/create/` suffixes, unlike Advance License endpoints. This is an inconsistency.
-
-### Header Serializer Behavior
-
-When GET-ting a header, the response includes nested lines:
-- Advance: `lincense_lines` (note: typo in serializer field name)
-- DFIA: `dfia_license_lines`
-
----
-
-## URL Pattern Inconsistencies
-
-| Pattern | Examples | Notes |
-|---------|----------|-------|
-| Underscore vs hyphen | `/sap_sync/` vs `/sap-sync/` | Mixed across endpoints |
-| Trailing suffixes | `/dfia-license-header/list/` vs `/advance-license-headers/` | DFIA uses action suffixes |
-| Field naming | `boe_No` (camelCase), `fob_exhange_rate` (typo) | From model definitions |
-| Serializer field | `lincense_lines` | Typo for "license_lines" |
+- `GET /license/dfia-license-header/list/`
+- `POST /license/dfia-license-header/create/`
+- `GET /license/dfia-license-header/{fileNo}/`
+- `PUT /license/dfia-license-header/{fileNo}/`
+- `DELETE /license/dfia-license-header/{fileNo}/`
+- `GET /license/dfia-license-export-lines/dropdown/{fileNo}/`
+- `POST /license/dfia-license-import-lines/create/`
+- `PUT /license/dfia-license-import-lines/{id}/`
+- `DELETE /license/dfia-license-import-lines/{id}/`
+- `POST /license/dfia-license-export-lines/create/`
+- `PUT /license/dfia-license-export-lines/{id}/`
+- `DELETE /license/dfia-license-export-lines/{id}/`
