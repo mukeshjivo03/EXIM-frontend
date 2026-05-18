@@ -47,6 +47,14 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+function todayISO() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 interface Props {
   data: StockStatus | null;
   tankItems: TankItem[];
@@ -64,6 +72,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [eVehicleNumber, setEVehicleNumber] = useState("");
   const [eLocation, setELocation] = useState("");
   const [eEta, setEEta] = useState("");
+  const [eArrivalDate, setEArrivalDate] = useState("");
   const [eTransporterName, setETransporterName] = useState("");
   const [eTransferType, setETransferType] = useState<"bulk" | "batch" | "">("");
   const [eAction, setEAction] = useState<"RETAIN" | "TOLERATE" | "DEBIT" | "">("");
@@ -78,6 +87,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
 
   // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
   const jobWorkLocked = data?.status === "AT_REFINERY" && !!data?.job_work_vendor;
+  const showOutsideFactoryArrivalDate = eStatus !== data?.status && eStatus === "OUT_SIDE_FACTORY";
 
   // Filtered vendor list for job work combobox
   const filteredVendors = useMemo(() => {
@@ -99,6 +109,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEVehicleNumber(data.vehicle_number ?? "");
       setELocation(data.location ?? "");
       setEEta(data.eta ?? "");
+      setEArrivalDate(data.arrival_date ?? "");
       setETransporterName(data.transporter ?? "");
       setETransferType("");
       setEAction("");
@@ -162,6 +173,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             new_status: eStatus,
             action: finalAction,
             created_by: email,
+            arrival_date: eStatus === "OUT_SIDE_FACTORY" ? eArrivalDate.trim() || todayISO() : undefined,
           });
           toast.success("Stock moved (Bulk).");
         } else if (eTransferType === "batch") {
@@ -263,6 +275,9 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             <Select value={eStatus} onValueChange={(v) => {
               const s = v as StockStatusChoice;
               setEStatus(s);
+              if (s === "OUT_SIDE_FACTORY") {
+                setEArrivalDate(todayISO());
+              }
               if (s !== data?.status) {
                  if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT" || s === "COMPLETED" || s === "IN_TANK") {
                    setETransferType("bulk");
@@ -349,6 +364,17 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               )}
 
               {/* Job Work Vendor — combobox: type freely or pick from vendor list */}
+              {showOutsideFactoryArrivalDate && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Label htmlFor="e-arrival-date">Arrival Date</Label>
+                  <DateInput
+                    id="e-arrival-date"
+                    value={eArrivalDate}
+                    onChange={(e) => setEArrivalDate(e.target.value)}
+                  />
+                </div>
+              )}
+
               {eStatus === "AT_REFINERY" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Job Work Vendor *</Label>
