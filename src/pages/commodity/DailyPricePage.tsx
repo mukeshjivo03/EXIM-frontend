@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
 import { toastApiError } from "@/lib/errors";
@@ -16,6 +16,7 @@ import {
   AlertCircle,
   BarChart3,
   Hash,
+  Printer,
 } from "lucide-react";
 import {
   LineChart,
@@ -141,6 +142,7 @@ export default function DailyPricePage() {
   const [classicMode, setClassicMode] = useState(false);
   const [savedClassicMode, setSavedClassicMode] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
+  const prePrintClassicModeRef = useRef<boolean | null>(null);
 
   // Previous day prices for delta calculation
   const [prevDayPrices, setPrevDayPrices] = useState<DbDailyPrice[]>([]);
@@ -193,6 +195,27 @@ export default function DailyPricePage() {
       handleFetch();
     }
   }, []);
+
+  useEffect(() => {
+    function handleBeforePrint() {
+      prePrintClassicModeRef.current = classicMode;
+      setClassicMode(true);
+    }
+
+    function handleAfterPrint() {
+      if (prePrintClassicModeRef.current !== null) {
+        setClassicMode(prePrintClassicModeRef.current);
+        prePrintClassicModeRef.current = null;
+      }
+    }
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [classicMode]);
 
   /* ── handlers ──────────────────────────────────────────── */
 
@@ -330,9 +353,9 @@ export default function DailyPricePage() {
 
   return (
     <Guard resource="dailyprice" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view daily prices.</div>}>
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page daily-price-print-root">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Daily Commodity Prices</h1>
           <p className="text-sm text-muted-foreground">
@@ -362,12 +385,16 @@ export default function DailyPricePage() {
               Open Sheet
             </a>
           </Button>
+          <Button className="btn-press print:hidden" variant="outline" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
         </div>
       </div>
 
       {/* Unsaved data warning */}
       {fetched && prices.length > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3 print:hidden">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
             Fetched prices are in preview. Click <strong>"Save to Database"</strong> to persist them.
@@ -377,7 +404,7 @@ export default function DailyPricePage() {
 
       {/* KPI Summary Cards */}
       {kpis && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 print:hidden">
           <SummaryCard icon={Hash} label="Commodities" value={kpis.count} loading={false} />
           <SummaryCard icon={BarChart3} label="Avg Factory Price" value={`₹ ${fmtPrice(kpis.avg)}`} loading={false} />
           <SummaryCard icon={TrendingUp} label="Highest" value={`₹ ${fmtPrice(Number(kpis.highest.factory_kg))}`} loading={false} />
@@ -386,7 +413,7 @@ export default function DailyPricePage() {
       )}
 
       {/* Search */}
-      <div className="relative max-w-sm">
+      <div className="relative max-w-sm print:hidden">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search commodities..."
@@ -397,18 +424,23 @@ export default function DailyPricePage() {
       </div>
 
       {/* Fetched Prices Table */}
-      <Card className="card-hover shimmer-hover">
-        <CardHeader>
+      <Card className="card-hover shimmer-hover print:shadow-none print:border-none">
+        <CardHeader className="print:hidden">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Commodity Prices</CardTitle>
-              <CardDescription>
+              <CardDescription className="print:hidden">
                 {fetched
                   ? `${count} commodities fetched${prices.length > 0 ? ` — ${prices[0].fetched_date}` : ""}`
                   : "Click \"Fetch Prices\" to load data from the Google Sheet"}
               </CardDescription>
+              {fetched && prices.length > 0 && (
+                <p className="hidden print:block text-sm text-muted-foreground mt-1">
+                  Date: {prices[0].fetched_date}
+                </p>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 print:hidden">
               {fetched && prices.length > 0 && (
                 <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest animate-pulse border-amber-300 text-amber-600 dark:text-amber-400">
                   LIVE PREVIEW
@@ -430,8 +462,8 @@ export default function DailyPricePage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto">
+        <CardContent className="print:p-0">
+          <div className="rounded-md border overflow-x-auto print:rounded-none print:border-0 print:overflow-visible daily-price-print-table">
             {classicMode ? (
               /* ── Classic Excel-style view ── */
               <Table className="text-base" style={{ borderCollapse: "separate", borderSpacing: "4px 0" }}>
@@ -539,7 +571,7 @@ export default function DailyPricePage() {
       </Card>
 
       {/* Saved Prices by Date — with compare */}
-      <Card className="card-hover shimmer-hover">
+      <Card className="card-hover shimmer-hover print:hidden">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -795,7 +827,7 @@ export default function DailyPricePage() {
       </Card>
 
       {/* Price Trends Chart */}
-      <Card className="card-hover shimmer-hover overflow-hidden">
+      <Card className="card-hover shimmer-hover overflow-hidden print:hidden">
         <CardHeader className="pb-2">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -939,3 +971,4 @@ export default function DailyPricePage() {
     </Guard>
   );
 }
+

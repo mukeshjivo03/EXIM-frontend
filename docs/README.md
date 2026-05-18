@@ -27,8 +27,9 @@ EXIM is an **Export-Import management system** used internally to track:
 - **Commodity daily prices** with historical charts and delta tracking
 - **Jivo commodity rates** with matrix view and historical browsing
 - **Open GRPOs** monitoring with pending day alerts
+- **Open POs** monitoring with aging (`Days Open`) in Accounts
 - **Domestic contracts** (purchase orders)
-- **EXIM account** balances and transactions
+- **EXIM account** balances, ledgers, and open AP/AR/PO views
 - **Advance Licenses** and **DFIA Licenses** with line-level tracking
 - **SAP data synchronization** for raw materials, finished goods, and vendors
 - **User management** with role-based access control
