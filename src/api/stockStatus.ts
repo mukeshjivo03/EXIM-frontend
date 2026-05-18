@@ -191,6 +191,7 @@ export async function moveStock(data: {
   new_status: string;
   action: string;
   created_by: string;
+  arrival_date?: string;
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/move/", data);
   return res.data;
