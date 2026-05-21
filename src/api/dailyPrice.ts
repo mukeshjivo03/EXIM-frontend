@@ -40,6 +40,11 @@ export interface DbDailyPrice {
   created_by: string;
 }
 
+export interface HighestLowestResponse {
+  highest: DbDailyPrice | null;
+  lowest: DbDailyPrice | null;
+}
+
 export async function getDailyPricesByDate(date: string): Promise<DbDailyPrice[]> {
   const { data } = await api.get<DbDailyPrice[]>("/daily-price/db-list/", {
     params: { date },
@@ -50,6 +55,13 @@ export async function getDailyPricesByDate(date: string): Promise<DbDailyPrice[]
 export async function getDailyPricesByRange(fromDate: string, toDate: string): Promise<DbDailyPrice[]> {
   const { data } = await api.get<DbDailyPrice[]>("/daily-price/range/", {
     params: { from_date: fromDate, to_date: toDate },
+  });
+  return data;
+}
+
+export async function getHighestLowestByMonth(month: number): Promise<HighestLowestResponse> {
+  const { data } = await api.get<HighestLowestResponse>("/daily-price/highest-lowest/", {
+    params: { month },
   });
   return data;
 }

@@ -157,7 +157,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             job_work_vendor: eJobWorkVendor.trim(),
           });
           toast.success("Stock arrived (Arrive Batch).");
-        } else if (eStatus === "IN_TANK") {
+        } else if (eStatus === "IN_TANK" || eStatus === "IN_WAREHOUSE") {
           await patchStockStatus(data.id, {
             status: eStatus,
             bility_number: eBilityNumber.trim() || undefined,
@@ -165,7 +165,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             quantity: String(newQty),
             created_by: email,
           });
-          toast.success("Stock moved to In Tank.");
+          toast.success(`Stock moved to ${formatStatus(eStatus)}.`);
         } else if (eTransferType === "bulk") {
           await moveStock({
             stock_id: data.id,
@@ -279,7 +279,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                 setEArrivalDate(todayISO());
               }
               if (s !== data?.status) {
-                 if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT" || s === "COMPLETED" || s === "IN_TANK") {
+                 if (s === "OUT_SIDE_FACTORY" || s === "ON_THE_WAY" || s === "MUNDRA_PORT" || s === "COMPLETED" || s === "IN_TANK" || s === "IN_WAREHOUSE") {
                    setETransferType("bulk");
                  } else if (s === "UNDER_LOADING" || s === "OTW_TO_REFINERY") {
                    setETransferType("batch");
@@ -287,7 +287,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                    setETransferType("");
                  }
 
-                 if (s === "MUNDRA_PORT" || s === "OUT_SIDE_FACTORY" || s === "COMPLETED" || s === "IN_TANK") {
+                 if (s === "MUNDRA_PORT" || s === "OUT_SIDE_FACTORY" || s === "COMPLETED" || s === "IN_TANK" || s === "IN_WAREHOUSE") {
                    setEAction("TOLERATE");
                  } else {
                    setEAction("");
@@ -333,7 +333,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                eStatus !== "UNDER_LOADING" &&
                eStatus !== "OTW_TO_REFINERY" &&
                eStatus !== "COMPLETED" &&
-               eStatus !== "IN_TANK" && (
+               eStatus !== "IN_TANK" &&
+               eStatus !== "IN_WAREHOUSE" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Transfer Type *</Label>
                   <Select value={eTransferType} onValueChange={(v) => setETransferType(v as "bulk" | "batch")}>
@@ -348,7 +349,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                 </div>
               )}
 
-              {eQuantity.trim() !== "" && eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && Number(data?.quantity) !== Number(eQuantity) && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
+              {eQuantity.trim() !== "" && eStatus !== "OUT_SIDE_FACTORY" && eStatus !== "COMPLETED" && eStatus !== "IN_TANK" && eStatus !== "IN_WAREHOUSE" && Number(data?.quantity) !== Number(eQuantity) && (eTransferType || eStatus === "AT_REFINERY" || eStatus === "ON_THE_WAY" || eStatus === "MUNDRA_PORT" || eStatus === "UNDER_LOADING" || eStatus === "OTW_TO_REFINERY") && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Action *</Label>
                   <Select value={eAction} onValueChange={(v) => setEAction(v as any)}>
@@ -430,7 +431,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                 </div>
               )}
 
-              {eStatus === "IN_TANK" && (
+              {(eStatus === "IN_TANK" || eStatus === "IN_WAREHOUSE") && (
                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="space-y-2">
                     <Label htmlFor="e-bility">Bility Number</Label>
