@@ -35,6 +35,7 @@ export function statusColorClass(s: string): string {
     case "DELIVERED":
     case "COMPLETED":
     case "IN_TANK":
+    case "IN_WAREHOUSE":
     case "KANDLA_STORAGE":
       return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
     case "PENDING":
@@ -72,6 +73,7 @@ export const JOURNEY_STEPS: { status: StockStatusChoice; label: string; icon: an
   { status: "UNDER_LOADING", label: "Underloading", icon: Package },
   { status: "OTW_TO_REFINERY", label: "OTW", icon: Truck },
   { status: "OUT_SIDE_FACTORY", label: "Outside Factory", icon: Truck },
+  { status: "IN_WAREHOUSE", label: "Warehouse", icon: Warehouse },
   { status: "KANDLA_STORAGE", label: "Tank", icon: Warehouse },
 ];
 
@@ -80,6 +82,6 @@ export const JOURNEY_STEPS: { status: StockStatusChoice; label: string; icon: an
 export const STATUS_ORDER: Record<string, number> = {
   OUT_SIDE_FACTORY: 0, ON_THE_WAY: 1, UNDER_LOADING: 2, AT_REFINERY: 3,
   OTW_TO_REFINERY: 4, KANDLA_STORAGE: 5, MUNDRA_PORT: 6, ON_THE_SEA: 7,
-  IN_CONTRACT: 8, IN_TANK: 9, DELIVERED: 10, IN_TRANSIT: 11,
-  PENDING: 12, PROCESSING: 13, COMPLETED: 14,
+  IN_CONTRACT: 8, IN_TANK: 9, IN_WAREHOUSE: 10, DELIVERED: 11, IN_TRANSIT: 12,
+  PENDING: 13, PROCESSING: 14, COMPLETED: 15,
 };

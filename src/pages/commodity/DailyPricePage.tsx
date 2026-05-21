@@ -33,8 +33,10 @@ import {
   saveDailyPrices,
   getDailyPricesByDate,
   getDailyPricesByRange,
+  getHighestLowestByMonth,
   getPriceTrends,
   type DbDailyPrice,
+  type HighestLowestResponse,
   type PriceTrendsResponse,
 } from "@/api/dailyPrice";
 import Guard from "@/components/Guard";
@@ -62,6 +64,7 @@ const LINE_COLORS = [
   "#8b5cf6", "#0891b2", "#d946ef", "#ca8a04",
   "#059669", "#e11d48", "#7c3aed", "#ea580c",
 ];
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 
 function fmtPrice(v: number | string, decimals = 2): string {
@@ -146,6 +149,9 @@ export default function DailyPricePage() {
 
   // Previous day prices for delta calculation
   const [prevDayPrices, setPrevDayPrices] = useState<DbDailyPrice[]>([]);
+  const [highestLowestMonth, setHighestLowestMonth] = useState<number>(new Date().getMonth() + 1);
+  const [highestLowestData, setHighestLowestData] = useState<HighestLowestResponse | null>(null);
+  const [highestLowestLoading, setHighestLowestLoading] = useState(false);
 
   /* ── data loading ──────────────────────────────────────── */
 
@@ -187,6 +193,18 @@ export default function DailyPricePage() {
     } catch { /* non-critical */ }
   }
 
+  async function loadHighestLowest(month: number) {
+    setHighestLowestLoading(true);
+    try {
+      const data = await getHighestLowestByMonth(month);
+      setHighestLowestData(data);
+    } catch {
+      setHighestLowestData(null);
+    } finally {
+      setHighestLowestLoading(false);
+    }
+  }
+
   // Auto-fetch on page load if not already cached
   useEffect(() => {
     loadTrends();
@@ -195,6 +213,10 @@ export default function DailyPricePage() {
       handleFetch();
     }
   }, []);
+
+  useEffect(() => {
+    loadHighestLowest(highestLowestMonth);
+  }, [highestLowestMonth]);
 
   useEffect(() => {
     function handleBeforePrint() {
@@ -423,6 +445,71 @@ export default function DailyPricePage() {
         />
       </div>
 
+      {/* Monthly Highest / Lowest */}
+      <Card className="card-hover shimmer-hover print:hidden">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle>Monthly Highest / Lowest</CardTitle>
+              <CardDescription>
+                Showing highest and lowest factory price for {MONTH_NAMES[highestLowestMonth - 1]}
+              </CardDescription>
+            </div>
+            <Select value={String(highestLowestMonth)} onValueChange={(v) => setHighestLowestMonth(Number(v))}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTH_NAMES.map((monthName, index) => (
+                  <SelectItem key={monthName} value={String(index + 1)}>{monthName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <Card className="border-emerald-200 dark:border-emerald-900/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-emerald-700 dark:text-emerald-400">Highest Factory Price ({MONTH_NAMES[highestLowestMonth - 1]})</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {highestLowestLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : highestLowestData?.highest ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">{highestLowestData.highest.commodity_name}</p>
+                    <p className="text-muted-foreground">{format(parseISO(highestLowestData.highest.date), "d MMM yyyy")}</p>
+                    <p className="font-bold">₹ {fmtPrice(highestLowestData.highest.factory_price)}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No highest price found for this month.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-rose-200 dark:border-rose-900/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-rose-700 dark:text-rose-400">Lowest Factory Price ({MONTH_NAMES[highestLowestMonth - 1]})</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {highestLowestLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : highestLowestData?.lowest ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">{highestLowestData.lowest.commodity_name}</p>
+                    <p className="text-muted-foreground">{format(parseISO(highestLowestData.lowest.date), "d MMM yyyy")}</p>
+                    <p className="font-bold">₹ {fmtPrice(highestLowestData.lowest.factory_price)}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No lowest price found for this month.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Fetched Prices Table */}
       <Card className="card-hover shimmer-hover print:shadow-none print:border-none">
         <CardHeader className="print:hidden">
@@ -583,6 +670,16 @@ export default function DailyPricePage() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Select value={String(highestLowestMonth)} onValueChange={(v) => setHighestLowestMonth(Number(v))}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Select month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_NAMES.map((monthName, index) => (
+                    <SelectItem key={monthName} value={String(index + 1)}>{monthName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <DatePicker value={fromDate} onChange={setFromDate} placeholder="From date" />
               <span className="text-muted-foreground text-sm">to</span>
               <DatePicker value={toDate} onChange={setToDate} placeholder="To date" />
@@ -635,6 +732,45 @@ export default function DailyPricePage() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <Card className="border-emerald-200 dark:border-emerald-900/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-emerald-700 dark:text-emerald-400">Highest Factory Price ({MONTH_NAMES[highestLowestMonth - 1]})</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {highestLowestLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : highestLowestData?.highest ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">{highestLowestData.highest.commodity_name}</p>
+                    <p className="text-muted-foreground">{format(parseISO(highestLowestData.highest.date), "d MMM yyyy")}</p>
+                    <p className="font-bold">₹ {fmtPrice(highestLowestData.highest.factory_price)}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No highest price found for this month.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-rose-200 dark:border-rose-900/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-rose-700 dark:text-rose-400">Lowest Factory Price ({MONTH_NAMES[highestLowestMonth - 1]})</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {highestLowestLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : highestLowestData?.lowest ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">{highestLowestData.lowest.commodity_name}</p>
+                    <p className="text-muted-foreground">{format(parseISO(highestLowestData.lowest.date), "d MMM yyyy")}</p>
+                    <p className="font-bold">₹ {fmtPrice(highestLowestData.lowest.factory_price)}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No lowest price found for this month.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
           <div className="rounded-md border overflow-x-auto relative">
             {compareMode ? (
                /* ── Comparison Pivot Table view ── */
