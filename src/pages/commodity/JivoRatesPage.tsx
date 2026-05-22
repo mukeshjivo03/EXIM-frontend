@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { toastApiError } from "@/lib/errors";
@@ -13,6 +13,7 @@ import {
   Hash,
   LayoutList,
   Grid3X3,
+  Printer,
 } from "lucide-react";
 
 import {
@@ -86,8 +87,37 @@ export default function JivoRatesPage() {
   const [viewMode, setViewMode] = useState<"list" | "matrix">("matrix");
   // Classic = Excel-like colored mode; default = aesthetic mode
   const [classicMode, setClassicMode] = useState(false);
+  const prePrintViewModeRef = useRef<"list" | "matrix" | null>(null);
+  const prePrintClassicModeRef = useRef<boolean | null>(null);
 
   useEffect(() => { if (!fetched) handleFetch(); }, []);
+
+  useEffect(() => {
+    function handleBeforePrint() {
+      prePrintViewModeRef.current = viewMode;
+      prePrintClassicModeRef.current = classicMode;
+      setViewMode("matrix");
+      setClassicMode(true);
+    }
+
+    function handleAfterPrint() {
+      if (prePrintViewModeRef.current !== null) {
+        setViewMode(prePrintViewModeRef.current);
+        prePrintViewModeRef.current = null;
+      }
+      if (prePrintClassicModeRef.current !== null) {
+        setClassicMode(prePrintClassicModeRef.current);
+        prePrintClassicModeRef.current = null;
+      }
+    }
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [classicMode, viewMode]);
 
   /* ── handlers ──────────────────────────────────────────── */
 
@@ -232,9 +262,9 @@ export default function JivoRatesPage() {
 
   return (
     <Guard resource="jivorates" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Jivo rates.</div>}>
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page jivo-rate-print-root">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Jivo Rates</h1>
           <p className="text-sm text-muted-foreground">Fetch and track Jivo commodity rates</p>
@@ -252,12 +282,16 @@ export default function JivoRatesPage() {
               {saving ? "Saving..." : "Save to Database"}
             </Button>
           )}
+          <Button className="btn-press print:hidden" variant="outline" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
         </div>
       </div>
 
       {/* Unsaved data warning */}
       {fetched && preview.length > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3 print:hidden">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
             Fetched rates are in preview. Click <strong>"Save to Database"</strong> to persist them.
@@ -267,7 +301,7 @@ export default function JivoRatesPage() {
 
       {/* KPI Cards */}
       {kpis && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 print:hidden">
           <SummaryCard icon={Hash} label="Total Entries" value={kpis.count} loading={false} />
           <SummaryCard icon={BarChart3} label="Avg Rate" value={`₹ ${fmtRate(kpis.avg)}`} loading={false} />
           <SummaryCard icon={TrendingUp} label="Highest Rate" value={`₹ ${fmtRate(kpis.highest.rate)}`} loading={false} />
@@ -276,7 +310,7 @@ export default function JivoRatesPage() {
       )}
 
       {/* Search */}
-      <div className="relative max-w-sm">
+      <div className="relative max-w-sm print:hidden">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search commodity or pack type..."
@@ -287,8 +321,8 @@ export default function JivoRatesPage() {
       </div>
 
       {/* Fetched Rates Table */}
-      <Card className="card-hover shimmer-hover">
-        <CardHeader>
+      <Card className="card-hover shimmer-hover print:shadow-none print:border-none">
+        <CardHeader className="print:hidden">
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>Jivo Rates</CardTitle>
@@ -338,8 +372,8 @@ export default function JivoRatesPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto">
+        <CardContent className="print:p-0">
+          <div className="rounded-md border overflow-x-auto print:rounded-none print:border-0 print:overflow-visible jivo-rate-print-table">
             {viewMode === "matrix" ? (
               <Table className="text-base">
                 <TableHeader>
@@ -472,7 +506,7 @@ export default function JivoRatesPage() {
       </Card>
 
       {/* Saved Rates by Range */}
-      <Card className="card-hover shimmer-hover">
+      <Card className="card-hover shimmer-hover print:hidden">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>

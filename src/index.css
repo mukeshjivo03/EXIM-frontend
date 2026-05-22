@@ -729,7 +729,7 @@ input, select, textarea, button {
   }
 }
 
-/* Daily Price: print only the classic commodity table */
+/* Daily Price / Jivo Rates: print only the classic commodity table */
 @media print {
   @page {
     size: A4 landscape;
@@ -745,11 +745,14 @@ input, select, textarea, button {
   }
 
   .daily-price-print-root,
-  .daily-price-print-root * {
+  .daily-price-print-root *,
+  .jivo-rate-print-root,
+  .jivo-rate-print-root * {
     visibility: visible !important;
   }
 
-  .daily-price-print-root {
+  .daily-price-print-root,
+  .jivo-rate-print-root {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -759,12 +762,14 @@ input, select, textarea, button {
     background: #fff !important;
   }
 
-  .daily-price-print-table {
+  .daily-price-print-table,
+  .jivo-rate-print-table {
     width: 100% !important;
     margin: 0 !important;
   }
 
-  .daily-price-print-table table {
+  .daily-price-print-table table,
+  .jivo-rate-print-table table {
     width: 100% !important;
     border-collapse: separate !important;
     border-spacing: 3px 0 !important;
@@ -772,11 +777,13 @@ input, select, textarea, button {
     color: #1f2b33 !important;
   }
 
-  .daily-price-print-table thead tr {
+  .daily-price-print-table thead tr,
+  .jivo-rate-print-table thead tr {
     background: transparent !important;
   }
 
-  .daily-price-print-table th {
+  .daily-price-print-table th,
+  .jivo-rate-print-table th {
     background: #ff9901 !important;
     color: #000 !important;
     font-weight: 700 !important;
@@ -786,7 +793,8 @@ input, select, textarea, button {
     white-space: nowrap !important;
   }
 
-  .daily-price-print-table td {
+  .daily-price-print-table td,
+  .jivo-rate-print-table td {
     background: #cfd8dc !important;
     border: 1px solid #111 !important;
     padding: 10px 8px !important;
@@ -795,14 +803,21 @@ input, select, textarea, button {
 
   .daily-price-print-table .font-semibold,
   .daily-price-print-table .font-bold,
-  .daily-price-print-table .font-medium {
+  .daily-price-print-table .font-medium,
+  .jivo-rate-print-table .font-semibold,
+  .jivo-rate-print-table .font-bold,
+  .jivo-rate-print-table .font-medium {
     font-weight: 600 !important;
   }
 
   .daily-price-print-table .rounded-md,
   .daily-price-print-table .rounded,
   .daily-price-print-table .rounded-lg,
-  .daily-price-print-table .rounded-xl {
+  .daily-price-print-table .rounded-xl,
+  .jivo-rate-print-table .rounded-md,
+  .jivo-rate-print-table .rounded,
+  .jivo-rate-print-table .rounded-lg,
+  .jivo-rate-print-table .rounded-xl {
     border-radius: 0 !important;
   }
 }
