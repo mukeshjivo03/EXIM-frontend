@@ -59,9 +59,12 @@ export async function getDailyPricesByRange(fromDate: string, toDate: string): P
   return data;
 }
 
-export async function getHighestLowestByMonth(month: number): Promise<HighestLowestResponse> {
+export async function getHighestLowestByDateRange(startDate?: string, endDate?: string): Promise<HighestLowestResponse> {
+  const params: Record<string, string> = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
   const { data } = await api.get<HighestLowestResponse>("/daily-price/highest-lowest/", {
-    params: { month },
+    params,
   });
   return data;
 }

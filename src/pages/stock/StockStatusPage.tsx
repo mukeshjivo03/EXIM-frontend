@@ -57,9 +57,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -69,8 +66,10 @@ import { ViewStockSheet } from "./components/ViewStockSheet";
 import { EditStockDialog } from "./components/EditStockDialog";
 import { DeleteStockDialog } from "./components/DeleteStockDialog";
 
-type StockStatusPageFilters = Omit<StockStatusFilters, "status"> & {
+type StockStatusPageFilters = Omit<StockStatusFilters, "status" | "vendor" | "item"> & {
   status?: string[];
+  vendor?: string[];
+  item?: string[];
 };
 
 /* ── component ────────────────────────────────────────────── */
@@ -100,9 +99,9 @@ export default function StockStatusPage() {
 
   // filters
   const [fStatuses, setFStatuses] = useState<string[]>([]);
-  const [fVendor, setFVendor] = useState("");
-  const [fItem, setFItem] = useState("");
-  const hasFilters = !!(fStatuses.length || fVendor || fItem);
+  const [fVendors, setFVendors] = useState<string[]>([]);
+  const [fItems, setFItems] = useState<string[]>([]);
+  const hasFilters = !!(fStatuses.length || fVendors.length || fItems.length);
 
   // Heatmap helper
   const maxQty = useMemo(() => {
@@ -165,49 +164,18 @@ export default function StockStatusPage() {
     setError("");
     try {
       const statuses = filters?.status ?? [];
-      if (statuses.length > 1) {
-        const [results, insights] = await Promise.all([
-          Promise.all(
-            statuses.map((status) =>
-              getStockStatuses({
-                status,
-                vendor: filters?.vendor,
-                item: filters?.item,
-              })
-            )
-          ),
-          getStockInsights({
-            status: statuses,
-            vendor: filters?.vendor,
-            item: filters?.item,
-          }),
-        ]);
-        const data = results.flat();
-        setRows(
-          data
-            .filter((r) => !r.deleted)
-            .sort((a, b) => {
-              const oa = STATUS_ORDER[a.status] ?? 99;
-              const ob = STATUS_ORDER[b.status] ?? 99;
-              return oa !== ob ? oa - ob : b.id - a.id;
-            })
-        );
-        setSummary(insights.summary);
-        setSelectedIds(new Set());
-        return;
-      }
-
-      const status = statuses[0];
+      const vendors = filters?.vendor ?? [];
+      const items = filters?.item ?? [];
       const [data, insights] = await Promise.all([
         getStockStatuses({
-          status,
-          vendor: filters?.vendor,
-          item: filters?.item,
+          status: statuses,
+          vendor: vendors,
+          item: items,
         }),
         getStockInsights({
-          status,
-          vendor: filters?.vendor,
-          item: filters?.item,
+          status: statuses,
+          vendor: vendors,
+          item: items,
         }),
       ]);
       setRows(
@@ -395,8 +363,8 @@ export default function StockStatusPage() {
     if (!hasFilters) return undefined;
     const f: StockStatusPageFilters = {};
     if (fStatuses.length) f.status = fStatuses;
-    if (fVendor) f.vendor = fVendor;
-    if (fItem) f.item = fItem;
+    if (fVendors.length) f.vendor = fVendors;
+    if (fItems.length) f.item = fItems;
     return f;
   }
 
@@ -407,8 +375,8 @@ export default function StockStatusPage() {
 
   function clearFilters() {
     setFStatuses([]);
-    setFVendor("");
-    setFItem("");
+    setFVendors([]);
+    setFItems([]);
     setPage(1);
     fetchList();
   }
@@ -416,6 +384,18 @@ export default function StockStatusPage() {
   function toggleStatusFilter(status: string) {
     setFStatuses((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  }
+
+  function toggleVendorFilter(vendor: string) {
+    setFVendors((prev) =>
+      prev.includes(vendor) ? prev.filter((v) => v !== vendor) : [...prev, vendor]
+    );
+  }
+
+  function toggleItemFilter(item: string) {
+    setFItems((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   }
 
@@ -524,7 +504,7 @@ export default function StockStatusPage() {
       {/* Presets */}
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={!fStatuses.length && !fVendor && !fItem ? "default" : "outline"}
+          variant={!fStatuses.length && !fVendors.length && !fItems.length ? "default" : "outline"}
           size="sm"
           className="rounded-full"
           onClick={clearFilters}
@@ -537,8 +517,8 @@ export default function StockStatusPage() {
           className="rounded-full gap-1.5"
           onClick={() => {
             setSingleStatusFilter("MUNDRA_PORT");
-            setFItem("");
-            setFVendor("");
+            setFItems([]);
+            setFVendors([]);
             fetchList({ status: ["MUNDRA_PORT"] });
           }}
         >
@@ -551,8 +531,8 @@ export default function StockStatusPage() {
           className="rounded-full gap-1.5"
           onClick={() => {
             setSingleStatusFilter("ON_THE_SEA");
-            setFItem("");
-            setFVendor("");
+            setFItems([]);
+            setFVendors([]);
             fetchList({ status: ["ON_THE_SEA"] });
           }}
         >
@@ -565,8 +545,8 @@ export default function StockStatusPage() {
           className="rounded-full gap-1.5"
           onClick={() => {
             setSingleStatusFilter("ON_THE_WAY");
-            setFItem("");
-            setFVendor("");
+            setFItems([]);
+            setFVendors([]);
             fetchList({ status: ["ON_THE_WAY"] });
           }}
         >
@@ -635,41 +615,105 @@ export default function StockStatusPage() {
             </div>
             <div className="space-y-1.5 min-w-[180px] flex-1">
               <Label className="text-xs text-muted-foreground">Vendor</Label>
-              <Select value={fVendor || "__all__"} onValueChange={(v) => setFVendor(v === "__all__" ? "" : v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All Vendors</SelectItem>
-                  {uniqueVendors.map((vc) => {
-                    const v = vendors.find((x) => x.card_code === vc);
-                    return (
-                      <SelectItem key={vc} value={vc}>
-                        {vc}{v ? ` - ${v.card_name}` : ""}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {fVendors.length === 0
+                        ? "All Vendors"
+                        : fVendors.length === 1
+                          ? `${fVendors[0]}${vendorNameMap.get(fVendors[0]) ? ` - ${vendorNameMap.get(fVendors[0])}` : ""}`
+                          : `${fVendors.length} vendors selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-2">
+                  <div className="max-h-72 overflow-y-auto space-y-1">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                      onClick={() => setFVendors([])}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setFVendors([]);
+                      }}
+                    >
+                      <Checkbox checked={fVendors.length === 0} className="cursor-pointer" />
+                      All Vendors
+                    </div>
+                    {uniqueVendors.map((vc) => {
+                      const v = vendors.find((x) => x.card_code === vc);
+                      return (
+                        <div
+                          key={vc}
+                          role="button"
+                          tabIndex={0}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                          onClick={() => toggleVendorFilter(vc)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") toggleVendorFilter(vc);
+                          }}
+                        >
+                          <Checkbox checked={fVendors.includes(vc)} className="cursor-pointer" />
+                          <span className="truncate">{vc}{v ? ` - ${v.card_name}` : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5 min-w-[180px] flex-1">
               <Label className="text-xs text-muted-foreground">Item</Label>
-              <Select value={fItem || "__all__"} onValueChange={(v) => setFItem(v === "__all__" ? "" : v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All Items</SelectItem>
-                  {uniqueItems.map((ic) => {
-                    const item = tankItems.find((x) => x.tank_item_code === ic);
-                    return (
-                      <SelectItem key={ic} value={ic}>
-                        {ic}{item ? ` - ${item.tank_item_name}` : ""}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {fItems.length === 0
+                        ? "All Items"
+                        : fItems.length === 1
+                          ? `${fItems[0]}${itemNameMap.get(fItems[0]) ? ` - ${itemNameMap.get(fItems[0])}` : ""}`
+                          : `${fItems.length} items selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-2">
+                  <div className="max-h-72 overflow-y-auto space-y-1">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                      onClick={() => setFItems([])}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setFItems([]);
+                      }}
+                    >
+                      <Checkbox checked={fItems.length === 0} className="cursor-pointer" />
+                      All Items
+                    </div>
+                    {uniqueItems.map((ic) => {
+                      const item = tankItems.find((x) => x.tank_item_code === ic);
+                      return (
+                        <div
+                          key={ic}
+                          role="button"
+                          tabIndex={0}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                          onClick={() => toggleItemFilter(ic)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") toggleItemFilter(ic);
+                          }}
+                        >
+                          <Checkbox checked={fItems.includes(ic)} className="cursor-pointer" />
+                          <span className="truncate">{ic}{item ? ` - ${item.tank_item_name}` : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex gap-2">
               <Button onClick={applyFilters} className="gap-1.5">
