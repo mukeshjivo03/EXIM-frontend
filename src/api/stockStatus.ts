@@ -66,15 +66,15 @@ export interface StockStatusPayload {
 }
 
 export interface StockStatusFilters {
-  status?: string;
-  vendor?: string;
-  item?: string;
+  status?: string | string[];
+  vendor?: string | string[];
+  item?: string | string[];
 }
 
 export interface StockInsightsFilters {
   status?: string | string[];
-  vendor?: string;
-  item?: string;
+  vendor?: string | string[];
+  item?: string | string[];
 }
 
 export interface StockInsightsSummary {
@@ -97,18 +97,23 @@ export async function getStockSummary(): Promise<StockInsights> {
 export async function getStockInsights(filters?: StockInsightsFilters): Promise<StockInsights> {
   const params = new URLSearchParams();
   const statuses = Array.isArray(filters?.status) ? filters.status : filters?.status ? [filters.status] : [];
+  const vendors = Array.isArray(filters?.vendor) ? filters.vendor : filters?.vendor ? [filters.vendor] : [];
+  const items = Array.isArray(filters?.item) ? filters.item : filters?.item ? [filters.item] : [];
   statuses.forEach((status) => params.append("status", status));
-  if (filters?.vendor) params.set("vendor", filters.vendor);
-  if (filters?.item) params.set("item", filters.item);
+  vendors.forEach((vendor) => params.append("vendor", vendor));
+  items.forEach((item) => params.append("item", item));
   const res = await api.get<StockInsights>("/stock-status/stock-insights/", { params });
   return res.data;
 }
 
 export async function getStockStatuses(filters?: StockStatusFilters): Promise<StockStatus[]> {
-  const params: Record<string, string> = {};
-  if (filters?.status) params.status = filters.status;
-  if (filters?.vendor) params.vendor = filters.vendor;
-  if (filters?.item) params.item = filters.item;
+  const params = new URLSearchParams();
+  const statuses = Array.isArray(filters?.status) ? filters.status : filters?.status ? [filters.status] : [];
+  const vendors = Array.isArray(filters?.vendor) ? filters.vendor : filters?.vendor ? [filters.vendor] : [];
+  const items = Array.isArray(filters?.item) ? filters.item : filters?.item ? [filters.item] : [];
+  statuses.forEach((status) => params.append("status", status));
+  vendors.forEach((vendor) => params.append("vendor", vendor));
+  items.forEach((item) => params.append("item", item));
   const res = await api.get<StockStatus[]>("/stock-status/", { params });
   return res.data ?? [];
 }
