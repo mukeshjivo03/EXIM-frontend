@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { RefreshCw, BarChart3, Droplets, Scale, PackageCheck, ChevronDown, ChevronRight, FileSpreadsheet, LayoutDashboard } from "lucide-react";
+import * as XLSX from "xlsx-js-style";
+import { RefreshCw, BarChart3, Droplets, Scale, PackageCheck, ChevronDown, ChevronRight, FileSpreadsheet, LayoutDashboard, FileDown } from "lucide-react";
 
 import {
   getDirectorInventory,
@@ -198,6 +199,104 @@ export default function DirectorDashboardPage() {
     });
   }
 
+  function downloadReportExcel() {
+    const workbook = XLSX.utils.book_new();
+    const tableRows = rows.map((row) => [
+      row.label.toUpperCase(),
+      row.liter > 0 ? row.liter : "",
+      row.mts > 0 ? row.mts : "",
+    ]);
+    const sheet = XLSX.utils.aoa_to_sheet([
+      [`OIL STATUS ${dateStr}`, "", ""],
+      ["STATUS", "IN LTR", "IN MTS"],
+      ...tableRows,
+      ["TOTAL", totals.liter, totals.mts],
+    ]);
+
+    sheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+    sheet["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 14 }];
+
+    const darkBlue = "1A3A6C";
+    const borderColor = "CBD5E1";
+    const headerBorderColor = "FFFFFF";
+    const titleStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 16 },
+      fill: { fgColor: { rgb: darkBlue } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: headerBorderColor } },
+        bottom: { style: "thin", color: { rgb: headerBorderColor } },
+        left: { style: "thin", color: { rgb: headerBorderColor } },
+        right: { style: "thin", color: { rgb: headerBorderColor } },
+      },
+    };
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: darkBlue } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: headerBorderColor } },
+        bottom: { style: "thin", color: { rgb: headerBorderColor } },
+        left: { style: "thin", color: { rgb: headerBorderColor } },
+        right: { style: "thin", color: { rgb: headerBorderColor } },
+      },
+    };
+    const bodyStyle = {
+      border: {
+        top: { style: "thin", color: { rgb: borderColor } },
+        bottom: { style: "thin", color: { rgb: borderColor } },
+        left: { style: "thin", color: { rgb: borderColor } },
+        right: { style: "thin", color: { rgb: borderColor } },
+      },
+    };
+    const footerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: darkBlue } },
+      border: {
+        top: { style: "thin", color: { rgb: headerBorderColor } },
+        bottom: { style: "thin", color: { rgb: headerBorderColor } },
+        left: { style: "thin", color: { rgb: headerBorderColor } },
+        right: { style: "thin", color: { rgb: headerBorderColor } },
+      },
+    };
+
+    ["A1", "B1", "C1"].forEach((cell) => {
+      if (!sheet[cell]) sheet[cell] = { t: "s", v: "" };
+      sheet[cell].s = titleStyle;
+    });
+    ["A2", "B2", "C2"].forEach((cell) => {
+      sheet[cell].s = headerStyle;
+    });
+
+    for (let rowIndex = 3; rowIndex <= rows.length + 2; rowIndex += 1) {
+      ["A", "B", "C"].forEach((col, colIndex) => {
+        const cell = sheet[`${col}${rowIndex}`];
+        if (!cell) return;
+        cell.s = {
+          ...bodyStyle,
+          font: { bold: colIndex === 0 },
+          alignment: { horizontal: colIndex === 0 ? "left" : "right" },
+          numFmt: colIndex === 0 ? undefined : "#,##0",
+        };
+      });
+    }
+
+    const totalRow = rows.length + 3;
+    ["A", "B", "C"].forEach((col, colIndex) => {
+      const cell = sheet[`${col}${totalRow}`];
+      if (!cell) return;
+      cell.s = {
+        ...footerStyle,
+        alignment: { horizontal: colIndex === 0 ? "left" : "right" },
+        numFmt: colIndex === 0 ? undefined : "#,##0",
+      };
+    });
+
+    XLSX.utils.book_append_sheet(workbook, sheet, `Oil Status ${dateStr}`.slice(0, 31));
+    XLSX.writeFile(workbook, `director-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Director report Excel downloaded");
+  }
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
       {/* Header */}
@@ -207,6 +306,15 @@ export default function DirectorDashboardPage() {
           <p className="text-base text-muted-foreground">Inventory snapshot by stage</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={downloadReportExcel}
+            disabled={loading}
+            className="btn-press gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            Download Excel
+          </Button>
           <Button
             variant={compactView ? "default" : "outline"}
             onClick={() => setCompactView(!compactView)}

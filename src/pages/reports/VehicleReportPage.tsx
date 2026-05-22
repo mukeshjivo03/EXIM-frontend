@@ -1,6 +1,7 @@
 ﻿import { Fragment, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown, FileDown } from "lucide-react";
 
 import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
@@ -78,6 +79,59 @@ function fmtRate(rate?: number | null): string {
   return Number(rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function excelDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN");
+}
+
+function autosizeColumns(rows: Record<string, unknown>[]) {
+  if (rows.length === 0) return [];
+  const keys = Object.keys(rows[0]);
+  return keys.map((key) => ({
+    wch: Math.min(
+      Math.max(
+        key.length,
+        ...rows.map((row) => String(row[key] ?? "").length)
+      ) + 2,
+      40
+    ),
+  }));
+}
+
+function buildExcelRows(statusLabel: string, vehicles: VehicleReport[]) {
+  return vehicles.flatMap((vehicle, vehicleIndex) =>
+    vehicle.items.map((item, itemIndex) => {
+      const days = daysRemaining(item.eta);
+      return {
+        "S.No": `${vehicleIndex + 1}${vehicle.items.length > 1 ? `.${itemIndex + 1}` : ""}`,
+        Status: statusLabel,
+        "Vehicle No.": vehicle.vehicle_number || "-",
+        Transporter: vehicle.transporter || "-",
+        "Vendor Code": item.vendor_code || "-",
+        Vendor: item.vendor_name || "-",
+        "Item Code": item.item_code || "-",
+        Item: item.item_name || "-",
+        Rate: item.rate ?? "",
+        "Qty (Litre)": item.total_quantity_in_litre,
+        "Qty (MTS)": item.total_quantity_in_mts,
+        "Days Remaining": days ?? "",
+        ETA: excelDate(item.eta),
+        "Job Work": item.job_work || "-",
+      };
+    })
+  );
+}
+
+function appendJsonSheet(workbook: XLSX.WorkBook, name: string, rows: Record<string, unknown>[]) {
+  const fallbackRows = [{ Message: "No data" }];
+  const sheetRows = rows.length > 0 ? rows : fallbackRows;
+  const sheet = XLSX.utils.json_to_sheet(sheetRows);
+  sheet["!cols"] = autosizeColumns(sheetRows);
+  XLSX.utils.book_append_sheet(workbook, sheet, name.slice(0, 31));
+}
+
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -147,6 +201,38 @@ export default function VehicleReportPage() {
     TABS.forEach((t) => fetchStatus(t.key));
   }
 
+  function downloadExcel() {
+    const workbook = XLSX.utils.book_new();
+    const generatedOn = new Date().toLocaleString("en-IN");
+
+    const summaryRows = TABS.map((t) => {
+      const items = flattenVehicles(data[t.key]);
+      return {
+        Status: t.label,
+        Vehicles: data[t.key].length,
+        Items: items.length,
+        "Qty (MTS)": items.reduce((sum, row) => sum + row.total_quantity_in_mts, 0),
+        "Overdue Items": items.filter((row) => {
+          const days = daysRemaining(row.eta);
+          return days !== null && days < 0;
+        }).length,
+        "Generated On": generatedOn,
+      };
+    });
+
+    appendJsonSheet(workbook, "Summary", summaryRows);
+
+    TABS.forEach((t) => {
+      appendJsonSheet(workbook, t.label, buildExcelRows(t.label, data[t.key]));
+    });
+
+    const allRows = TABS.flatMap((t) => buildExcelRows(t.label, data[t.key]));
+    appendJsonSheet(workbook, "All Vehicles", allRows);
+
+    XLSX.writeFile(workbook, `vehicle-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Vehicle report Excel downloaded");
+  }
+
   const tab = TABS.find((t) => t.key === activeTab)!;
   const rawVehicles = data[activeTab];
   const rows = flattenVehicles(rawVehicles);
@@ -187,10 +273,21 @@ export default function VehicleReportPage() {
           <h1 className="text-xl sm:text-2xl font-bold">Vehicle Report</h1>
           <p className="text-sm text-muted-foreground">Live vehicle-wise stock movement by status</p>
         </div>
-        <Button onClick={refreshAll} variant="outline" className="btn-press gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh All
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={downloadExcel}
+            variant="outline"
+            className="btn-press gap-2"
+            disabled={Object.values(loading).some(Boolean)}
+          >
+            <FileDown className="h-4 w-4" />
+            Download Excel
+          </Button>
+          <Button onClick={refreshAll} variant="outline" className="btn-press gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh All
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
