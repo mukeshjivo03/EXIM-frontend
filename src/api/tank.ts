@@ -9,7 +9,7 @@ export interface TankItemPayload {
 }
 
 export interface TankItem {
-  id: number;
+  id: string;
   tank_item_code: string;
   tank_item_name: string;
   is_active: boolean;
@@ -28,17 +28,26 @@ export async function createTankItem(data: TankItemPayload): Promise<TankItemPay
   return res.data;
 }
 
-export async function getTankItem(tankItemCode: string): Promise<TankItem> {
-  const res = await api.get<TankItem>(`/tank/item/${tankItemCode}/`);
+export async function getTankItem(tankItemId: string): Promise<TankItem> {
+  const res = await api.get<TankItem>(`/tank/item/${tankItemId}/`);
   return res.data;
 }
 
-export async function deleteTankItem(tankItemCode: string): Promise<void> {
-  await api.delete(`/tank/item/${tankItemCode}/`);
+export async function deleteTankItem(tankItemId: string): Promise<void> {
+  await api.delete(`/tank/item/${tankItemId}/`);
 }
 
-export async function updateTankItem(tankItemCode: string, color: string, tankItemName: string): Promise<void> {
-  await api.put(`/tank/item/update-color/${tankItemCode}/`, { color, tank_item_name: tankItemName });
+export async function updateTankItem(
+  tankItemId: string,
+  color: string,
+  tankItemName: string,
+  tankItemCode?: string
+): Promise<void> {
+  await api.put(`/tank/item/update-color/${tankItemId}/`, {
+    color,
+    tank_item_name: tankItemName,
+    ...(tankItemCode ? { tank_item_code: tankItemCode } : {}),
+  });
 }
 
 // ── Tank (Tank Data) ────────────────────────────────────────────

@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/context/ThemeContext";
 import { useHasPermission } from "@/hooks/useHasPermission";
 import { getRmItem, getFgItem, getVendor, deleteRmItem, deleteFgItem, deleteVendor, type SapItem, type Vendor } from "@/api/sapSync";
-import { getTankItem, deleteTankItem, type TankItem } from "@/api/tank";
+import { getTankItem, getTankItems, deleteTankItem, type TankItem } from "@/api/tank";
 
 const HISTORY_KEY = "navbar-search-history";
 const MAX_HISTORY = 5;
@@ -82,11 +82,22 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
     setVendor(null);
     setTankItem(null);
 
+    const tankItemLookup = async () => {
+      const tankItems = await getTankItems();
+      const match = tankItems.find(
+        (item) =>
+          item.id === code ||
+          item.tank_item_code.toLowerCase() === code.toLowerCase()
+      );
+      if (!match) return null;
+      return getTankItem(match.id);
+    };
+
     const results = await Promise.allSettled([
       getRmItem(code),
       getFgItem(code),
       getVendor(code),
-      getTankItem(code),
+      tankItemLookup(),
     ]);
 
     const foundRm = results[0].status === "fulfilled" ? results[0].value : null;
@@ -178,7 +189,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
     if (!tankItem) return;
     setDeleting(true);
     try {
-      await deleteTankItem(tankItem.tank_item_code);
+      await deleteTankItem(tankItem.id);
       setTankItem(null);
       window.dispatchEvent(new Event("tank-items-updated"));
       if (!rmItem && !fgItem && !vendor) closeModal();

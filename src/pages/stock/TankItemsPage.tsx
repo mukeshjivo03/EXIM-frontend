@@ -125,7 +125,7 @@ export default function TankItemsPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const allOnPageSelected =
     paginatedItems.length > 0 &&
-    paginatedItems.every((item) => selectedIds.has(item.tank_item_code));
+    paginatedItems.every((item) => selectedIds.has(item.id));
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<TankItem | null>(null);
@@ -136,6 +136,7 @@ export default function TankItemsPage() {
 
   // Edit dialog (for grid view)
   const [editTarget, setEditTarget] = useState<TankItem | null>(null);
+  const [editCode, setEditCode] = useState("");
   const [editColor, setEditColor] = useState("");
   const [editName, setEditName] = useState("");
   const [editing, setEditing] = useState(false);
@@ -146,7 +147,7 @@ export default function TankItemsPage() {
     setError("");
     try {
       const data = await getTankItems();
-      setItems((data ?? []).sort((a, b) => a.id - b.id));
+      setItems((data ?? []).sort((a, b) => String(a.id).localeCompare(String(b.id))));
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load tank items"));
     } finally {
@@ -238,12 +239,12 @@ export default function TankItemsPage() {
     const name = deleteTarget.tank_item_name;
     setDeleting(true);
     try {
-      await deleteTankItem(deleteTarget.tank_item_code);
+      await deleteTankItem(deleteTarget.id);
       setDeleteTarget(null);
       toast.success(`Tank item "${name}" deleted.`);
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        next.delete(deleteTarget.tank_item_code);
+        next.delete(deleteTarget.id);
         return next;
       });
       await fetchItems();
@@ -264,13 +265,13 @@ export default function TankItemsPage() {
 
   // Bulk delete
   async function handleBulkDelete() {
-    const toDelete = items.filter((item) => selectedIds.has(item.tank_item_code));
+    const toDelete = items.filter((item) => selectedIds.has(item.id));
     if (toDelete.length === 0) return;
     setBulkDeleting(true);
     let successCount = 0;
     for (const item of toDelete) {
       try {
-        await deleteTankItem(item.tank_item_code);
+        await deleteTankItem(item.id);
         successCount++;
       } catch {
         toast.error(`Failed to delete "${item.tank_item_name}".`);
@@ -288,18 +289,20 @@ export default function TankItemsPage() {
   // Edit (dialog - used in grid view)
   function openEdit(item: TankItem) {
     setEditTarget(item);
+    setEditCode(item.tank_item_code);
     setEditColor(findPaletteColor(item.color, customColors));
     setEditName(item.tank_item_name);
   }
 
   async function handleEdit() {
-    if (!editTarget || !editColor || !editName.trim()) return;
+    if (!editTarget || !editCode.trim() || !editColor || !editName.trim()) return;
     setEditing(true);
     try {
       await updateTankItem(
-        editTarget.tank_item_code,
+        editTarget.id,
         editColor,
-        editName.trim()
+        editName.trim(),
+        editCode.trim()
       );
       toast.success(`Tank item "${editTarget.tank_item_name}" updated.`);
       setEditTarget(null);
@@ -314,7 +317,7 @@ export default function TankItemsPage() {
   // Inline color change (table view)
   async function handleInlineColorChange(item: TankItem, newColor: string) {
     try {
-      await updateTankItem(item.tank_item_code, newColor, item.tank_item_name);
+      await updateTankItem(item.id, newColor, item.tank_item_name, item.tank_item_code);
       toast.success(`Color updated for "${item.tank_item_name}".`);
       await fetchItems();
     } catch (err) {
@@ -323,11 +326,11 @@ export default function TankItemsPage() {
   }
 
   // Toggle selection
-  function toggleSelect(code: string) {
+  function toggleSelect(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(code)) next.delete(code);
-      else next.add(code);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -336,13 +339,13 @@ export default function TankItemsPage() {
     if (allOnPageSelected) {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        paginatedItems.forEach((item) => next.delete(item.tank_item_code));
+        paginatedItems.forEach((item) => next.delete(item.id));
         return next;
       });
     } else {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        paginatedItems.forEach((item) => next.add(item.tank_item_code));
+        paginatedItems.forEach((item) => next.add(item.id));
         return next;
       });
     }
@@ -638,14 +641,14 @@ export default function TankItemsPage() {
                       <TableRow
                         key={item.id}
                         className={
-                          selectedIds.has(item.tank_item_code) ? "bg-muted/50" : ""
+                          selectedIds.has(item.id) ? "bg-muted/50" : ""
                         }
                       >
                         {canDelete && (
                           <TableCell>
                             <Checkbox
-                              checked={selectedIds.has(item.tank_item_code)}
-                              onCheckedChange={() => toggleSelect(item.tank_item_code)}
+                              checked={selectedIds.has(item.id)}
+                              onCheckedChange={() => toggleSelect(item.id)}
                               aria-label={`Select ${item.tank_item_name}`}
                             />
                           </TableCell>
@@ -744,7 +747,7 @@ export default function TankItemsPage() {
                       item.color,
                       customColors
                     );
-                    const isSelected = selectedIds.has(item.tank_item_code);
+                    const isSelected = selectedIds.has(item.id);
 
                     return (
                       <div
@@ -760,7 +763,7 @@ export default function TankItemsPage() {
                           <div className="absolute top-2 left-2">
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => toggleSelect(item.tank_item_code)}
+                              onCheckedChange={() => toggleSelect(item.id)}
                               aria-label={`Select ${item.tank_item_name}`}
                             />
                           </div>
@@ -973,9 +976,8 @@ export default function TankItemsPage() {
             <div className="space-y-2">
               <Label>Tank Item Code</Label>
               <Input
-                value={editTarget?.tank_item_code ?? ""}
-                disabled
-                className="disabled:opacity-70"
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -1002,7 +1004,7 @@ export default function TankItemsPage() {
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={editing || !editColor || !editName.trim()}
+              disabled={editing || !editCode.trim() || !editColor || !editName.trim()}
             >
               {editing ? "Saving..." : "Save Changes"}
             </Button>
