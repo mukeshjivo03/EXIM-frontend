@@ -12,6 +12,8 @@ import {
   Printer,
   GripVertical,
   RotateCcw,
+  Plus,
+  X,
 } from "lucide-react";
 
 import { getStockDashboard, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
@@ -107,6 +109,37 @@ function isGapEntry(entry: RowOrderEntry) {
   return entry.startsWith("__GAP__");
 }
 
+function getDefaultRowOrderEntries(): RowOrderEntry[] {
+  let gapIndex = 0;
+  return DEFAULT_PRINT_ORDER.map((code) => code === "__GAP__" ? `__GAP__:${gapIndex++}` : code);
+}
+
+function addDefaultGapsToOrder(order: RowOrderEntry[]) {
+  if (order.some(isGapEntry)) return order;
+
+  const next = [...order];
+  for (const gapId of getDefaultRowOrderEntries().filter(isGapEntry)) {
+    next.push(gapId);
+  }
+
+  const defaultEntries = getDefaultRowOrderEntries();
+  for (const gapId of defaultEntries.filter(isGapEntry)) {
+    const gapIndex = next.indexOf(gapId);
+    const defaultGapIndex = defaultEntries.indexOf(gapId);
+    const previousDefaultItem = [...defaultEntries.slice(0, defaultGapIndex)]
+      .reverse()
+      .find((code) => !isGapEntry(code) && next.includes(code));
+
+    if (!previousDefaultItem) continue;
+
+    next.splice(gapIndex, 1);
+    const anchorIndex = next.indexOf(previousDefaultItem);
+    next.splice(anchorIndex + 1, 0, gapId);
+  }
+
+  return next;
+}
+
 /* ── component ────────────────────────────────────────────────── */
 
 export default function StockDashboardPage() {
@@ -127,7 +160,9 @@ export default function StockDashboardPage() {
     try {
       const saved = localStorage.getItem(ROW_ORDER_STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed.filter((code): code is string => typeof code === "string") : [];
+      return Array.isArray(parsed)
+        ? addDefaultGapsToOrder(parsed.filter((code): code is string => typeof code === "string"))
+        : [];
     } catch {
       return [];
     }
@@ -352,11 +387,8 @@ export default function StockDashboardPage() {
 
   const orderedDisplayRows = useMemo(() => {
     const itemMap = new Map(displayItems.map((item) => [item.item_code, item]));
-    let gapIndex = 0;
-    const defaultOrder = DEFAULT_PRINT_ORDER
-      .map((code) => code === "__GAP__" ? `__GAP__:${gapIndex++}` : code)
-      .filter((code) => isGapEntry(code) || itemMap.has(code));
-    const preferredOrder = rowOrder.length > 0 ? rowOrder : defaultOrder;
+    const defaultOrder = getDefaultRowOrderEntries().filter((code) => isGapEntry(code) || itemMap.has(code));
+    const preferredOrder = rowOrder.length > 0 ? addDefaultGapsToOrder(rowOrder) : defaultOrder;
     const orderedSet = new Set(preferredOrder.filter((code) => !isGapEntry(code)));
     const extras = displayItems
       .filter((item) => !orderedSet.has(item.item_code))
@@ -373,7 +405,7 @@ export default function StockDashboardPage() {
       if (!isGapEntry(code)) return true;
       const previous = arr[index - 1];
       const next = arr[index + 1];
-      return Boolean(previous && next && !isGapEntry(previous) && !isGapEntry(next));
+      return Boolean(previous && next);
     });
 
     return compactEntries.map((code) => {
@@ -392,7 +424,9 @@ export default function StockDashboardPage() {
 
     const nextVisibleOrder = [...currentCodes];
     const [movedCode] = nextVisibleOrder.splice(index, 1);
-    nextVisibleOrder.splice(targetIndex, 0, movedCode);
+    const targetIndexAfterRemoval = nextVisibleOrder.indexOf(targetCode);
+    const insertIndex = isGapEntry(targetCode) ? targetIndexAfterRemoval + 1 : targetIndexAfterRemoval;
+    nextVisibleOrder.splice(insertIndex, 0, movedCode);
     setRowOrder((prev) => {
       const hiddenCodes = prev.filter((code) => !isGapEntry(code) && !nextVisibleOrder.includes(code));
       return [...nextVisibleOrder, ...hiddenCodes];
@@ -410,6 +444,33 @@ export default function StockDashboardPage() {
   function resetRowOrder() {
     setRowOrder([]);
     toast.success("Stock dashboard row order reset.");
+  }
+
+  function addSeparator() {
+    const currentOrder = orderedDisplayRows.map((row) => row.id);
+    const itemIndexes = currentOrder
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => !isGapEntry(entry))
+      .map(({ index }) => index);
+
+    if (itemIndexes.length < 2) {
+      toast.error("Need at least two rows to add a separator.");
+      return;
+    }
+
+    const insertIndex = itemIndexes[itemIndexes.length - 1];
+    const nextOrder = [...currentOrder];
+    nextOrder.splice(insertIndex, 0, `__GAP__:custom:${Date.now()}`);
+    setRowOrder(nextOrder);
+    toast.success("Separator added.");
+  }
+
+  function removeSeparator(separatorId: string) {
+    const nextOrder = orderedDisplayRows
+      .map((row) => row.id)
+      .filter((id) => id !== separatorId);
+    setRowOrder(nextOrder);
+    toast.success("Separator removed.");
   }
 
   const matrixColCount =
@@ -711,6 +772,16 @@ export default function StockDashboardPage() {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 text-xs uppercase tracking-wider"
+                onClick={addSeparator}
+                disabled={loading || orderedDisplayRows.filter((row) => row.type === "item").length < 2}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Separator
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs uppercase tracking-wider"
                 onClick={resetRowOrder}
                 disabled={rowOrder.length === 0}
               >
@@ -891,12 +962,32 @@ export default function StockDashboardPage() {
                             handleRowDrop(row.id);
                           }}
                           className={cn(
-                            "h-4 bg-background",
+                            "h-7 bg-background transition-colors",
                             dragOverRow === row.id ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
                           )}
                         >
-                          <td colSpan={matrixColCount} className="border-0 p-0">
-                            <div className="h-4 border-y border-dashed border-muted-foreground/20 bg-muted/20" />
+                          <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
+                            <div className={cn(
+                              "flex h-7 items-center justify-center border-y border-dashed border-muted-foreground/30 bg-muted/25",
+                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                            )}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-60 hover:opacity-100"
+                                title="Remove separator"
+                                onClick={() => removeSeparator(row.id)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                          <td colSpan={matrixColCount - 1} className="border-0 p-0">
+                            <div className={cn(
+                              "h-7 border-y border-dashed border-muted-foreground/30 bg-muted/25",
+                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                            )} />
                           </td>
                         </tr>
                       );
