@@ -10,6 +10,10 @@ import {
   ChevronRight,
   Info,
   Printer,
+  GripVertical,
+  RotateCcw,
+  Plus,
+  X,
 } from "lucide-react";
 
 import { getStockDashboard, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
@@ -22,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type Unit = "KG" | "MTS" | "LTR";
+type RowOrderEntry = string;
 
 const UNIT_LABELS: Record<Unit, string> = { KG: "KG", MTS: "MTS", LTR: "Liters" };
 
@@ -84,6 +89,57 @@ const STATUS_PALETTE = [
   { bg: "bg-pink-100/80 dark:bg-pink-900/30",     text: "text-pink-700 dark:text-pink-300",     subBg: "bg-pink-50/60 dark:bg-pink-900/20" },
 ] as const;
 
+const ROW_ORDER_STORAGE_KEY = "stock_dashboard_row_order";
+const DEFAULT_PRINT_ORDER: (string | "__GAP__")[] = [
+  "RM0CDRO", "RM00C01", "RM00CPC", "RM00C02",
+  "RM00SBR", "RM00SBD", "RM0SB02",
+  "RMMKG01", "RM0GNCP",
+  "RM000SF", "RM00SF2", "RM00MDO", "RM000MR",
+  "RMMKG02", "RM00GNR", "RMGNR02", "RM00GD",
+  "RM00RBR", "RM00RBD", "RM0RB02",
+  "RM00CSR", "RMCSR02", "RM00VNP", "RM0CCNT",
+  "RM0SESM", "RMSESMT",
+  "__GAP__",
+  "RM00P02", "RM00P03", "RM0EV02", "RM0EL02", "RMSOLIVE",
+  "__GAP__",
+  "RM00P01", "RM0EL01", "RM0EV01", "RM0HOSF",
+];
+
+function isGapEntry(entry: RowOrderEntry) {
+  return entry.startsWith("__GAP__");
+}
+
+function getDefaultRowOrderEntries(): RowOrderEntry[] {
+  let gapIndex = 0;
+  return DEFAULT_PRINT_ORDER.map((code) => code === "__GAP__" ? `__GAP__:${gapIndex++}` : code);
+}
+
+function addDefaultGapsToOrder(order: RowOrderEntry[]) {
+  if (order.some(isGapEntry)) return order;
+
+  const next = [...order];
+  for (const gapId of getDefaultRowOrderEntries().filter(isGapEntry)) {
+    next.push(gapId);
+  }
+
+  const defaultEntries = getDefaultRowOrderEntries();
+  for (const gapId of defaultEntries.filter(isGapEntry)) {
+    const gapIndex = next.indexOf(gapId);
+    const defaultGapIndex = defaultEntries.indexOf(gapId);
+    const previousDefaultItem = [...defaultEntries.slice(0, defaultGapIndex)]
+      .reverse()
+      .find((code) => !isGapEntry(code) && next.includes(code));
+
+    if (!previousDefaultItem) continue;
+
+    next.splice(gapIndex, 1);
+    const anchorIndex = next.indexOf(previousDefaultItem);
+    next.splice(anchorIndex + 1, 0, gapId);
+  }
+
+  return next;
+}
+
 /* ── component ────────────────────────────────────────────────── */
 
 export default function StockDashboardPage() {
@@ -98,6 +154,19 @@ export default function StockDashboardPage() {
   const [hideZeroRows, setHideZeroRows] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [hoveredCol, setHoveredCol] = useState<string | null>(null);
+  const [draggedRow, setDraggedRow] = useState<string | null>(null);
+  const [dragOverRow, setDragOverRow] = useState<string | null>(null);
+  const [rowOrder, setRowOrder] = useState<RowOrderEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(ROW_ORDER_STORAGE_KEY);
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed)
+        ? addDefaultGapsToOrder(parsed.filter((code): code is string => typeof code === "string"))
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [unit, setUnit] = useState<Unit>(() => {
     const saved = localStorage.getItem("stock_dashboard_unit");
@@ -116,6 +185,14 @@ export default function StockDashboardPage() {
   useEffect(() => {
     localStorage.setItem("stock_dashboard_rounding", String(roundingEnabled));
   }, [roundingEnabled]);
+
+  useEffect(() => {
+    if (rowOrder.length > 0) {
+      localStorage.setItem(ROW_ORDER_STORAGE_KEY, JSON.stringify(rowOrder));
+    } else {
+      localStorage.removeItem(ROW_ORDER_STORAGE_KEY);
+    }
+  }, [rowOrder]);
 
   const tankQtyMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -308,6 +385,100 @@ export default function StockDashboardPage() {
     });
   }, [data, hideZeroRows, tankQtyMap, tankSummary, filters.status, filters.rmcode, filters.vendor]);
 
+  const orderedDisplayRows = useMemo(() => {
+    const itemMap = new Map(displayItems.map((item) => [item.item_code, item]));
+    const defaultOrder = getDefaultRowOrderEntries().filter((code) => isGapEntry(code) || itemMap.has(code));
+    const preferredOrder = rowOrder.length > 0 ? addDefaultGapsToOrder(rowOrder) : defaultOrder;
+    const orderedSet = new Set(preferredOrder.filter((code) => !isGapEntry(code)));
+    const extras = displayItems
+      .filter((item) => !orderedSet.has(item.item_code))
+      .map((item) => item.item_code);
+
+    const entries = [...preferredOrder];
+    if (extras.length > 0 && entries.some((code) => !isGapEntry(code))) {
+      entries.push("__GAP__:extra");
+    }
+    entries.push(...extras);
+
+    const visibleEntries = entries.filter((code) => isGapEntry(code) || itemMap.has(code));
+    const compactEntries = visibleEntries.filter((code, index, arr) => {
+      if (!isGapEntry(code)) return true;
+      const previous = arr[index - 1];
+      const next = arr[index + 1];
+      return Boolean(previous && next);
+    });
+
+    return compactEntries.map((code) => {
+      if (isGapEntry(code)) return { type: "gap" as const, id: code };
+      return { type: "item" as const, id: code, item: itemMap.get(code)! };
+    });
+  }, [displayItems, rowOrder]);
+
+  function moveRow(itemCode: string, targetCode: string) {
+    if (itemCode === targetCode) return;
+
+    const currentCodes = orderedDisplayRows.map((row) => row.id);
+    const index = currentCodes.indexOf(itemCode);
+    const targetIndex = currentCodes.indexOf(targetCode);
+    if (index < 0 || targetIndex < 0) return;
+
+    const nextVisibleOrder = [...currentCodes];
+    const [movedCode] = nextVisibleOrder.splice(index, 1);
+    const targetIndexAfterRemoval = nextVisibleOrder.indexOf(targetCode);
+    const insertIndex = isGapEntry(targetCode) ? targetIndexAfterRemoval + 1 : targetIndexAfterRemoval;
+    nextVisibleOrder.splice(insertIndex, 0, movedCode);
+    setRowOrder((prev) => {
+      const hiddenCodes = prev.filter((code) => !isGapEntry(code) && !nextVisibleOrder.includes(code));
+      return [...nextVisibleOrder, ...hiddenCodes];
+    });
+  }
+
+  function handleRowDrop(targetCode: string) {
+    if (draggedRow) {
+      moveRow(draggedRow, targetCode);
+    }
+    setDraggedRow(null);
+    setDragOverRow(null);
+  }
+
+  function resetRowOrder() {
+    setRowOrder([]);
+    toast.success("Stock dashboard row order reset.");
+  }
+
+  function addSeparator() {
+    const currentOrder = orderedDisplayRows.map((row) => row.id);
+    const itemIndexes = currentOrder
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => !isGapEntry(entry))
+      .map(({ index }) => index);
+
+    if (itemIndexes.length < 2) {
+      toast.error("Need at least two rows to add a separator.");
+      return;
+    }
+
+    const insertIndex = itemIndexes[itemIndexes.length - 1];
+    const nextOrder = [...currentOrder];
+    nextOrder.splice(insertIndex, 0, `__GAP__:custom:${Date.now()}`);
+    setRowOrder(nextOrder);
+    toast.success("Separator added.");
+  }
+
+  function removeSeparator(separatorId: string) {
+    const nextOrder = orderedDisplayRows
+      .map((row) => row.id)
+      .filter((id) => id !== separatorId);
+    setRowOrder(nextOrder);
+    toast.success("Separator removed.");
+  }
+
+  const matrixColCount =
+    2 +
+    (showFactoryCols ? 4 : 0) +
+    statusGroups.reduce((sum, group, index) => sum + group.vendors.length + (index < statusGroups.length - 1 ? 1 : 0), 0) +
+    1;
+
   /* ── Print ───────────────────────────────────────────────── */
 
   /** Strip RM prefix for cleaner print display: RM000 → , RM00 → , RM0 → , RM → */
@@ -354,27 +525,12 @@ export default function StockDashboardPage() {
     row1Cells += th("", "background:#B6D7A8;");
 
     // Data rows — custom fixed order with separator gaps for print
-    const PRINT_ORDER: (string | "__GAP__")[] = [
-      "RM0CDRO", "RM00C01", "RM00CPC", "RM00C02",
-      "RM00SBR", "RM00SBD", "RM0SB02",
-      "RMMKG01", "RM0GNCP",
-      "RM000SF", "RM00SF2", "RM00MDO", "RM000MR",
-      "RMMKG02", "RM00GNR", "RMGNR02", "RM00GD",
-      "RM00RBR", "RM00RBD", "RM0RB02",
-      "RM00CSR", "RMCSR02", "RM00VNP", "RM0CCNT",
-      "RM0SESM", "RMSESMT",
-      "__GAP__",
-      "RM00P02", "RM00P03", "RM0EV02", "RM0EL02", "RMSOLIVE",
-      "__GAP__",
-      "RM00P01", "RM0EL01", "RM0EV01", "RM0HOSF",
-    ];
-
     const itemMap = new Map(displayItems.map((item) => [item.item_code, item]));
     const totalCols = 3 + vendorCols.length + 1; // name + infactory + outside + vendors + total
 
     // Build ordered list: items from PRINT_ORDER first, then any remaining items
-    const orderedCodes = PRINT_ORDER.filter((c) => c === "__GAP__" || itemMap.has(c));
-    const orderedSet = new Set(PRINT_ORDER.filter((c) => c !== "__GAP__"));
+    const orderedCodes = DEFAULT_PRINT_ORDER.filter((c) => c === "__GAP__" || itemMap.has(c));
+    const orderedSet = new Set(DEFAULT_PRINT_ORDER.filter((c) => c !== "__GAP__"));
     const extraItems = displayItems.filter((item) => !orderedSet.has(item.item_code));
 
     function buildItemRow(item: typeof displayItems[0]) {
@@ -394,15 +550,22 @@ export default function StockDashboardPage() {
 
     const gapRow = `<tr><td colspan="${totalCols}" style="border:none;height:12px;"></td></tr>`;
 
-    let dataRowsHtml = orderedCodes.map((code) => {
-      if (code === "__GAP__") return gapRow;
-      const item = itemMap.get(code);
-      return item ? buildItemRow(item) : "";
-    }).join("");
+    let dataRowsHtml = "";
+    if (rowOrder.length > 0) {
+      dataRowsHtml = orderedDisplayRows
+        .map((row) => row.type === "gap" ? gapRow : buildItemRow(row.item))
+        .join("");
+    } else {
+      dataRowsHtml = orderedCodes.map((code) => {
+        if (code === "__GAP__") return gapRow;
+        const item = itemMap.get(code);
+        return item ? buildItemRow(item) : "";
+      }).join("");
 
-    // Append any items not in the predefined order
-    if (extraItems.length > 0) {
-      dataRowsHtml += gapRow + extraItems.map(buildItemRow).join("");
+      // Append any items not in the predefined order
+      if (extraItems.length > 0) {
+        dataRowsHtml += gapRow + extraItems.map(buildItemRow).join("");
+      }
     }
 
     // Grand total row
@@ -604,14 +767,36 @@ export default function StockDashboardPage() {
               <CardTitle className="text-lg">Inventory Matrix</CardTitle>
               <CardDescription className="text-xs">RM × Status × Vendor Pivot</CardDescription>
             </div>
-            <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
-                <span>Hover Row/Col to highlight</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
-                <span>Heatmap intensity</span>
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs uppercase tracking-wider"
+                onClick={addSeparator}
+                disabled={loading || orderedDisplayRows.filter((row) => row.type === "item").length < 2}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Separator
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs uppercase tracking-wider"
+                onClick={resetRowOrder}
+                disabled={rowOrder.length === 0}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset Order
+              </Button>
+              <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
+                  <span>Hover Row/Col to highlight</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
+                  <span>Heatmap intensity</span>
+                </div>
               </div>
             </div>
           </div>
@@ -626,10 +811,11 @@ export default function StockDashboardPage() {
           ) : (
             <div
               className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
-              style={{ scrollSnapType: "x proximity", scrollPaddingLeft: 190 }}
+              style={{ scrollSnapType: "x proximity", scrollPaddingLeft: 262 }}
             >
               <table className="w-full table-fixed text-base" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
+                  <col style={{ width: 72 }} />
                   <col style={{ width: 190 }} />
                   {showFactoryCols && <>
                     <col style={{ width: 120 }} />
@@ -653,7 +839,10 @@ export default function StockDashboardPage() {
                 <thead>
                   {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/40 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-foreground/30 text-base" rowSpan={2}>
+                    <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-2 py-4 text-center uppercase tracking-wider border border-foreground/30 text-xs" rowSpan={2}>
+                      Order
+                    </th>
+                    <th className="sticky left-[72px] z-30 bg-muted/60 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-foreground/30 text-base" rowSpan={2}>
                       RM NAME
                     </th>
                     {showFactoryCols && <>
@@ -753,7 +942,57 @@ export default function StockDashboardPage() {
                 </thead>
 
                 <tbody>
-                  {displayItems.map((item) => {
+                  {orderedDisplayRows.map((row) => {
+                    if (row.type === "gap") {
+                      return (
+                        <tr
+                          key={row.id}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            setDragOverRow(row.id);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverRow === row.id) {
+                              setDragOverRow(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleRowDrop(row.id);
+                          }}
+                          className={cn(
+                            "h-7 bg-background transition-colors",
+                            dragOverRow === row.id ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
+                          )}
+                        >
+                          <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
+                            <div className={cn(
+                              "flex h-7 items-center justify-center border-y border-dashed border-muted-foreground/30 bg-muted/25",
+                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                            )}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-60 hover:opacity-100"
+                                title="Remove separator"
+                                onClick={() => removeSeparator(row.id)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                          <td colSpan={matrixColCount - 1} className="border-0 p-0">
+                            <div className={cn(
+                              "h-7 border-y border-dashed border-muted-foreground/30 bg-muted/25",
+                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                            )} />
+                          </td>
+                        </tr>
+                      );
+                    }
+                    const item = row.item;
                     const tankVal = tankQtyMap.get(item.item_code) ?? 0;
                     const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
                     const grandTotal = showFactoryCols
@@ -762,16 +1001,50 @@ export default function StockDashboardPage() {
                     return (
                       <tr
                         key={item.item_code}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedRow(item.item_code);
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", item.item_code);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          setDragOverRow(item.item_code);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverRow === item.item_code) {
+                            setDragOverRow(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleRowDrop(item.item_code);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedRow(null);
+                          setDragOverRow(null);
+                        }}
                         onMouseEnter={() => setHoveredRow(item.item_code)}
                         onMouseLeave={() => setHoveredRow(null)}
                         className={cn(
                           "border-b transition-all group/row",
                           "bg-card",
-                          hoveredRow === item.item_code ? "bg-muted/30 shadow-inner scale-[1.002] z-10 relative" : ""
+                          hoveredRow === item.item_code ? "bg-muted/30 shadow-inner scale-[1.002] z-10 relative" : "",
+                          draggedRow === item.item_code ? "opacity-60" : "",
+                          dragOverRow === item.item_code && draggedRow !== item.item_code ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-4 py-3 text-sm text-left border border-foreground/30 transition-colors",
+                          "sticky left-0 z-20 px-1.5 py-2 text-center border border-foreground/30 transition-colors cursor-grab active:cursor-grabbing",
+                          hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
+                        )}>
+                          <div className="flex items-center justify-center" title="Drag row to reorder">
+                            <GripVertical className="h-4 w-4 opacity-70" />
+                          </div>
+                        </td>
+                        <td className={cn(
+                          "sticky left-[72px] z-20 px-4 py-3 text-sm text-left border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_name || tankNameMap.get(item.item_code) || item.item_code}
@@ -832,7 +1105,7 @@ export default function StockDashboardPage() {
 
                   {/* Grand Total Row */}
                   <tr className="bg-muted/50 text-base border-t-2 border-border font-semibold">
-                    <td className="sticky left-0 z-30 bg-muted/60 px-4 py-4 text-center border border-foreground/30 uppercase tracking-wider">Grand Total</td>
+                    <td className="sticky left-0 z-30 bg-muted/60 px-4 py-4 text-center border border-foreground/30 uppercase tracking-wider" colSpan={2}>Grand Total</td>
                     {showFactoryCols && <>
                       <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
                         {fmtLiters(tankInFactoryTotal, unit, roundingEnabled)}
