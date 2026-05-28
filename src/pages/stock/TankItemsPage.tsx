@@ -410,12 +410,12 @@ export default function TankItemsPage() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view tank items.</div>}
     >
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Tank Items</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Tank Items</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Create and manage tank items
             {canEdit && (
               <span className="hidden sm:inline text-muted-foreground/60">
@@ -425,13 +425,13 @@ export default function TankItemsPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full sm:w-auto flex-wrap items-center justify-start sm:justify-end gap-2">
           {/* Bulk delete */}
           {canDelete && selectedIds.size > 0 && (
             <Button
               variant="destructive"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 h-8 sm:h-9 text-[10px] sm:text-xs px-2.5 sm:px-3"
               onClick={() => setBulkDeleteOpen(true)}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -441,7 +441,7 @@ export default function TankItemsPage() {
           {canAdd && (
             <Button
               onClick={() => setCreateOpen(true)}
-              className="btn-press gap-2"
+              className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Tank Item</span>
@@ -456,11 +456,11 @@ export default function TankItemsPage() {
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Tank Items</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Tank Items</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {filteredItems.length}
                 {search.trim()
                   ? ` of ${items.length}`
@@ -469,15 +469,15 @@ export default function TankItemsPage() {
                 {search.trim() ? " matching" : " in the system"}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full sm:w-auto items-center gap-2">
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search items..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-9 w-48 sm:w-56"
+                  className="pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-56"
                 />
               </div>
               {/* View toggle */}

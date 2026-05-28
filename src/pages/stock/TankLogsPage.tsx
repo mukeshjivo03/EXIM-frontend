@@ -190,12 +190,12 @@ export default function TankLogsPage() {
   /* ── render ─────────────────────────────────────── */
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Tank Logs</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Tank Logs</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Inward, outward, and transfer operation logs
           </p>
         </div>
@@ -205,11 +205,11 @@ export default function TankLogsPage() {
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Logs</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Logs</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {filteredLogs.length}
                 {filteredLogs.length !== logs.length
                   ? ` of ${logs.length}`
@@ -217,15 +217,15 @@ export default function TankLogsPage() {
                 log entries
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search logs..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-9 w-44 sm:w-52"
+                  className="pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-52"
                 />
               </div>
               {/* Date range */}
@@ -233,7 +233,7 @@ export default function TankLogsPage() {
                 value={dateRange}
                 onValueChange={(v) => setDateRange(v as DateRange)}
               >
-                <SelectTrigger className="h-9 w-32">
+                <SelectTrigger className="h-8 sm:h-9 w-28 sm:w-32 text-[10px] sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,17 +249,17 @@ export default function TankLogsPage() {
 
           {/* Custom date inputs */}
           {dateRange === "custom" && (
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex flex-wrap items-center gap-2 mt-3">
               <DatePicker
                 value={customFrom}
                 onChange={(v) => setCustomFrom(v || "")}
-                className="h-9 w-40"
+                className="h-8 sm:h-9 w-36 sm:w-40 text-xs sm:text-sm"
               />
-              <span className="text-sm text-muted-foreground">to</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">to</span>
               <DatePicker
                 value={customTo}
                 onChange={(v) => setCustomTo(v || "")}
-                className="h-9 w-40"
+                className="h-8 sm:h-9 w-36 sm:w-40 text-xs sm:text-sm"
               />
             </div>
           )}

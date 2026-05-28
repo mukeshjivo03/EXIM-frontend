@@ -298,19 +298,19 @@ export default function DirectorDashboardPage() {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Director Dashboard</h1>
-          <p className="text-base text-muted-foreground">Inventory snapshot by stage</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Director Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Inventory snapshot by stage</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={downloadReportExcel}
             disabled={loading}
-            className="btn-press gap-2"
+            className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs"
           >
             <FileDown className="h-4 w-4" />
             Download Excel
@@ -318,7 +318,7 @@ export default function DirectorDashboardPage() {
           <Button
             variant={compactView ? "default" : "outline"}
             onClick={() => setCompactView(!compactView)}
-            className="btn-press gap-2"
+            className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs"
           >
             {compactView ? (
               <><LayoutDashboard className="h-4 w-4" /> Dashboard</>
@@ -326,7 +326,7 @@ export default function DirectorDashboardPage() {
               <><FileSpreadsheet className="h-4 w-4" /> Report View</>
             )}
           </Button>
-          <Button onClick={fetchData} disabled={loading} className="btn-press gap-2">
+          <Button onClick={fetchData} disabled={loading} className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {loading ? "Loading..." : "Refresh"}
           </Button>
@@ -337,21 +337,21 @@ export default function DirectorDashboardPage() {
         /* ── Compact Report View ─────────────────────────────── */
         <Card className="overflow-hidden border-0 shadow-lg w-full max-w-2xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-lg" style={{ borderCollapse: "collapse" }}>
+            <table className="w-full text-xs sm:text-lg" style={{ borderCollapse: "collapse" }}>
               <thead>
                 <tr>
                   <th
                     colSpan={3}
-                    className="text-white text-center py-5 px-6 text-2xl font-extrabold tracking-[0.15em] uppercase"
+                    className="text-white text-center py-3 sm:py-5 px-3 sm:px-6 text-sm sm:text-2xl font-extrabold tracking-wide sm:tracking-[0.15em] uppercase"
                     style={{ backgroundColor: "#1a3a6c" }}
                   >
                     OIL STATUS {dateStr}
                   </th>
                 </tr>
                 <tr>
-                  <th className="px-6 py-4 text-left font-extrabold text-base uppercase tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 240 }}>STATUS</th>
-                  <th className="px-6 py-4 text-right font-extrabold text-base uppercase tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 180 }}>IN LTR</th>
-                  <th className="px-6 py-4 text-right font-extrabold text-base uppercase tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 140 }}>IN MTS</th>
+                  <th className="px-3 sm:px-6 py-2.5 sm:py-4 text-left font-extrabold text-[10px] sm:text-base uppercase tracking-wide sm:tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 180 }}>STATUS</th>
+                  <th className="px-3 sm:px-6 py-2.5 sm:py-4 text-right font-extrabold text-[10px] sm:text-base uppercase tracking-wide sm:tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 130 }}>IN LTR</th>
+                  <th className="px-3 sm:px-6 py-2.5 sm:py-4 text-right font-extrabold text-[10px] sm:text-base uppercase tracking-wide sm:tracking-widest text-white" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)", minWidth: 110 }}>IN MTS</th>
                 </tr>
               </thead>
               <tbody>
@@ -365,13 +365,13 @@ export default function DirectorDashboardPage() {
                     ))
                   : rows.map((row) => (
                       <tr key={row.key} className="hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-colors">
-                        <td className="px-6 py-4 font-semibold uppercase text-base tracking-wide" style={{ border: "1px solid #cbd5e1" }}>
+                        <td className="px-3 sm:px-6 py-2.5 sm:py-4 font-semibold uppercase text-[11px] sm:text-base tracking-wide" style={{ border: "1px solid #cbd5e1" }}>
                           {row.label}
                         </td>
-                        <td className="px-6 py-4 text-right tabular-nums text-lg" style={{ border: "1px solid #cbd5e1" }}>
+                        <td className="px-3 sm:px-6 py-2.5 sm:py-4 text-right tabular-nums text-xs sm:text-lg" style={{ border: "1px solid #cbd5e1" }}>
                           {row.liter > 0 ? fmtNum(row.liter) : <span className="text-slate-400">-</span>}
                         </td>
-                        <td className="px-6 py-4 text-right tabular-nums text-lg" style={{ border: "1px solid #cbd5e1" }}>
+                        <td className="px-3 sm:px-6 py-2.5 sm:py-4 text-right tabular-nums text-xs sm:text-lg" style={{ border: "1px solid #cbd5e1" }}>
                           {row.mts > 0 ? fmtNum(row.mts) : <span className="text-slate-400">-</span>}
                         </td>
                       </tr>
@@ -379,13 +379,13 @@ export default function DirectorDashboardPage() {
               </tbody>
               <tfoot>
                 <tr className="text-white font-extrabold">
-                  <td className="px-6 py-5 text-base uppercase tracking-widest" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
+                  <td className="px-3 sm:px-6 py-3 sm:py-5 text-[11px] sm:text-base uppercase tracking-wide sm:tracking-widest" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
                     TOTAL
                   </td>
-                  <td className="px-6 py-5 text-right tabular-nums text-xl" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
+                  <td className="px-3 sm:px-6 py-3 sm:py-5 text-right tabular-nums text-sm sm:text-xl" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
                     {loading ? "—" : fmtNum(totals.liter)}
                   </td>
-                  <td className="px-6 py-5 text-right tabular-nums text-xl" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
+                  <td className="px-3 sm:px-6 py-3 sm:py-5 text-right tabular-nums text-sm sm:text-xl" style={{ backgroundColor: "#1a3a6c", border: "1px solid rgba(255,255,255,0.15)" }}>
                     {loading ? "—" : fmtNum(totals.mts)}
                   </td>
                 </tr>
@@ -396,32 +396,32 @@ export default function DirectorDashboardPage() {
       ) : (
         <>
           {/* ── KPI Cards ───────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
             <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20">
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Liter</p>
-                  <Droplets className="h-4 w-4 text-blue-500" />
+                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-wide sm:tracking-wider text-blue-600 dark:text-blue-400">Total Liter</p>
+                  <Droplets className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
                 </div>
-                <p className="text-3xl font-extrabold mt-1">{loading ? "—" : fmtNum(totals.liter)}</p>
+                <p className="text-base sm:text-3xl font-extrabold mt-1 leading-tight">{loading ? "—" : fmtNum(totals.liter)}</p>
               </CardContent>
             </Card>
             <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20">
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Total MTS</p>
-                  <Scale className="h-4 w-4 text-emerald-500" />
+                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-wide sm:tracking-wider text-emerald-600 dark:text-emerald-400">Total MTS</p>
+                  <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
                 </div>
-                <p className="text-3xl font-extrabold mt-1">{loading ? "—" : fmtNum(totals.mts)}</p>
+                <p className="text-base sm:text-3xl font-extrabold mt-1 leading-tight">{loading ? "—" : fmtNum(totals.mts)}</p>
               </CardContent>
             </Card>
-            <Card className="border-none bg-violet-50/60 dark:bg-violet-950/20">
-              <CardContent className="p-4">
+            <Card className="col-span-2 lg:col-span-1 border-none bg-violet-50/60 dark:bg-violet-950/20">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">Active Stages</p>
-                  <PackageCheck className="h-4 w-4 text-violet-500" />
+                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-wide sm:tracking-wider text-violet-600 dark:text-violet-400">Active Stages</p>
+                  <PackageCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-violet-500" />
                 </div>
-                <p className="text-3xl font-extrabold mt-1">
+                <p className="text-base sm:text-3xl font-extrabold mt-1 leading-tight">
                   {loading ? "—" : rows.filter((r) => r.liter > 0 || r.mts > 0).length}
                 </p>
               </CardContent>
@@ -429,24 +429,24 @@ export default function DirectorDashboardPage() {
           </div>
 
           {/* ── Stage-Wise Inventory Table ───────────────────── */}
-          <Card className="card-hover shimmer-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Stage-Wise Inventory
-              </CardTitle>
-              <CardDescription>Data source: `/director-inventorty/`</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/50 border-b">
-                      <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wider text-muted-foreground">Liter</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wider text-muted-foreground">MTS</th>
-                    </tr>
-                  </thead>
+            <Card className="card-hover shimmer-hover">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Stage-Wise Inventory
+                </CardTitle>
+                <CardDescription className="text-[10px] sm:text-xs">Data source: `/director-inventorty/`</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-x-auto">
+                  <table className="w-full text-xs sm:text-base">
+                    <thead>
+                      <tr className="bg-muted/50 border-b">
+                        <th className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-left text-[10px] sm:text-sm font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground">Stage</th>
+                        <th className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground">Liter</th>
+                        <th className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground">MTS</th>
+                      </tr>
+                    </thead>
                   <tbody>
                     {rows.map((row) => {
                       const canExpand = Boolean(row.statusCode || row.breakdown);
@@ -459,7 +459,7 @@ export default function DirectorDashboardPage() {
                             className={`border-b transition-colors ${canExpand ? "cursor-pointer hover:bg-muted/30" : "hover:bg-muted/30"}`}
                             onClick={canExpand ? () => toggleExpand(row.key) : undefined}
                           >
-                            <td className="px-4 py-3 text-base font-medium">
+                            <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base font-medium">
                               <div className="flex items-center gap-2">
                                 {canExpand && (
                                   <span
@@ -472,8 +472,8 @@ export default function DirectorDashboardPage() {
                                 <span>{row.label}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-base text-right tabular-nums">{loading ? "—" : fmtNum(row.liter)}</td>
-                            <td className="px-4 py-3 text-base text-right tabular-nums">{loading ? "—" : fmtNum(row.mts)}</td>
+                            <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base text-right tabular-nums">{loading ? "—" : fmtNum(row.liter)}</td>
+                            <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base text-right tabular-nums">{loading ? "—" : fmtNum(row.mts)}</td>
                           </tr>
 
                           {canExpand && isOpen && row.breakdown && (
@@ -557,9 +557,9 @@ export default function DirectorDashboardPage() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-muted/70 border-t-2">
-                      <td className="px-4 py-3 text-base font-extrabold">Grand Total</td>
-                      <td className="px-4 py-3 text-base text-right font-extrabold tabular-nums">{loading ? "—" : fmtNum(totals.liter)}</td>
-                      <td className="px-4 py-3 text-base text-right font-extrabold tabular-nums">{loading ? "—" : fmtNum(totals.mts)}</td>
+                      <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base font-extrabold">Grand Total</td>
+                      <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base text-right font-extrabold tabular-nums">{loading ? "—" : fmtNum(totals.liter)}</td>
+                      <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-base text-right font-extrabold tabular-nums">{loading ? "—" : fmtNum(totals.mts)}</td>
                     </tr>
                   </tfoot>
                 </table>

@@ -409,25 +409,25 @@ export default function TankDataPage() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view tank data.</div>}
     >
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Tank Data</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Tank Data</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Create and manage tanks
           </p>
         </div>
         {(canAdd || canDelete) && (
-          <div className="flex gap-2">
+          <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
             {canAdd && (
-            <Button onClick={() => openCreateDialog("TANK")} className="btn-press gap-2">
+            <Button onClick={() => openCreateDialog("TANK")} className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
               <Plus className="h-4 w-4" />
               Create Tank
             </Button>
             )}
             {canAdd && (
-            <Button onClick={() => openCreateDialog("TOTES")} variant="outline" className="btn-press gap-2">
+            <Button onClick={() => openCreateDialog("TOTES")} variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
               <Plus className="h-4 w-4" />
               Create Tote
             </Button>
@@ -441,10 +441,10 @@ export default function TankDataPage() {
 
       {/* Tank Summary */}
       <div>
-        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+        <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3 sm:mb-4">
           Tank Summary
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
           <SummaryCard
             icon={Warehouse}
             label="Total Tank Capacity"
@@ -530,25 +530,25 @@ export default function TankDataPage() {
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Tanks</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Tanks</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {filteredTanks.length}
                 {search.trim() ? ` of ${tanks.length}` : ""} tanks
                 {search.trim() ? " matching" : " in the system"}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full sm:w-auto items-center gap-2">
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search tanks..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-9 w-48 sm:w-56"
+                  className="pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-56"
                 />
               </div>
               {/* View toggle */}

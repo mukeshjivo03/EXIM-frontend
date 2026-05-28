@@ -181,14 +181,14 @@ export default function WarehouseInventoryPage() {
   }, [grouped]);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Warehouse Inventory</h1>
-          <p className="text-sm text-muted-foreground">Live inventory by warehouse and category from SAP</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Warehouse Inventory</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Live inventory by warehouse and category from SAP</p>
         </div>
-        <Button onClick={fetchData} disabled={loading} className="btn-press gap-2">
+        <Button onClick={fetchData} disabled={loading} className="btn-press self-start sm:self-auto h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           {loading ? "Loading..." : "Refresh"}
         </Button>
@@ -196,12 +196,12 @@ export default function WarehouseInventoryPage() {
 
       {/* Warehouse filter pills */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2.5 sm:pb-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Filter Warehouses</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Warehouses</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={selectAll}>All</Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={selectNone}>Reset</Button>
+              <Button variant="outline" size="sm" className="h-7 text-[10px] sm:text-xs px-2.5" onClick={selectAll}>All</Button>
+              <Button variant="outline" size="sm" className="h-7 text-[10px] sm:text-xs px-2.5" onClick={selectNone}>Reset</Button>
             </div>
           </div>
         </CardHeader>
@@ -221,7 +221,7 @@ export default function WarehouseInventoryPage() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(wh)}
                   onClick={() => toggleWarehouse(wh)}
-                  className={`px-3 py-1 rounded-full text-sm border transition-all font-medium ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-sm border transition-all font-medium ${
                     selectedWarehouses.has(wh)
                       ? headerColor(wh) + " border-transparent shadow-sm"
                       : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/30"
@@ -238,48 +238,48 @@ export default function WarehouseInventoryPage() {
 
       {/* Insight cards */}
       {!loading && overallTotal > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-            <CardContent className="p-4 flex flex-col gap-1">
+            <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Stock</p>
-                <BarChart3 className="h-4 w-4 text-blue-500" />
+                <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-blue-600 dark:text-blue-400">Total Stock</p>
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
               </div>
-              <h3 className="text-2xl font-bold tabular-nums">{fmtNum(overallTotal)}</h3>
-              <p className="text-xs text-muted-foreground">LTR across {selectedWarehouses.size} warehouse{selectedWarehouses.size !== 1 ? "s" : ""}</p>
+              <h3 className="text-base sm:text-2xl font-bold tabular-nums leading-tight">{fmtNum(overallTotal)}</h3>
+              <p className="text-[9px] sm:text-xs text-muted-foreground">LTR across {selectedWarehouses.size} warehouse{selectedWarehouses.size !== 1 ? "s" : ""}</p>
             </CardContent>
           </Card>
 
           <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
-            <CardContent className="p-4 flex flex-col gap-1">
+            <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Active Warehouses</p>
-                <Building2 className="h-4 w-4 text-emerald-500" />
+                <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-emerald-600 dark:text-emerald-400">Active Warehouses</p>
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
               </div>
-              <h3 className="text-2xl font-bold">{insights.activeWarehouses}</h3>
-              <p className="text-xs text-muted-foreground">{insights.totalCategories} categories in stock</p>
+              <h3 className="text-base sm:text-2xl font-bold leading-tight">{insights.activeWarehouses}</h3>
+              <p className="text-[9px] sm:text-xs text-muted-foreground">{insights.totalCategories} categories in stock</p>
             </CardContent>
           </Card>
 
           <Card className="border-none bg-violet-50/60 dark:bg-violet-950/20 shadow-sm">
-            <CardContent className="p-4 flex flex-col gap-1">
+            <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400">Top Warehouse</p>
-                <Warehouse className="h-4 w-4 text-violet-500" />
+                <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-violet-600 dark:text-violet-400">Top Warehouse</p>
+                <Warehouse className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-violet-500" />
               </div>
-              <h3 className="text-xl font-bold truncate">{insights.topWarehouse.code}</h3>
-              <p className="text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topWarehouse.total)} LTR</p>
+              <h3 className="text-sm sm:text-xl font-bold truncate leading-tight">{insights.topWarehouse.code}</h3>
+              <p className="text-[9px] sm:text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topWarehouse.total)} LTR</p>
             </CardContent>
           </Card>
 
           <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm">
-            <CardContent className="p-4 flex flex-col gap-1">
+            <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">Top Category</p>
-                <TrendingUp className="h-4 w-4 text-amber-500" />
+                <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-amber-600 dark:text-amber-400">Top Category</p>
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
               </div>
-              <h3 className="text-xl font-bold truncate">{insights.topCategory.name}</h3>
-              <p className="text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topCategory.total)} LTR</p>
+              <h3 className="text-sm sm:text-xl font-bold truncate leading-tight">{insights.topCategory.name}</h3>
+              <p className="text-[9px] sm:text-xs text-muted-foreground tabular-nums">{fmtNum(insights.topCategory.total)} LTR</p>
             </CardContent>
           </Card>
         </div>
@@ -287,7 +287,7 @@ export default function WarehouseInventoryPage() {
 
       {/* Warehouse cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-64 rounded-xl" />
           ))}
@@ -298,7 +298,7 @@ export default function WarehouseInventoryPage() {
           <p className="font-medium">No data available</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {[...grouped.entries()].map(([wh, rows]) => {
             const total = rows.reduce((s, r) => s + r.Total, 0);
             const allRows = items.filter((i) => i.Warehouse === wh);
@@ -307,17 +307,17 @@ export default function WarehouseInventoryPage() {
 
             return (
               <Card key={wh} className={`border-2 ${warehouseColor(wh)}`}>
-                <CardHeader className={`rounded-t-xl px-4 py-3 ${headerColor(wh)}`}>
+                <CardHeader className={`rounded-t-xl px-3 sm:px-4 py-2.5 sm:py-3 ${headerColor(wh)}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Warehouse className="h-4 w-4" />
-                      <CardTitle className="text-base font-semibold">{wh}</CardTitle>
+                      <Warehouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <CardTitle className="text-sm sm:text-base font-semibold">{wh}</CardTitle>
                     </div>
-                    <Badge variant="outline" className="text-xs font-normal bg-white/50 dark:bg-black/20">
+                    <Badge variant="outline" className="text-[10px] sm:text-xs font-normal bg-white/50 dark:bg-black/20">
                       {nonZeroCount}/{categoryCount} categories
                     </Badge>
                   </div>
-                  <CardDescription className="text-current opacity-70 text-xs mt-0.5">
+                  <CardDescription className="text-current opacity-70 text-[10px] sm:text-xs mt-0.5">
                     Grand Total: <span className="font-semibold">{fmtNum(total)} LTR</span>
                   </CardDescription>
                 </CardHeader>
@@ -330,10 +330,10 @@ export default function WarehouseInventoryPage() {
                   ) : (
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b text-xs uppercase tracking-wider text-muted-foreground">
-                          <th className="px-4 py-2 text-left font-medium">Category</th>
-                          <th className="px-4 py-2 text-right font-medium">Total (LTR)</th>
-                          <th className="px-4 py-2 text-right font-medium">Share</th>
+                        <tr className="border-b text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">
+                          <th className="px-2.5 sm:px-4 py-2 text-left font-medium">Category</th>
+                          <th className="px-2.5 sm:px-4 py-2 text-right font-medium">Total (LTR)</th>
+                          <th className="px-2.5 sm:px-4 py-2 text-right font-medium">Share</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -346,11 +346,11 @@ export default function WarehouseInventoryPage() {
                                 key={idx}
                                 className="border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                               >
-                                <td className="px-4 py-2.5 text-sm">{row.Category}</td>
-                                <td className="px-4 py-2.5 text-sm text-right tabular-nums font-medium">
+                                <td className="px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm">{row.Category}</td>
+                                <td className="px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm text-right tabular-nums font-medium">
                                   {fmtNum(row.Total)}
                                 </td>
-                                <td className="px-4 py-2.5 text-right">
+                                <td className="px-2.5 sm:px-4 py-2.5 text-right">
                                   <div className="flex items-center justify-end gap-2">
                                     <div className="w-16 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                                       <div
@@ -358,7 +358,7 @@ export default function WarehouseInventoryPage() {
                                         style={{ width: `${share}%` }}
                                       />
                                     </div>
-                                    <span className="text-xs tabular-nums text-muted-foreground w-10 text-right">
+                                    <span className="text-[10px] sm:text-xs tabular-nums text-muted-foreground w-10 text-right">
                                       {share.toFixed(1)}%
                                     </span>
                                   </div>
@@ -369,9 +369,9 @@ export default function WarehouseInventoryPage() {
                       </tbody>
                       <tfoot>
                         <tr className="border-t-2 font-semibold bg-black/5 dark:bg-white/5">
-                          <td className="px-4 py-2.5 text-sm">Grand Total</td>
-                          <td className="px-4 py-2.5 text-sm text-right tabular-nums">{fmtNum(total)}</td>
-                          <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">100%</td>
+                          <td className="px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm">Grand Total</td>
+                          <td className="px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm text-right tabular-nums">{fmtNum(total)}</td>
+                          <td className="px-2.5 sm:px-4 py-2.5 text-right text-[10px] sm:text-xs text-muted-foreground">100%</td>
                         </tr>
                       </tfoot>
                     </table>

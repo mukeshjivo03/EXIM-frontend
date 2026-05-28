@@ -477,20 +477,20 @@ export default function TankMonitoringPage() {
   /* ── render ────────────────────────────────────────────── */
 
   return (
-    <div className={cn("p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page", kiosk && "p-4")}>
+    <div className={cn("p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page", kiosk && "p-4")}>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Tank Monitoring</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Tank Monitoring</h1>
           <div className="flex items-center gap-1.5 mt-1">
             <Droplets className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Live Tank Visual Display</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Live Tank Visual Display</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full lg:w-auto flex-wrap items-center gap-2 sm:gap-3">
           {/* Filter by item */}
           <Select value={filterItem || "__all__"} onValueChange={(v) => setFilterItem(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[180px] h-9 text-xs">
+            <SelectTrigger className="w-full sm:w-[180px] h-8 sm:h-9 text-[10px] sm:text-xs">
               <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
               <SelectValue placeholder="All Items" />
             </SelectTrigger>
@@ -508,13 +508,13 @@ export default function TankMonitoringPage() {
           </Select>
 
           {/* Group mode */}
-          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/50">
+          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg sm:rounded-xl border border-border/50">
             {([["none", "Grid"], ["product", "By Product"], ["status", "By Status"]] as [GroupMode, string][]).map(([mode, label]) => (
               <button
                 key={mode}
                 onClick={() => setGroupMode(mode)}
                 className={cn(
-                  "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                  "px-2.5 sm:px-3 py-1 text-[10px] font-bold uppercase tracking-wide sm:tracking-widest transition-all rounded-md sm:rounded-lg",
                   groupMode === mode ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -526,13 +526,13 @@ export default function TankMonitoringPage() {
           {/* Unit toggle */}
           <div className="flex items-center rounded-lg border bg-muted p-0.5">
             <button
-              className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", unit === "L" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+              className={cn("px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors", unit === "L" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
               onClick={() => setUnit("L")}
             >
               Liters
             </button>
             <button
-              className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", unit === "MT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+              className={cn("px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors", unit === "MT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
               onClick={() => setUnit("MT")}
             >
               MTS
@@ -540,13 +540,13 @@ export default function TankMonitoringPage() {
           </div>
 
           {/* Refresh */}
-          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-2" onClick={refreshAll} disabled={loading}>
+          <Button variant="outline" size="sm" className="gap-1.5 sm:gap-2 h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={refreshAll} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
 
           {/* Kiosk */}
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-2" onClick={() => setKiosk(!kiosk)} title={kiosk ? "Exit Kiosk Mode" : "Kiosk Mode"}>
+          <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl border-2" onClick={() => setKiosk(!kiosk)} title={kiosk ? "Exit Kiosk Mode" : "Kiosk Mode"}>
             {kiosk ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
         </div>
@@ -557,15 +557,17 @@ export default function TankMonitoringPage() {
       {/* Tank Summary Cards */}
       {!kiosk && (
         <div>
-          <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+          <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3 sm:mb-4">
             Tank Summary
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
             <SummaryCard icon={Gauge} label="Total Quantity" value={tankSummary ? `${conv(Number(tankSummary.current_stock), unit)} ${unit}` : ""} loading={!tankSummary} />
             <SummaryCard icon={Warehouse} label="Total Capacity" value={tankSummary ? `${conv(Number(tankSummary.total_tank_capacity), unit)} ${unit}` : ""} loading={!tankSummary} />
             <SummaryCard icon={Container} label="Total Tanks" value={tankSummary ? tankSummary.tank_count : ""} loading={!tankSummary} />
             <SummaryCard icon={Package} label="Total Products" value={tankSummary ? tankSummary.item_count : ""} loading={!tankSummary} />
-            <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
+            <div className="col-span-2 lg:col-span-1">
+              <SummaryCard icon={BarChart3} label="Fill Rate" value={tankSummary ? `${tankSummary.utilisation_rate}%` : ""} loading={!tankSummary} />
+            </div>
           </div>
         </div>
       )}

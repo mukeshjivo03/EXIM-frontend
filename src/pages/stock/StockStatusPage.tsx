@@ -411,7 +411,7 @@ export default function StockStatusPage() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view stock status.</div>}
     >
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page relative pb-20">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page relative pb-20">
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && canBulk && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -472,15 +472,16 @@ export default function StockStatusPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Stock Status</h1>
-          <p className="text-sm text-muted-foreground">Track and manage stock statuses</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Stock Status</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Track and manage stock statuses</p>
         </div>
         {canAdd && (
-        <Button onClick={() => { loadDropdowns(); setCreateOpen(true); }} className="btn-press gap-2 shadow-sm shrink-0">
+        <Button onClick={() => { loadDropdowns(); setCreateOpen(true); }} className="btn-press self-start sm:self-auto h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs shadow-sm shrink-0">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Add Stock Status</span>
+          <span className="sm:hidden">Add</span>
         </Button>
         )}
       </div>
@@ -489,24 +490,26 @@ export default function StockStatusPage() {
 
       {/* Stock Status Summary */}
       <div>
-        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+        <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3 sm:mb-4">
           Stock Status Summary
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={overallSummary?.total_count ?? 0} loading={!overallSummary} />
           <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(overallSummary?.total_value ?? 0))}`} loading={!overallSummary} />
           <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(overallSummary?.total_qty ?? 0))} KG`} loading={!overallSummary} />
           <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtNum(Number(overallSummary?.avg_price_per_kg ?? 0))}`} loading={!overallSummary} />
-          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(overallSummary?.avg_price_per_ltr ?? 0))}`} loading={!overallSummary} />
+          <div className="col-span-2 lg:col-span-1">
+            <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(overallSummary?.avg_price_per_ltr ?? 0))}`} loading={!overallSummary} />
+          </div>
         </div>
       </div>
 
       {/* Presets */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         <Button
           variant={!fStatuses.length && !fVendors.length && !fItems.length ? "default" : "outline"}
           size="sm"
-          className="rounded-full"
+          className="rounded-full h-7 sm:h-8 text-[10px] sm:text-xs px-2.5 sm:px-3"
           onClick={clearFilters}
         >
           All
@@ -514,7 +517,7 @@ export default function StockStatusPage() {
         <Button
           variant={fStatuses.length === 1 && fStatuses[0] === "MUNDRA_PORT" ? "default" : "outline"}
           size="sm"
-          className="rounded-full gap-1.5"
+          className="rounded-full gap-1.5 h-7 sm:h-8 text-[10px] sm:text-xs px-2.5 sm:px-3"
           onClick={() => {
             setSingleStatusFilter("MUNDRA_PORT");
             setFItems([]);
@@ -528,7 +531,7 @@ export default function StockStatusPage() {
         <Button
           variant={fStatuses.length === 1 && fStatuses[0] === "ON_THE_SEA" ? "default" : "outline"}
           size="sm"
-          className="rounded-full gap-1.5"
+          className="rounded-full gap-1.5 h-7 sm:h-8 text-[10px] sm:text-xs px-2.5 sm:px-3"
           onClick={() => {
             setSingleStatusFilter("ON_THE_SEA");
             setFItems([]);
@@ -542,7 +545,7 @@ export default function StockStatusPage() {
         <Button
           variant={fStatuses.length === 1 && fStatuses[0] === "ON_THE_WAY" ? "default" : "outline"}
           size="sm"
-          className="rounded-full gap-1.5"
+          className="rounded-full gap-1.5 h-7 sm:h-8 text-[10px] sm:text-xs px-2.5 sm:px-3"
           onClick={() => {
             setSingleStatusFilter("ON_THE_WAY");
             setFItems([]);
@@ -557,19 +560,19 @@ export default function StockStatusPage() {
 
       {/* Filters */}
       <div>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3">
           Detailed Filters
         </h2>
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-end gap-4 flex-wrap">
-            <div className="space-y-1.5 min-w-[180px] flex-1">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="flex items-end gap-2.5 sm:gap-4 flex-wrap">
+            <div className="space-y-1.5 min-w-[160px] flex-1">
+              <Label className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                 <Filter className="h-3 w-3" /> Status
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between font-normal">
+                  <Button variant="outline" className="w-full justify-between font-normal h-8 sm:h-9 text-[10px] sm:text-sm">
                     <span className="truncate">
                       {fStatuses.length === 0
                         ? "All Statuses"
@@ -613,11 +616,11 @@ export default function StockStatusPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-1.5 min-w-[180px] flex-1">
-              <Label className="text-xs text-muted-foreground">Vendor</Label>
+            <div className="space-y-1.5 min-w-[160px] flex-1">
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Vendor</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between font-normal">
+                  <Button variant="outline" className="w-full justify-between font-normal h-8 sm:h-9 text-[10px] sm:text-sm">
                     <span className="truncate">
                       {fVendors.length === 0
                         ? "All Vendors"
@@ -664,11 +667,11 @@ export default function StockStatusPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-1.5 min-w-[180px] flex-1">
-              <Label className="text-xs text-muted-foreground">Item</Label>
+            <div className="space-y-1.5 min-w-[160px] flex-1">
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Item</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between font-normal">
+                  <Button variant="outline" className="w-full justify-between font-normal h-8 sm:h-9 text-[10px] sm:text-sm">
                     <span className="truncate">
                       {fItems.length === 0
                         ? "All Items"
@@ -716,12 +719,12 @@ export default function StockStatusPage() {
               </Popover>
             </div>
             <div className="flex gap-2">
-              <Button onClick={applyFilters} className="gap-1.5">
+              <Button onClick={applyFilters} className="gap-1.5 h-8 sm:h-9 text-[10px] sm:text-xs px-2.5 sm:px-3">
                 <Filter className="h-4 w-4" />
                 Apply
               </Button>
               {hasFilters && (
-                <Button variant="outline" onClick={clearFilters} className="gap-1.5">
+                <Button variant="outline" onClick={clearFilters} className="gap-1.5 h-8 sm:h-9 text-[10px] sm:text-xs px-2.5 sm:px-3">
                   <X className="h-4 w-4" />
                   Clear
                 </Button>
@@ -734,25 +737,27 @@ export default function StockStatusPage() {
 
       {/* Filtered Summary */}
       <div>
-        <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+        <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3 sm:mb-4">
           Filtered Summary
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
           <SummaryCard icon={Hash} label="Total Count" value={summary?.total_count ?? 0} loading={loading} />
           <SummaryCard icon={IndianRupee} label="Total Value" value={`₹ ${fmtNum(Number(summary?.total_value ?? 0))}`} loading={loading} />
           <SummaryCard icon={Scale} label="Total Quantity" value={`${fmtNum(Number(summary?.total_qty ?? 0))} KG`} loading={loading} />
           <SummaryCard icon={Weight} label="Avg Price / KG" value={`₹ ${fmtNum(Number(summary?.avg_price_per_kg ?? 0))}`} loading={loading} />
-          <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(summary?.avg_price_per_ltr ?? 0))}`} loading={loading} />
+          <div className="col-span-2 lg:col-span-1">
+            <SummaryCard icon={Droplets} label="Avg Price / LTR" value={`₹ ${fmtNum(Number(summary?.avg_price_per_ltr ?? 0))}`} loading={loading} />
+          </div>
         </div>
       </div>
 
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <CardTitle>Stock Statuses</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Stock Statuses</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {filteredRows.length}{search ? ` of ${rows.length}` : ""} record{rows.length !== 1 ? "s" : ""}
               </CardDescription>
             </div>
@@ -762,7 +767,7 @@ export default function StockStatusPage() {
                 placeholder="Search any value..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-8"
+                className="pl-8 h-8 sm:h-9 text-xs sm:text-sm"
               />
             </div>
           </div>
