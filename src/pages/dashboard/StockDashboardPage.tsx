@@ -608,42 +608,42 @@ export default function StockDashboardPage() {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-6 lg:space-y-8 animate-page pb-20">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 lg:space-y-8 animate-page pb-20">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl tracking-tight">Stock Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Multi-dimensional inventory analytics</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl tracking-tight">Stock Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Multi-dimensional inventory analytics</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl border border-foreground/30/50">
+        <div className="flex w-full flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3">
+          <div className="flex w-full sm:w-auto flex-wrap items-center gap-1 sm:gap-2 bg-muted/50 p-1 rounded-lg sm:rounded-xl border border-foreground/30/50">
             <Button 
               variant={roundingEnabled ? "secondary" : "ghost"} 
               size="sm" 
-              className="h-8 rounded-lg gap-1.5 text-xs uppercase tracking-wider"
+              className="h-7 sm:h-8 rounded-md sm:rounded-lg gap-1 text-[10px] sm:text-xs uppercase tracking-wide shrink-0"
               onClick={() => setRoundingEnabled(!roundingEnabled)}
             >
               {roundingEnabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               {roundingEnabled ? "Rounding On" : "Rounding Off"}
             </Button>
-            <div className="w-[1px] h-4 bg-border mx-1" />
+            <div className="hidden sm:block w-[1px] h-4 bg-border mx-0.5 sm:mx-1" />
             <Button 
               variant={hideZeroRows ? "secondary" : "ghost"} 
               size="sm" 
-              className="h-8 rounded-lg gap-1.5 text-xs uppercase tracking-wider"
+              className="h-7 sm:h-8 rounded-md sm:rounded-lg gap-1 text-[10px] sm:text-xs uppercase tracking-wide shrink-0"
               onClick={() => setHideZeroRows(!hideZeroRows)}
             >
               {hideZeroRows ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               {hideZeroRows ? "Showing Active" : "Hide Empty"}
             </Button>
-            <div className="w-[1px] h-4 bg-border mx-1" />
-            <div className="flex items-center">
+            <div className="hidden sm:block w-[1px] h-4 bg-border mx-0.5 sm:mx-1" />
+            <div className="flex flex-wrap items-center">
               {(["KG", "MTS", "LTR"] as Unit[]).map((u) => (
                 <button
                   key={u}
                   onClick={() => setUnit(u)}
                   className={cn(
-                    "px-3 py-1 text-xs uppercase tracking-wider transition-all rounded-lg",
+                    "px-2 sm:px-3 py-1 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider transition-all rounded-md sm:rounded-lg",
                     unit === u ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -652,11 +652,11 @@ export default function StockDashboardPage() {
               ))}
             </div>
           </div>
-          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={() => fetchData(filters)} disabled={loading}>
+          <Button variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={() => fetchData(filters)} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
-          <Button variant="outline" className="btn-press gap-2 rounded-xl border-2" onClick={handlePrint} disabled={!data}>
+          <Button variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={handlePrint} disabled={!data}>
             <Printer className="h-4 w-4" />
             Print
           </Button>
@@ -664,38 +664,38 @@ export default function StockDashboardPage() {
       </div>
 
       {/* ── Summary & Insights ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
         <Card className="card-hover border-none bg-blue-50/50 dark:bg-blue-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">In Factory</p>
-              <Factory className="h-4 w-4 text-blue-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-blue-600 dark:text-blue-400">In Factory</p>
+              <Factory className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
             </div>
-            <h3 className="text-2xl font-bold">{data ? fmtLiters(tankInFactoryTotal, unit, roundingEnabled) : "—"}</h3>
-            <p className="text-xs text-muted-foreground uppercase">{UNIT_LABELS[unit]} Volume</p>
+            <h3 className="text-sm sm:text-2xl font-bold leading-tight">{data ? fmtLiters(tankInFactoryTotal, unit, roundingEnabled) : "—"}</h3>
+            <p className="text-[9px] sm:text-xs text-muted-foreground uppercase">{UNIT_LABELS[unit]} Volume</p>
           </CardContent>
         </Card>
 
         <Card className="card-hover border-none bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">Outside Factory</p>
-              <PackageOpen className="h-4 w-4 text-amber-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-amber-600 dark:text-amber-400">Outside Factory</p>
+              <PackageOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
             </div>
-            <h3 className="text-2xl font-bold">{data ? fmtNum(data.summary.outside_factory_total, unit, roundingEnabled) : "—"}</h3>
-            <p className="text-xs text-muted-foreground uppercase">Logistical Stock</p>
+            <h3 className="text-sm sm:text-2xl font-bold leading-tight">{data ? fmtNum(data.summary.outside_factory_total, unit, roundingEnabled) : "—"}</h3>
+            <p className="text-[9px] sm:text-xs text-muted-foreground uppercase">Logistical Stock</p>
           </CardContent>
         </Card>
 
         {/* Insight Badges */}
-        <Card className="card-hover border-none bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm overflow-hidden relative group">
-          <CardContent className="p-5 flex flex-col gap-1">
-            <p className="text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Top Item</p>
+        <Card className="col-span-2 lg:col-span-1 card-hover border-none bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm overflow-hidden relative group">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
+            <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-indigo-600 dark:text-indigo-400">Top Item</p>
             {loading ? <Skeleton className="h-6 w-20" /> : (
-              <h3 className="text-xl font-bold truncate">{(insights?.topItem?.item_name || insights?.topItem?.item_code) ?? "—"}</h3>
+              <h3 className="text-sm sm:text-xl font-bold truncate">{(insights?.topItem?.item_name || insights?.topItem?.item_code) ?? "—"}</h3>
             )}
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[10px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5">BY VOLUME</Badge>
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] h-4 bg-white/50 dark:bg-black/20 border-none px-1.5">BY VOLUME</Badge>
             </div>
             <Info className="absolute -bottom-2 -right-2 h-12 w-12 text-indigo-500/10 group-hover:scale-110 transition-transform" />
           </CardContent>
@@ -704,12 +704,12 @@ export default function StockDashboardPage() {
 
       {/* ── Filters ── */}
       <Card className="border shadow-sm">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
             <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">RM Code</label>
+              <label className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">RM Code</label>
               <select
-                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                className="w-full h-9 sm:h-10 rounded-md border bg-background px-3 text-xs sm:text-sm"
                 value={filters.rmcode ?? ""}
                 onChange={(e) => updateFilter({ rmcode: e.target.value })}
                 disabled={loading}
@@ -721,9 +721,9 @@ export default function StockDashboardPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Vendor</label>
+              <label className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">Vendor</label>
               <select
-                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                className="w-full h-9 sm:h-10 rounded-md border bg-background px-3 text-xs sm:text-sm"
                 value={filters.vendor ?? ""}
                 onChange={(e) => updateFilter({ vendor: e.target.value })}
                 disabled={loading}
@@ -735,9 +735,9 @@ export default function StockDashboardPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Status</label>
+              <label className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">Status</label>
               <select
-                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                className="w-full h-9 sm:h-10 rounded-md border bg-background px-3 text-xs sm:text-sm"
                 value={filters.status ?? ""}
                 onChange={(e) => updateFilter({ status: e.target.value })}
                 disabled={loading}
@@ -750,8 +750,8 @@ export default function StockDashboardPage() {
             </div>
           </div>
           {hasFilters && (
-            <div className="mt-4">
-              <Button variant="outline" size="sm" onClick={clearFilters} disabled={loading}>
+            <div className="mt-3 sm:mt-4">
+              <Button variant="outline" size="sm" className="h-7 sm:h-8 text-[10px] sm:text-xs px-2.5 sm:px-3" onClick={clearFilters} disabled={loading}>
                 Clear Filters
               </Button>
             </div>
@@ -761,17 +761,17 @@ export default function StockDashboardPage() {
 
       {/* ── Table Matrix ── */}
       <Card className="border shadow-xl bg-card overflow-hidden">
-        <CardHeader className="border-b bg-muted/30">
-          <div className="flex items-center justify-between">
+        <CardHeader className="border-b bg-muted/30 px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Inventory Matrix</CardTitle>
-              <CardDescription className="text-xs">RM × Status × Vendor Pivot</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Inventory Matrix</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">RM × Status × Vendor Pivot</CardDescription>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs uppercase tracking-wider"
+                className="h-7 sm:h-8 gap-1 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider"
                 onClick={addSeparator}
                 disabled={loading || orderedDisplayRows.filter((row) => row.type === "item").length < 2}
               >
@@ -781,21 +781,23 @@ export default function StockDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs uppercase tracking-wider"
+                className="h-7 sm:h-8 gap-1 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider"
                 onClick={resetRowOrder}
                 disabled={rowOrder.length === 0}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset Order
               </Button>
-              <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-muted-foreground">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1">
                   <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
-                  <span>Hover Row/Col to highlight</span>
+                  <span className="hidden sm:inline">Hover Row/Col to highlight</span>
+                  <span className="sm:hidden">Hover</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
-                  <span>Heatmap intensity</span>
+                  <span className="hidden sm:inline">Heatmap intensity</span>
+                  <span className="sm:hidden">Heatmap</span>
                 </div>
               </div>
             </div>
@@ -813,7 +815,7 @@ export default function StockDashboardPage() {
               className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
               style={{ scrollSnapType: "x proximity", scrollPaddingLeft: 262 }}
             >
-              <table className="w-full table-fixed text-base" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+              <table className="w-full table-fixed text-xs sm:text-base" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                 <colgroup>
                   <col style={{ width: 72 }} />
                   <col style={{ width: 190 }} />
@@ -839,10 +841,10 @@ export default function StockDashboardPage() {
                 <thead>
                   {/* Row 1 — Status / column group headers */}
                   <tr className="bg-muted/40 border-b">
-                    <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-2 py-4 text-center uppercase tracking-wider border border-foreground/30 text-xs" rowSpan={2}>
+                    <th className="sticky left-0 z-30 bg-muted/60 backdrop-blur-md px-2 py-3 sm:py-4 text-center uppercase tracking-wide sm:tracking-wider border border-foreground/30 text-[10px] sm:text-xs" rowSpan={2}>
                       Order
                     </th>
-                    <th className="sticky left-[72px] z-30 bg-muted/60 backdrop-blur-md px-4 py-4 text-center uppercase tracking-wider border border-foreground/30 text-base" rowSpan={2}>
+                    <th className="sticky left-[72px] z-30 bg-muted/60 backdrop-blur-md px-3 sm:px-4 py-3 sm:py-4 text-center uppercase tracking-wide sm:tracking-wider border border-foreground/30 text-xs sm:text-base" rowSpan={2}>
                       RM NAME
                     </th>
                     {showFactoryCols && <>
@@ -851,13 +853,13 @@ export default function StockDashboardPage() {
                         onMouseEnter={() => setHoveredCol("IN_FACTORY")}
                         onMouseLeave={() => setHoveredCol(null)}
                         className={cn(
-                          "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
+                          "px-2 py-2.5 sm:py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
                           hoveredCol === "IN_FACTORY" ? "bg-green-50/60 dark:bg-green-900/20" : "bg-muted/20"
                         )}
                         style={{ scrollSnapAlign: "start" }}
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-green-600 text-base uppercase tracking-wider font-semibold">In Factory</span>
+                          <span className="text-green-600 text-[10px] sm:text-base uppercase tracking-wide sm:tracking-wider font-semibold">In Factory</span>
                           <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-green-500" />
                         </div>
                       </th>
@@ -868,12 +870,12 @@ export default function StockDashboardPage() {
                         onMouseEnter={() => setHoveredCol("OUT_SIDE_FACTORY")}
                         onMouseLeave={() => setHoveredCol(null)}
                         className={cn(
-                          "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
+                          "px-2 py-2.5 sm:py-3 text-center border border-foreground/30 cursor-pointer transition-colors group",
                           hoveredCol === "OUT_SIDE_FACTORY" ? "bg-amber-50/60 dark:bg-amber-900/20" : "bg-muted/20"
                         )}
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-amber-600 text-base uppercase tracking-wider font-semibold">Outside</span>
+                          <span className="text-amber-600 text-[10px] sm:text-base uppercase tracking-wide sm:tracking-wider font-semibold">Outside</span>
                           <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
                         </div>
                       </th>
@@ -891,7 +893,7 @@ export default function StockDashboardPage() {
                             onMouseEnter={() => setHoveredCol(group.status)}
                             onMouseLeave={() => setHoveredCol(null)}
                             className={cn(
-                              "px-2 py-3 text-center border border-foreground/30 cursor-pointer transition-all hover:brightness-95 group text-base font-semibold uppercase tracking-wider",
+                              "px-2 py-2.5 sm:py-3 text-center border border-foreground/30 cursor-pointer transition-all hover:brightness-95 group text-[10px] sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider",
                               palette.bg,
                               palette.text,
                               hoveredCol === group.status && "ring-2 ring-inset ring-current/30 z-10 shadow-lg"
@@ -909,15 +911,15 @@ export default function StockDashboardPage() {
                         </Fragment>
                       );
                     })}
-                    <th className="px-4 py-3 text-center bg-muted/40 border border-foreground/30 uppercase tracking-wider text-base font-semibold" rowSpan={2}>
+                    <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-center bg-muted/40 border border-foreground/30 uppercase tracking-wide sm:tracking-wider text-xs sm:text-base font-semibold" rowSpan={2}>
                       TOTAL
                     </th>
                   </tr>
                   {/* Row 2 — Vendor sub-headers */}
                   <tr className="border-b shadow-sm">
                     {showFactoryCols && <>
-                      <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
-                      <th className="border border-foreground/30 bg-muted/20 py-1 text-sm text-center text-muted-foreground uppercase" />
+                      <th className="border border-foreground/30 bg-muted/20 py-1 text-[10px] sm:text-sm text-center text-muted-foreground uppercase" />
+                      <th className="border border-foreground/30 bg-muted/20 py-1 text-[10px] sm:text-sm text-center text-muted-foreground uppercase" />
                     </>}
                     {statusGroups.map((group, gi) => {
                       const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
@@ -928,7 +930,7 @@ export default function StockDashboardPage() {
                           onMouseEnter={() => setHoveredCol(key)}
                           onMouseLeave={() => setHoveredCol(null)}
                           className={cn(
-                            "px-2 py-2 text-center text-base font-semibold truncate transition-colors uppercase tracking-wider border border-foreground/30",
+                            "px-2 py-2 text-center text-[10px] sm:text-base font-semibold truncate transition-colors uppercase tracking-wide sm:tracking-wider border border-foreground/30",
                             palette.subBg,
                             palette.text,
                             hoveredCol === key ? "brightness-90" : ""
@@ -1036,7 +1038,7 @@ export default function StockDashboardPage() {
                         )}
                       >
                         <td className={cn(
-                          "sticky left-0 z-20 px-1.5 py-2 text-center border border-foreground/30 transition-colors cursor-grab active:cursor-grabbing",
+                          "sticky left-0 z-20 px-1.5 py-1.5 sm:py-2 text-center border border-foreground/30 transition-colors cursor-grab active:cursor-grabbing",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           <div className="flex items-center justify-center" title="Drag row to reorder">
@@ -1044,14 +1046,14 @@ export default function StockDashboardPage() {
                           </div>
                         </td>
                         <td className={cn(
-                          "sticky left-[72px] z-20 px-4 py-3 text-sm text-left border border-foreground/30 transition-colors",
+                          "sticky left-[72px] z-20 px-2.5 sm:px-4 py-2 sm:py-3 text-[11px] sm:text-sm text-left border border-foreground/30 transition-colors",
                           hoveredRow === item.item_code ? "bg-primary text-primary-foreground shadow-xl" : "bg-card"
                         )}>
                           {item.item_name || tankNameMap.get(item.item_code) || item.item_code}
                         </td>
                         {showFactoryCols && <>
                           {/* IN FACTORY */}
-                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
+                          <td className="px-2 py-2 sm:py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {tankVal > 0
                               ? <span className="text-blue-600 dark:text-blue-400">{fmtLiters(tankVal, unit, roundingEnabled)}</span>
                               : <span className="opacity-20">·</span>}
@@ -1059,7 +1061,7 @@ export default function StockDashboardPage() {
                           {/* spacer */}
                           <td className="p-0 bg-background border-x-0" />
                           {/* OUTSIDE */}
-                          <td className="px-2 py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
+                          <td className="px-2 py-2 sm:py-3 text-center tabular-nums transition-all border border-foreground/30 bg-background">
                             {item.outside_factory > 0
                               ? <span className="text-amber-600 dark:text-amber-400">{fmtNum(item.outside_factory, unit, roundingEnabled)}</span>
                               : <span className="opacity-20">·</span>}
@@ -1078,7 +1080,7 @@ export default function StockDashboardPage() {
                                 <td
                                   key={key}
                                   className={cn(
-                                    "px-2 py-3 text-center tabular-nums transition-all relative group/cell border border-foreground/30",
+                                    "px-2 py-2 sm:py-3 text-center tabular-nums transition-all relative group/cell border border-foreground/30",
                                     hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
                                   )}
                                 >
@@ -1096,7 +1098,7 @@ export default function StockDashboardPage() {
                             )}
                           </Fragment>
                         ))}
-                        <td className="px-4 py-3 text-center tabular-nums text-base font-semibold bg-muted/20 border border-foreground/30">
+                        <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-center tabular-nums text-xs sm:text-base font-semibold bg-muted/20 border border-foreground/30">
                           {fmtAny(grandTotal, roundingEnabled)}
                         </td>
                       </tr>
@@ -1104,14 +1106,14 @@ export default function StockDashboardPage() {
                   })}
 
                   {/* Grand Total Row */}
-                  <tr className="bg-muted/50 text-base border-t-2 border-border font-semibold">
-                    <td className="sticky left-0 z-30 bg-muted/60 px-4 py-4 text-center border border-foreground/30 uppercase tracking-wider" colSpan={2}>Grand Total</td>
+                  <tr className="bg-muted/50 text-xs sm:text-base border-t-2 border-border font-semibold">
+                    <td className="sticky left-0 z-30 bg-muted/60 px-3 sm:px-4 py-3 sm:py-4 text-center border border-foreground/30 uppercase tracking-wide sm:tracking-wider" colSpan={2}>Grand Total</td>
                     {showFactoryCols && <>
-                      <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
+                      <td className="px-2 py-3 sm:py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
                         {fmtLiters(tankInFactoryTotal, unit, roundingEnabled)}
                       </td>
                       <td className="p-0 bg-background border-x-0" />
-                      <td className="px-2 py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
+                      <td className="px-2 py-3 sm:py-4 text-center tabular-nums border border-foreground/30 text-amber-600 dark:text-amber-400">
                         {fmtNum(data?.totals.outside_factory ?? 0, unit, roundingEnabled)}
                       </td>
                       <td className="p-0 bg-background border-x-0" />
@@ -1120,7 +1122,7 @@ export default function StockDashboardPage() {
                       <Fragment key={group.status}>
                         <td
                           colSpan={group.vendors.length}
-                          className="px-2 py-4 text-center tabular-nums border border-foreground/30 font-semibold"
+                          className="px-2 py-3 sm:py-4 text-center tabular-nums border border-foreground/30 font-semibold"
                         >
                           {fmtNum(
                             data?.totals.status_totals?.[group.status] ??
@@ -1137,7 +1139,7 @@ export default function StockDashboardPage() {
                         )}
                       </Fragment>
                     ))}
-                    <td className="px-4 py-4 text-center tabular-nums bg-primary text-primary-foreground font-bold border border-foreground/30">
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 text-center tabular-nums bg-primary text-primary-foreground font-bold border border-foreground/30">
                       {fmtAny(
                         showFactoryCols
                           ? convertFromLiters(tankInFactoryTotal, unit) +

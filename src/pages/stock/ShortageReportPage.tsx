@@ -149,14 +149,14 @@ export default function ShortageReportPage() {
   const paginated = sorted.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-xl sm:text-2xl font-bold">Shortage Report</h1>
+          <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Shortage Report</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           Shortage entries recorded during stock transitions
         </p>
       </div>
@@ -164,51 +164,51 @@ export default function ShortageReportPage() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Insight Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
         <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Records</p>
-              <Hash className="h-4 w-4 text-blue-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-blue-600 dark:text-blue-400">Total Records</p>
+              <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
             </div>
             {loading
               ? <div className="h-8 w-12 bg-blue-200/50 dark:bg-blue-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold">{insights?.total_records ?? 0}</h3>
+              : <h3 className="text-base sm:text-2xl font-bold">{insights?.total_records ?? 0}</h3>
             }
           </CardContent>
         </Card>
 
         <Card className="border-none bg-red-50/60 dark:bg-red-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-red-600 dark:text-red-400">Total Shortage</p>
-              <Scale className="h-4 w-4 text-red-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-red-600 dark:text-red-400">Total Shortage</p>
+              <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
             </div>
             {loading
               ? <div className="h-8 w-24 bg-red-200/50 dark:bg-red-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortage ?? insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>
+              : <h3 className="text-base sm:text-2xl font-bold tabular-nums">{Number(insights?.total_deduction_shortage ?? insights?.total_deduction_shortager ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} <span className="text-[10px] sm:text-sm font-normal text-muted-foreground">MTS</span></h3>
             }
           </CardContent>
         </Card>
 
-        <Card className="border-none bg-orange-50/60 dark:bg-orange-950/20 shadow-sm">
-          <CardContent className="p-5 flex flex-col gap-1">
+        <Card className="col-span-2 lg:col-span-1 border-none bg-orange-50/60 dark:bg-orange-950/20 shadow-sm">
+          <CardContent className="p-3 sm:p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Deduction</p>
-              <IndianRupee className="h-4 w-4 text-orange-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-orange-600 dark:text-orange-400">Total Deduction</p>
+              <IndianRupee className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
             </div>
             {loading
               ? <div className="h-8 w-28 bg-orange-200/50 dark:bg-orange-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">₹ {Number(insights?.total_deduction_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+              : <h3 className="text-base sm:text-2xl font-bold tabular-nums">₹ {Number(insights?.total_deduction_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
             }
           </CardContent>
         </Card>
       </div>
 
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
-          <CardTitle>Shortage Entries</CardTitle>
-          <CardDescription>{sorted.length} entr{sorted.length !== 1 ? "ies" : "y"} found</CardDescription>
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-base sm:text-lg">Shortage Entries</CardTitle>
+          <CardDescription className="text-[10px] sm:text-xs">{sorted.length} entr{sorted.length !== 1 ? "ies" : "y"} found</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-md border overflow-x-auto">

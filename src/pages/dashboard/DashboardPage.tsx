@@ -271,7 +271,7 @@ export default function DashboardPage() {
   const loading = capacityLoading || balanceLoading || trendsLoading || contractsLoading;
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-8 lg:space-y-10 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 lg:p-8 space-y-5 sm:space-y-7 lg:space-y-10 animate-page">
       
       {/* Chart Gradients Definitions */}
       <svg width="0" height="0" className="absolute">
@@ -288,22 +288,22 @@ export default function DashboardPage() {
       </svg>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
             <Activity className="h-3.5 w-3.5 text-emerald-500" />
             Live operational & financial intelligence
           </p>
         </div>
-        <Button variant="outline" className="btn-press gap-2 rounded-xl h-11 px-6 shadow-sm border-2" onClick={() => fetchAll()} disabled={loading}>
+        <Button variant="outline" className="btn-press self-end gap-2 rounded-lg sm:rounded-xl h-8 sm:h-11 px-3 sm:px-6 text-[11px] sm:text-sm shadow-sm border-2" onClick={() => fetchAll()} disabled={loading}>
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           Sync Live Data
         </Button>
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         <KPICard 
           title="Outstanding Receivable"
           value={`₹ ${fmtNum(totalReceivable / 10000000, 2)} Cr`}
@@ -342,22 +342,22 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
         
         {/* Tank Capacity (25%) */}
-        <Card className="xl:col-span-1 card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl">
-          <CardHeader>
+        <Card className="xl:col-span-1 card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl py-4 sm:py-6 gap-4 sm:gap-6">
+          <CardHeader className="px-4 sm:px-6 pb-1 sm:pb-0">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <div>
-                <CardTitle>Tank Capacity</CardTitle>
-                <CardDescription>Live fill analytics</CardDescription>
+                <CardTitle className="text-sm sm:text-base">Tank Capacity</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Live fill analytics</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="px-4 sm:px-6 space-y-4 sm:space-y-6">
             {capacityLoading ? (
-              <div className="flex items-center justify-center h-48 animate-pulse text-sm text-muted-foreground font-medium">Synchronizing…</div>
+              <div className="flex items-center justify-center h-48 animate-pulse text-xs sm:text-sm text-muted-foreground font-medium">Synchronizing…</div>
             ) : !capacity ? (
               <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-2">
                 <Inbox className="h-8 w-8 opacity-20" />
@@ -410,11 +410,11 @@ export default function DashboardPage() {
                     { label: "Empty", val: capacity.empty_capacity, color: "text-slate-500 dark:text-slate-400", dot: "bg-slate-300 dark:bg-slate-600" as string | undefined },
                   ].map((s) => (
                     <div key={s.label} className="flex items-center justify-between">
-                      <span className={cn("text-xs font-bold uppercase tracking-wider flex items-center gap-2", s.color)}>
+                      <span className={cn("text-[10px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-wider flex items-center gap-2", s.color)}>
                         {s.dot ? <div className={cn("h-2 w-2 rounded-full", s.dot)} /> : <Droplets className="h-3.5 w-3.5" />}
                         {s.label}
                       </span>
-                      <span className={cn("text-sm font-black", s.color)}>{fmtNum(s.val)} L</span>
+                      <span className={cn("text-xs sm:text-sm font-black", s.color)}>{fmtNum(s.val)} L</span>
                     </div>
                   ))}
                 </div>
@@ -424,109 +424,118 @@ export default function DashboardPage() {
         </Card>
 
         {/* Daily Price Trends (75%) */}
-        <Card className="xl:col-span-3 card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="xl:col-span-3 card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden py-4 sm:py-6 gap-4 sm:gap-6">
+          <CardHeader className="px-4 sm:px-6 pb-2">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>Market Intelligence</CardTitle>
-                  <CardDescription>Factory Rate trends (₹/Kg)</CardDescription>
+                  <CardTitle className="text-sm sm:text-base">Market Intelligence</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Factory Rate trends (₹/Kg)</CardDescription>
                 </div>
               </div>
-              
-              {/* Market Insights Panel */}
               {!trendsLoading && marketInsight && (
-                <div className="flex gap-4">
-                  <div className="bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 flex items-center gap-3">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900/30 flex items-center gap-2 shrink-0">
                     <div className="p-1 bg-emerald-500 rounded-full text-white">
                       <ArrowUpRight className="h-3 w-3" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase leading-none mb-1">Top Gainer</p>
-                      <p className="text-xs font-black truncate max-w-[80px]">{marketInsight.gainer.label}</p>
+                      <p className="text-[8px] sm:text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase leading-none mb-1">Top Gainer</p>
+                      <p className="text-[10px] sm:text-[11px] font-black truncate max-w-[90px] sm:max-w-[100px]">{marketInsight.gainer.label}</p>
                     </div>
-                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">+{marketInsight.gainer.pct.toFixed(1)}%</span>
+                    <span className="text-[10px] sm:text-[11px] font-black text-emerald-600 dark:text-emerald-400">+{marketInsight.gainer.pct.toFixed(1)}%</span>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-950/20 px-3 py-1.5 rounded-xl border border-red-100 dark:border-red-900/30 flex items-center gap-3">
+                  <div className="bg-red-50 dark:bg-red-950/20 px-2 py-1 rounded-lg border border-red-100 dark:border-red-900/30 flex items-center gap-2 shrink-0">
                     <div className="p-1 bg-red-500 rounded-full text-white">
                       <ArrowDownRight className="h-3 w-3" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase leading-none mb-1">Least Price</p>
-                      <p className="text-xs font-black truncate max-w-[80px]">{marketInsight.loser.label}</p>
+                      <p className="text-[8px] sm:text-[9px] font-bold text-red-600 dark:text-red-400 uppercase leading-none mb-1">Least Price</p>
+                      <p className="text-[10px] sm:text-[11px] font-black truncate max-w-[90px] sm:max-w-[100px]">{marketInsight.loser.label}</p>
                     </div>
-                    <span className="text-xs font-black text-red-600 dark:text-red-400">{marketInsight.loser.pct.toFixed(1)}%</span>
+                    <span className="text-[10px] sm:text-[11px] font-black text-red-600 dark:text-red-400">{marketInsight.loser.pct.toFixed(1)}%</span>
                   </div>
                 </div>
               )}
             </div>
 
               {!trendsLoading && trends && (
-              <div className="space-y-3 mt-6 pt-4 border-t border-border/50">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-xl">
-                  <DatePicker value={trendsStartDate} onChange={(v) => setTrendsStartDate(v || "")} placeholder="Start date" />
-                  <DatePicker value={trendsEndDate} onChange={(v) => setTrendsEndDate(v || "")} placeholder="End date" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9"
-                    disabled={!trendsStartDate || !trendsEndDate}
-                    onClick={() => fetchAll(trendsStartDate, trendsEndDate)}
+              <div className="space-y-2.5 mt-4 sm:mt-6 pt-4 border-t border-border/50">
+                <div className="w-full overflow-x-auto pb-1">
+                  <div className="flex items-center gap-2 min-w-max">
+                    <div className="flex items-center gap-1 rounded-lg border bg-muted/30 px-1.5 py-1">
+                      <div className="w-[118px] sm:w-[128px]">
+                        <DatePicker value={trendsStartDate} onChange={(v) => setTrendsStartDate(v || "")} placeholder="Start date" />
+                      </div>
+                      <div className="w-[118px] sm:w-[128px]">
+                        <DatePicker value={trendsEndDate} onChange={(v) => setTrendsEndDate(v || "")} placeholder="End date" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-7 sm:h-8 text-[10px] sm:text-xs px-2"
+                        disabled={!trendsStartDate || !trendsEndDate}
+                        onClick={() => fetchAll(trendsStartDate, trendsEndDate)}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-5 sm:h-6 text-[8px] sm:text-[9px] font-bold uppercase tracking-wide px-1.5 sm:px-2 rounded-md"
+                    onClick={() => setSelectedLabels(new Set(trends.datasets.map((d) => d.label)))}
                   >
-                    Apply Range
+                    Select All
                   </Button>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 text-[10px] font-bold uppercase tracking-widest px-2"
-                  onClick={() => setSelectedLabels(new Set(trends.datasets.map((d) => d.label)))}
-                >
-                  Select All
-                </Button>
-                <div className="h-4 w-[1px] bg-border mx-1" />
-                {trends.datasets.map((ds, i) => {
-                  const color = PRICE_COLORS[i % PRICE_COLORS.length];
-                  const active = selectedLabels.has(ds.label);
-                  return (
-                    <button
-                      key={ds.label}
-                      onClick={() => setSelectedLabels(prev => {
-                        const next = new Set(prev);
-                        if (next.has(ds.label)) {
-                          if (next.size > 1) next.delete(ds.label);
-                        } else next.add(ds.label);
-                        return next;
-                      })}
-                      className={cn(
-                        "flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all duration-300",
-                        active ? "text-white shadow-md scale-105" : "bg-transparent text-muted-foreground hover:border-foreground/40"
-                      )}
-                      style={active ? { backgroundColor: color, borderColor: color } : { borderColor: "hsl(var(--border))" }}
-                    >
-                      <div className="h-1.5 w-1.5 rounded-full bg-current" />
-                      {ds.label}
-                    </button>
-                  );
-                })}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {trends.datasets.map((ds, i) => {
+                    const color = PRICE_COLORS[i % PRICE_COLORS.length];
+                    const active = selectedLabels.has(ds.label);
+                    return (
+                      <button
+                        key={ds.label}
+                        onClick={() => setSelectedLabels(prev => {
+                          const next = new Set(prev);
+                          if (next.has(ds.label)) {
+                            if (next.size > 1) next.delete(ds.label);
+                          } else next.add(ds.label);
+                          return next;
+                        })}
+                        className={cn(
+                          "flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-2.5 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-wide border transition-all duration-300",
+                          active ? "text-white shadow-sm" : "bg-transparent text-muted-foreground hover:border-foreground/40"
+                        )}
+                        style={active ? { backgroundColor: color, borderColor: color } : { borderColor: "hsl(var(--border))" }}
+                      >
+                        <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {ds.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="px-4 sm:px-6 pt-4 sm:pt-6">
             {trendsLoading ? (
-              <div className="flex items-center justify-center h-[450px] animate-pulse font-bold text-muted-foreground tracking-widest">ANALYZING TRENDS…</div>
+              <div className="flex items-center justify-center h-[230px] sm:h-[450px] animate-pulse font-bold text-xs sm:text-base text-muted-foreground tracking-wide sm:tracking-widest">ANALYZING TRENDS…</div>
             ) : densePriceChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[450px] text-muted-foreground gap-4">
+              <div className="flex flex-col items-center justify-center h-[230px] sm:h-[450px] text-muted-foreground gap-4">
                 <Inbox className="h-12 w-12 opacity-10" />
                 <p className="font-bold uppercase tracking-widest text-sm">No price data synced</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={450}>
+              <div className="overflow-x-auto pb-1">
+                <div className="h-[230px] sm:h-[450px] min-w-[620px] sm:min-w-0">
+                  <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={densePriceChartData}
                   margin={{ top: 20, right: 20, left: 0, bottom: 40 }}
@@ -587,26 +596,28 @@ export default function DashboardPage() {
                     );
                   })}
                 </BarChart>
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              </div>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
       {/* Financial Outstanding Row */}
-      <Card className="card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
-        <CardHeader className="pb-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="card-hover border-none bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden py-4 sm:py-6 gap-4 sm:gap-6">
+        <CardHeader className="px-4 sm:px-6 pb-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Landmark className="h-5 w-5 text-primary" />
+              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                <Landmark className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Financial Exposure — Top 10 Parties</CardTitle>
-                <CardDescription>Receivables vs Payables analysis</CardDescription>
+                <CardTitle className="text-sm sm:text-base">Financial Exposure — Top 10 Parties</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Receivables vs Payables analysis</CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] bg-muted/30 px-6 py-3 rounded-2xl">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.2em] bg-muted/30 px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 <span className="text-emerald-600">Receivable</span>
@@ -618,16 +629,18 @@ export default function DashboardPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-10">
+        <CardContent className="px-4 sm:px-6 pt-5 sm:pt-10">
           {balanceLoading ? (
-            <div className="flex items-center justify-center h-[550px] animate-pulse text-muted-foreground font-bold tracking-[0.3em]">AUDITING LEDGERS…</div>
+            <div className="flex items-center justify-center h-[280px] sm:h-[550px] animate-pulse text-muted-foreground font-bold text-xs sm:text-base tracking-[0.14em] sm:tracking-[0.3em]">AUDITING LEDGERS…</div>
           ) : barData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[550px] text-muted-foreground gap-4">
+            <div className="flex flex-col items-center justify-center h-[280px] sm:h-[550px] text-muted-foreground gap-4">
               <Inbox className="h-16 w-12 opacity-10" />
               <p className="font-bold uppercase tracking-widest text-sm">No ledger data available</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={550}>
+            <div className="overflow-x-auto pb-1">
+              <div className="h-[280px] sm:h-[550px] min-w-[700px] sm:min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={barData}
                 layout="vertical"
@@ -650,7 +663,7 @@ export default function DashboardPage() {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={160}
+                  width={120}
                   tick={{ fontSize: 11, fontWeight: 700, fill: "hsl(var(--foreground))" }}
                   tickLine={false}
                   axisLine={false}
@@ -694,7 +707,9 @@ export default function DashboardPage() {
                   />
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </div>
+            </div>
           )}
         </CardContent>
       </Card>

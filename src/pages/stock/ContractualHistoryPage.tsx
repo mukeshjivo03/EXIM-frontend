@@ -74,17 +74,17 @@ export default function ContractualHistoryPage() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view contractual history.</div>}
     >
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <HistoryIcon className="h-6 w-6 text-primary" />
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               Contractual History
             </h1>
-            <p className="text-sm text-muted-foreground">Historical record of contracts made</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Historical record of contracts made</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="self-start sm:self-auto h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Refresh
           </Button>
@@ -92,9 +92,9 @@ export default function ContractualHistoryPage() {
 
         {/* Filters and Search */}
         <Card className="card-hover">
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="relative flex-1 min-w-[280px]">
+              <div className="relative flex-1 min-w-[220px] sm:min-w-[280px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by Item, Vendor or Creator..."
@@ -103,7 +103,7 @@ export default function ContractualHistoryPage() {
                     setSearch(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-9"
+                  className="pl-9 h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -112,9 +112,9 @@ export default function ContractualHistoryPage() {
 
         {/* Main Content */}
         <Card className="card-hover shimmer-hover">
-          <CardHeader>
-            <CardTitle>History Records</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-base sm:text-lg">History Records</CardTitle>
+            <CardDescription className="text-[10px] sm:text-xs">
               Showing {filteredData.length} total records
             </CardDescription>
           </CardHeader>
@@ -212,7 +212,7 @@ export default function ContractualHistoryPage() {
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (
               <div className="flex items-center justify-between pt-4">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Showing {paginatedData.length} of {filteredData.length} records
                 </p>
                 <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export default function ContractualHistoryPage() {
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-xs font-medium">
+                  <span className="text-[10px] sm:text-xs font-medium">
                     Page {page} of {totalPages}
                   </span>
                   <Button

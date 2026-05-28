@@ -84,13 +84,13 @@ export default function InTankBreakdownPage() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view tank breakdown.</div>}
     >
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">In Tank Breakdown</h1>
-            <p className="text-sm text-muted-foreground">Item-wise tank quantity and weighted average rates</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">In Tank Breakdown</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Item-wise tank quantity and weighted average rates</p>
           </div>
-          <Button variant="outline" className="gap-2" onClick={loadItems} disabled={itemsLoading || breakdownLoading}>
+          <Button variant="outline" className="self-start sm:self-auto h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={loadItems} disabled={itemsLoading || breakdownLoading}>
             <RefreshCw className={`h-4 w-4 ${itemsLoading || breakdownLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -99,11 +99,11 @@ export default function InTankBreakdownPage() {
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="max-w-md space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Item Currently In Tank</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Item Currently In Tank</Label>
               <Select value={selectedItem || "__none__"} onValueChange={(value) => setSelectedItem(value === "__none__" ? "" : value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 sm:h-9 text-[10px] sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -125,15 +125,17 @@ export default function InTankBreakdownPage() {
         </Card>
 
         <div>
-          <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+          <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide sm:tracking-wider text-muted-foreground mb-3 sm:mb-4">
             Insights
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
             <SummaryCard icon={Hash} label="Breakdown Count" value={breakdown.length} loading={breakdownLoading} />
             <SummaryCard icon={Droplets} label="Quantity / LTR" value={`${fmtNum(Number(average?.quantity_matched ?? 0))} LTR`} loading={breakdownLoading} />
             <SummaryCard icon={Scale} label="Quantity / KG" value={`${fmtNum(Number(average?.quantity_matched_kg ?? 0))} KG`} loading={breakdownLoading} />
             <SummaryCard icon={Weight} label="Avg Rate / KG" value={`Rs ${fmtNum(Number(average?.["adjusted_average_kg(STO)"] ?? 0))}`} loading={breakdownLoading} />
-            <SummaryCard icon={IndianRupee} label="Avg Rate / LTR" value={`Rs ${fmtNum(Number(average?.["adjusted_average(STO)"] ?? 0))}`} loading={breakdownLoading} />
+            <div className="col-span-2 lg:col-span-1">
+              <SummaryCard icon={IndianRupee} label="Avg Rate / LTR" value={`Rs ${fmtNum(Number(average?.["adjusted_average(STO)"] ?? 0))}`} loading={breakdownLoading} />
+            </div>
           </div>
           {average?.warning && (
             <div className="mt-3 flex items-center gap-2 text-sm text-amber-600">
@@ -144,9 +146,9 @@ export default function InTankBreakdownPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Stock Breakdown</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-base sm:text-lg">Stock Breakdown</CardTitle>
+            <CardDescription className="text-[10px] sm:text-xs">
               {selectedItem ? itemNameMap.get(selectedItem) ?? selectedItem : "Select an item"} · {breakdown.length} line{breakdown.length === 1 ? "" : "s"}
             </CardDescription>
           </CardHeader>

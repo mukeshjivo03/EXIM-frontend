@@ -267,78 +267,78 @@ export default function VehicleReportPage() {
   }, [data]);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 animate-page">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Vehicle Report</h1>
-          <p className="text-sm text-muted-foreground">Live vehicle-wise stock movement by status</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Vehicle Report</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Live vehicle-wise stock movement by status</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3">
           <Button
             onClick={downloadExcel}
             variant="outline"
-            className="btn-press gap-2"
+            className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs"
             disabled={Object.values(loading).some(Boolean)}
           >
             <FileDown className="h-4 w-4" />
             Download Excel
           </Button>
-          <Button onClick={refreshAll} variant="outline" className="btn-press gap-2">
+          <Button onClick={refreshAll} variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
             <RefreshCw className="h-4 w-4" />
             Refresh All
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-          <CardContent className="p-4 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Vehicles</p>
-              <Truck className="h-4 w-4 text-blue-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-blue-600 dark:text-blue-400">Total Vehicles</p>
+              <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-16 bg-blue-200/50 dark:bg-blue-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold">{insights.totalVehicles}</h3>}
-            <p className="text-xs text-muted-foreground">across all statuses</p>
+              : <h3 className="text-base sm:text-2xl font-bold leading-tight">{insights.totalVehicles}</h3>}
+            <p className="text-[9px] sm:text-xs text-muted-foreground">across all statuses</p>
           </CardContent>
         </Card>
 
         <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
-          <CardContent className="p-4 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Total Quantity</p>
-              <BarChart3 className="h-4 w-4 text-emerald-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-emerald-600 dark:text-emerald-400">Total Quantity</p>
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-24 bg-emerald-200/50 dark:bg-emerald-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold tabular-nums">{fmtMts(insights.totalMtsAll)} <span className="text-sm font-normal text-muted-foreground">MTS</span></h3>}
+              : <h3 className="text-base sm:text-2xl font-bold tabular-nums leading-tight">{fmtMts(insights.totalMtsAll)} <span className="text-[10px] sm:text-sm font-normal text-muted-foreground">MTS</span></h3>}
           </CardContent>
         </Card>
 
         <Card className={`border-none shadow-sm ${insights.overdueCount > 0 ? "bg-red-50/60 dark:bg-red-950/20" : "bg-green-50/60 dark:bg-green-950/20"}`}>
-          <CardContent className="p-4 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className={`text-xs uppercase tracking-wider ${insights.overdueCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>Overdue</p>
-              <AlertTriangle className={`h-4 w-4 ${insights.overdueCount > 0 ? "text-red-500" : "text-green-500"}`} />
+              <p className={`text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider ${insights.overdueCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>Overdue</p>
+              <AlertTriangle className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${insights.overdueCount > 0 ? "text-red-500" : "text-green-500"}`} />
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-12 bg-muted/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-2xl font-bold">{insights.overdueCount}</h3>}
-            <p className="text-xs text-muted-foreground">vehicles past ETA</p>
+              : <h3 className="text-base sm:text-2xl font-bold leading-tight">{insights.overdueCount}</h3>}
+            <p className="text-[9px] sm:text-xs text-muted-foreground">vehicles past ETA</p>
           </CardContent>
         </Card>
 
         <Card className="border-none bg-violet-50/60 dark:bg-violet-950/20 shadow-sm">
-          <CardContent className="p-4 flex flex-col gap-1">
+          <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400">Busiest Status</p>
-              <TrendingUp className="h-4 w-4 text-violet-500" />
+              <p className="text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-violet-600 dark:text-violet-400">Busiest Status</p>
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-violet-500" />
             </div>
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-28 bg-violet-200/50 dark:bg-violet-800/30 animate-pulse rounded mt-1" />
-              : <h3 className="text-lg font-bold leading-tight">{insights.topTab.label}</h3>}
-            <p className="text-xs text-muted-foreground">{data[insights.topTab.key].length} vehicles</p>
+              : <h3 className="text-sm sm:text-lg font-bold leading-tight">{insights.topTab.label}</h3>}
+            <p className="text-[9px] sm:text-xs text-muted-foreground">{data[insights.topTab.key].length} vehicles</p>
           </CardContent>
         </Card>
       </div>
@@ -352,7 +352,7 @@ export default function VehicleReportPage() {
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all",
+                "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border text-[10px] sm:text-sm font-medium transition-all",
                 isActive
                   ? t.color + " shadow-sm"
                   : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/30"
@@ -371,11 +371,11 @@ export default function VehicleReportPage() {
       </div>
 
       <Card className={cn("border-2", tab.color)}>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2.5 sm:pb-3 px-4 sm:px-6">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">{tab.label}</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm sm:text-base">{tab.label}</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {isLoading ? "Loading..." : `${sortedVehicles.length} vehicles · ${fmtMts(totalMts)} MTS`}
               </CardDescription>
             </div>
@@ -522,8 +522,8 @@ export default function VehicleReportPage() {
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
-                    <td colSpan={6} className="px-4 py-3 text-sm uppercase tracking-wider">Grand Total</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-sm">{fmtMts(totalMts)}</td>
+                    <td colSpan={6} className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-[10px] sm:text-sm uppercase tracking-wide sm:tracking-wider">Grand Total</td>
+                    <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-right tabular-nums text-[10px] sm:text-sm">{fmtMts(totalMts)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
