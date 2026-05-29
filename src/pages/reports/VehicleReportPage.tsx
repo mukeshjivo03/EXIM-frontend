@@ -46,6 +46,7 @@ function fmtMts(n: number) {
 }
 
 type FlatRow = { vehicle_number: string } & VehicleReport["items"][number];
+type VehicleReportItem = VehicleReport["items"][number];
 
 function flattenVehicles(vehicles: VehicleReport[]): FlatRow[] {
   return vehicles.flatMap((v) =>
@@ -60,6 +61,19 @@ function daysRemaining(eta: string | null): number | null {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.round((etaDate.getTime() - today.getTime()) / 86400000);
+}
+
+function isOutsideFactoryStatus(status?: string | null) {
+  return status === "OUT_SIDE_FACTORY" || status === "Outside Factory";
+}
+
+function reportDateLabel(status?: string | null) {
+  return isOutsideFactoryStatus(status) ? "Arrival Date" : "ETA";
+}
+
+function reportDate(item: VehicleReportItem, fallbackStatus?: string | null) {
+  const status = item.status || fallbackStatus;
+  return isOutsideFactoryStatus(status) ? item.arrival_date || null : item.eta || null;
 }
 
 function fmtDate(dateStr: string | null | undefined): string {
@@ -100,10 +114,12 @@ function autosizeColumns(rows: Record<string, unknown>[]) {
   }));
 }
 
-function buildExcelRows(statusLabel: string, vehicles: VehicleReport[]) {
+function buildExcelRows(statusLabel: string, statusKey: StatusKey, vehicles: VehicleReport[]) {
   return vehicles.flatMap((vehicle, vehicleIndex) =>
     vehicle.items.map((item, itemIndex) => {
-      const days = daysRemaining(item.eta);
+      const dateLabel = reportDateLabel(item.status || statusKey);
+      const dateValue = reportDate(item, statusKey);
+      const days = daysRemaining(dateValue);
       return {
         "S.No": `${vehicleIndex + 1}${vehicle.items.length > 1 ? `.${itemIndex + 1}` : ""}`,
         Status: statusLabel,
@@ -117,7 +133,7 @@ function buildExcelRows(statusLabel: string, vehicles: VehicleReport[]) {
         "Qty (Litre)": item.total_quantity_in_litre,
         "Qty (MTS)": item.total_quantity_in_mts,
         "Days Remaining": days ?? "",
-        ETA: excelDate(item.eta),
+        [dateLabel]: excelDate(dateValue),
         "Job Work": item.job_work || "-",
       };
     })
@@ -176,6 +192,7 @@ export default function VehicleReportPage() {
               total_quantity_in_litre: parseFloat(s.quantity_in_litre || "0"),
               total_quantity_in_mts: parseFloat(s.quantity) / 1000,
               eta: s.eta || null,
+              arrival_date: s.arrival_date || null,
               status: s.status,
               job_work: s.job_work_vendor || null,
               rate: Number.parseFloat(s.rate || "0"),
@@ -213,7 +230,7 @@ export default function VehicleReportPage() {
         Items: items.length,
         "Qty (MTS)": items.reduce((sum, row) => sum + row.total_quantity_in_mts, 0),
         "Overdue Items": items.filter((row) => {
-          const days = daysRemaining(row.eta);
+          const days = daysRemaining(reportDate(row));
           return days !== null && days < 0;
         }).length,
         "Generated On": generatedOn,
@@ -223,10 +240,10 @@ export default function VehicleReportPage() {
     appendJsonSheet(workbook, "Summary", summaryRows);
 
     TABS.forEach((t) => {
-      appendJsonSheet(workbook, t.label, buildExcelRows(t.label, data[t.key]));
+      appendJsonSheet(workbook, t.label, buildExcelRows(t.label, t.key, data[t.key]));
     });
 
-    const allRows = TABS.flatMap((t) => buildExcelRows(t.label, data[t.key]));
+    const allRows = TABS.flatMap((t) => buildExcelRows(t.label, t.key, data[t.key]));
     appendJsonSheet(workbook, "All Vehicles", allRows);
 
     XLSX.writeFile(workbook, `vehicle-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -239,17 +256,18 @@ export default function VehicleReportPage() {
 
   const sortedVehicles = useMemo(() => {
     return [...rawVehicles].sort((a, b) => {
-      const worstA = Math.min(...a.items.map((i) => daysRemaining(i.eta) ?? Infinity));
-      const worstB = Math.min(...b.items.map((i) => daysRemaining(i.eta) ?? Infinity));
+      const worstA = Math.min(...a.items.map((i) => daysRemaining(reportDate(i, activeTab)) ?? Infinity));
+      const worstB = Math.min(...b.items.map((i) => daysRemaining(reportDate(i, activeTab)) ?? Infinity));
       if (worstA === Infinity && worstB === Infinity) return 0;
       if (worstA === Infinity) return 1;
       if (worstB === Infinity) return -1;
       return worstA - worstB;
     });
-  }, [rawVehicles]);
+  }, [activeTab, rawVehicles]);
 
   const isLoading = loading[activeTab];
   const totalMts = rows.reduce((s, r) => s + r.total_quantity_in_mts, 0);
+  const activeDateLabel = reportDateLabel(activeTab);
 
   const insights = useMemo(() => {
     const allVehicles = TABS.flatMap((t) => data[t.key]);
@@ -257,7 +275,7 @@ export default function VehicleReportPage() {
     const allItems = flattenVehicles(allVehicles);
     const totalMtsAll = allItems.reduce((s, r) => s + r.total_quantity_in_mts, 0);
     const overdueCount = allItems.filter((r) => {
-      const d = daysRemaining(r.eta);
+      const d = daysRemaining(reportDate(r));
       return d !== null && d < 0;
     }).length;
     const topTab = TABS.reduce((best, t) =>
@@ -325,7 +343,7 @@ export default function VehicleReportPage() {
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-12 bg-muted/30 animate-pulse rounded mt-1" />
               : <h3 className="text-base sm:text-2xl font-bold leading-tight">{insights.overdueCount}</h3>}
-            <p className="text-[9px] sm:text-xs text-muted-foreground">vehicles past ETA</p>
+            <p className="text-[9px] sm:text-xs text-muted-foreground">vehicles past ETA / arrival date</p>
           </CardContent>
         </Card>
 
@@ -407,7 +425,7 @@ export default function VehicleReportPage() {
                     <TableHead className="text-right">Rate</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
                     <TableHead>Days</TableHead>
-                    <TableHead>ETA</TableHead>
+                    <TableHead>{activeDateLabel}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -416,12 +434,13 @@ export default function VehicleReportPage() {
                     const vehicleKey = `${v.vehicle_number}-${vIdx}`;
                     const isOpen = expanded.has(vehicleKey);
                     const vehicleTotalMts = v.items.reduce((s, i) => s + i.total_quantity_in_mts, 0);
-                    const worstEta = v.items.reduce<string | null>((worst, i) => {
-                      if (!i.eta) return worst;
-                      if (!worst) return i.eta;
-                      return new Date(i.eta) < new Date(worst) ? i.eta : worst;
+                    const worstDate = v.items.reduce<string | null>((worst, i) => {
+                      const date = reportDate(i, activeTab);
+                      if (!date) return worst;
+                      if (!worst) return date;
+                      return new Date(date) < new Date(worst) ? date : worst;
                     }, null);
-                    const worstDays = daysRemaining(worstEta);
+                    const worstDays = daysRemaining(worstDate);
 
                     const daysCell = (
                       <TableCell className="tabular-nums">
@@ -456,7 +475,7 @@ export default function VehicleReportPage() {
                           <TableCell className="text-right tabular-nums">{fmtRate(item.rate)}</TableCell>
                           <TableCell className="text-right tabular-nums">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                           {daysCell}
-                          <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{fmtDate(reportDate(item, activeTab))}</TableCell>
                         </TableRow>
                       );
                     }
@@ -485,7 +504,7 @@ export default function VehicleReportPage() {
                           <TableCell className="text-right text-sm text-muted-foreground">-</TableCell>
                           <TableCell className="text-right tabular-nums font-medium">{fmtMts(vehicleTotalMts)}</TableCell>
                           {daysCell}
-                          <TableCell className="text-sm text-muted-foreground">{fmtDate(worstEta)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{fmtDate(worstDate)}</TableCell>
                         </TableRow>
                         {isOpen && v.items.map((item, iIdx) => (
                           <TableRow key={`${vehicleKey}-${iIdx}`} className="bg-muted/10 border-l-4 border-l-primary/30 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -498,7 +517,7 @@ export default function VehicleReportPage() {
                             <TableCell className="text-right tabular-nums text-sm">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                             <TableCell className="tabular-nums">
                               {(() => {
-                                const d = daysRemaining(item.eta);
+                                const d = daysRemaining(reportDate(item, activeTab));
                                 if (d === null) return <span className="text-sm text-muted-foreground">-</span>;
                                 return (
                                   <span className={cn(
@@ -513,7 +532,7 @@ export default function VehicleReportPage() {
                                 );
                               })()}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{fmtDate(item.eta)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{fmtDate(reportDate(item, activeTab))}</TableCell>
                           </TableRow>
                         ))}
                       </Fragment>
