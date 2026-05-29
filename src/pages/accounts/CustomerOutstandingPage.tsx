@@ -240,11 +240,11 @@ export default function CustomerOutstandingPage() {
 
   return (
     <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer outstanding.</div>}>
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Customer Outstanding</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg sm:text-2xl font-bold">Customer Outstanding</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Customer outstanding details from SAP
             {syncedAt && (
               <span className="text-muted-foreground/60">
@@ -255,11 +255,11 @@ export default function CustomerOutstandingPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:flex-nowrap">
           <Button 
             variant={showAll ? "secondary" : "outline"}
             size="sm"
-            className="h-9 px-4"
+            className="h-8 w-full px-2 text-[10px] leading-tight sm:h-9 sm:w-auto sm:px-4 sm:text-xs"
             onClick={() => {
               setShowAll(!showAll);
               setPage(1);
@@ -267,9 +267,9 @@ export default function CustomerOutstandingPage() {
           >
             {showAll ? "Showing All Records" : "Show All Records"}
           </Button>
-          <Button className="h-9 btn-press" onClick={loadData} disabled={syncing}>
+          <Button className="h-8 w-full px-2 text-[10px] leading-tight btn-press sm:h-9 sm:w-auto sm:px-4 sm:text-xs" onClick={loadData} disabled={syncing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync Customer Outstanding"}
+            {syncing ? "Syncing..." : "Sync"}
           </Button>
         </div>
       </div>
@@ -313,8 +313,8 @@ export default function CustomerOutstandingPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Card className={cn("card-hover transition-all duration-300", stats.isSelectionActive && "ring-2 ring-primary bg-primary/5 shadow-md")}>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-5">
+        <Card className={cn("card-hover transition-all duration-300 col-span-2 lg:col-span-1", stats.isSelectionActive && "ring-2 ring-primary bg-primary/5 shadow-md")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {stats.isSelectionActive ? "Selected Parties" : "Total Parties"}
@@ -367,8 +367,8 @@ export default function CustomerOutstandingPage() {
 
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <div>
                 <CardTitle>Customer Outstanding</CardTitle>
                 <CardDescription>
@@ -381,7 +381,7 @@ export default function CustomerOutstandingPage() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => setSelectedRows(new Set())}
-                  className="h-8 text-xs bg-primary/5 border-primary/20 text-primary"
+                  className="h-8 w-full text-xs bg-primary/5 border-primary/20 text-primary sm:w-auto"
                 >
                   Clear Selection ({selectedVisibleCount || selectedRows.size})
                 </Button>
@@ -391,7 +391,7 @@ export default function CustomerOutstandingPage() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search card code/name/sales/doc no"
-                className="pl-8"
+                className="h-8 pl-8 text-xs sm:h-9 sm:text-sm"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);

@@ -181,11 +181,11 @@ export default function CustomerAgingPage() {
 
   return (
     <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer aging.</div>}>
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Customer Aging</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-lg sm:text-2xl font-bold">Customer Aging</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Customer aging balance from SAP
               {syncedAt && (
                 <span className="text-muted-foreground/60">
@@ -195,29 +195,29 @@ export default function CustomerAgingPage() {
               )}
             </p>
           </div>
-          <Button className="h-9 btn-press" onClick={loadData} disabled={syncing}>
+          <Button className="h-8 w-full px-2 text-[10px] leading-tight btn-press sm:h-9 sm:w-auto sm:px-4 sm:text-xs" onClick={loadData} disabled={syncing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync Customer Aging"}
+            {syncing ? "Syncing..." : "Sync"}
           </Button>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
           <Card className="card-hover"><CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0"><CardTitle className="text-sm font-medium text-muted-foreground">Total Records</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><p className="text-base sm:text-lg md:text-2xl font-bold">{stats.total}</p></CardContent></Card>
           <Card className="card-hover"><CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0"><CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle><TrendingUp className="h-4 w-4 text-green-500" /></CardHeader><CardContent><p className="text-base sm:text-lg md:text-2xl font-bold text-green-600 dark:text-green-400">₹ {fmtNum(stats.receivable)}</p></CardContent></Card>
-          <Card className="card-hover"><CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0"><CardTitle className="text-sm font-medium text-muted-foreground">Over 120 Days</CardTitle><Clock className="h-4 w-4 text-orange-500" /></CardHeader><CardContent><p className="text-base sm:text-lg md:text-2xl font-bold">{stats.stale}</p></CardContent></Card>
+          <Card className="card-hover col-span-2 lg:col-span-1"><CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0"><CardTitle className="text-sm font-medium text-muted-foreground">Over 120 Days</CardTitle><Clock className="h-4 w-4 text-orange-500" /></CardHeader><CardContent><p className="text-base sm:text-lg md:text-2xl font-bold">{stats.stale}</p></CardContent></Card>
         </div>
 
         <Card className="card-hover shimmer-hover">
           <CardHeader>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
                 <CardTitle>Customer Aging Details</CardTitle>
                 <CardDescription>{filtered.length} record{filtered.length !== 1 ? "s" : ""}</CardDescription>
               </div>
               {selectedRows.size > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setSelectedRows(new Set())}>
+                <Button variant="outline" size="sm" className="h-8 w-full text-xs sm:w-auto" onClick={() => setSelectedRows(new Set())}>
                   Clear Selection ({selectedVisibleCount || selectedRows.size})
                 </Button>
               )}
@@ -225,7 +225,7 @@ export default function CustomerAgingPage() {
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by code/name/sales/doc/aging"
-                  className="pl-8"
+                  className="h-8 pl-8 text-xs sm:h-9 sm:text-sm"
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -233,8 +233,8 @@ export default function CustomerAgingPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="w-[160px]">
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center sm:flex-wrap">
+                <div className="w-full sm:w-[160px]">
                   <DatePicker
                     value={startDate}
                     onChange={(v) => {
@@ -243,7 +243,7 @@ export default function CustomerAgingPage() {
                     }}
                   />
                 </div>
-                <div className="w-[160px]">
+                <div className="w-full sm:w-[160px]">
                   <DatePicker
                     value={endDate}
                     onChange={(v) => {
@@ -258,7 +258,7 @@ export default function CustomerAgingPage() {
                     setBucketFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs sm:h-10 sm:px-3 sm:text-sm"
                 >
                   <option value="ALL">All Buckets</option>
                   {buckets.map((b) => (

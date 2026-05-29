@@ -128,25 +128,35 @@ export default function OpenGrpoPage() {
   );
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Tailwind v4 safelist — keeps dynamic yellow classes in the bundle */}
       <span aria-hidden className="hidden bg-yellow-100 text-yellow-700 border-yellow-200 bg-yellow-50/40 bg-yellow-400 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800 dark:bg-yellow-950/10" />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Open GRPOs</h1>
-          <p className="text-sm text-muted-foreground">Goods Receipt Purchase Orders pending invoice</p>
+          <h1 className="text-lg sm:text-2xl font-bold">Open GRPOs</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Goods Receipt Purchase Orders pending invoice</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <Button
             variant={blinkEnabled ? "default" : "outline"}
-            className="btn-press"
+            className="h-8 px-2 text-[10px] leading-tight btn-press sm:h-9 sm:px-3 sm:text-xs"
             onClick={() => setBlinkEnabled((prev) => !prev)}
           >
-            {blinkEnabled ? "Hide Overdue Highlight" : "Highlight Overdue Outstanding"}
+            {blinkEnabled ? (
+              <>
+                <span className="sm:hidden">Hide Overdue</span>
+                <span className="hidden sm:inline">Hide Overdue Highlight</span>
+              </>
+            ) : (
+              <>
+                <span className="sm:hidden">Highlight Overdue</span>
+                <span className="hidden sm:inline">Highlight Overdue Outstanding</span>
+              </>
+            )}
           </Button>
-          <Button className="btn-press" onClick={handleFetch} disabled={loading}>
+          <Button className="h-8 px-2 text-[10px] leading-tight btn-press sm:h-9 sm:px-3 sm:text-xs" onClick={handleFetch} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             {loading ? "Loading..." : "Refresh"}
           </Button>
@@ -165,7 +175,7 @@ export default function OpenGrpoPage() {
 
       {/* KPI Cards */}
       {kpis && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-4">
           <SummaryCard icon={Hash}          label="Total Open GRPOs" value={kpis.total}                    loading={false} />
           <SummaryCard icon={Users}         label="Unique Vendors"    value={kpis.vendors}                  loading={false} />
           <SummaryCard icon={Clock}         label="Avg Pending"       value={`${kpis.avgDays.toFixed(1)}d (${kpis.critical} critical)`} loading={false} />
@@ -174,19 +184,19 @@ export default function OpenGrpoPage() {
       )}
 
       {/* Filters row */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search GRPO, vendor, warehouse..."
-            className="pl-9"
+            className="h-8 pl-9 text-xs sm:h-9 sm:text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         {warehouses.length > 0 && (
           <Select value={warehouse || "__all__"} onValueChange={(v) => setWarehouse(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="h-8 w-full text-xs sm:h-9 sm:w-[160px] sm:text-sm">
               <SelectValue placeholder="All Warehouses" />
             </SelectTrigger>
             <SelectContent>
@@ -198,7 +208,7 @@ export default function OpenGrpoPage() {
           </Select>
         )}
         {(search || warehouse) && (
-          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { setSearch(""); setWarehouse(""); }}>
+          <Button variant="ghost" size="sm" className="h-8 w-full px-2 text-xs text-muted-foreground sm:w-auto" onClick={() => { setSearch(""); setWarehouse(""); }}>
             Clear filters
           </Button>
         )}
@@ -207,7 +217,7 @@ export default function OpenGrpoPage() {
       {/* Table */}
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Open GRPOs</CardTitle>
               <CardDescription>
@@ -216,7 +226,7 @@ export default function OpenGrpoPage() {
                   : "Loading..."}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> &gt; 6d</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400 inline-block" /> &gt; 3d</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> ≤ 3d</span>

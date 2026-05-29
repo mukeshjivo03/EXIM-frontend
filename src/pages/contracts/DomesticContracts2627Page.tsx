@@ -526,26 +526,26 @@ export default function DomesticContracts2627Page() {
       action="view"
       fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view domestic contracts.</div>}
     >
-    <div className="p-3 sm:p-4 md:p-6 space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Domestic Contracts (2026-2027)</h1>
-          <p className="text-sm text-muted-foreground">Manage contracts, loading, and freight details</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Domestic Contracts (2026-2027)</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Manage contracts, loading, and freight details</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full sm:w-auto flex-wrap items-center justify-start sm:justify-end gap-2">
           {canAdd && (
-            <Button onClick={handleContractOpen} size="sm" className="btn-press">
+            <Button onClick={handleContractOpen} size="sm" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
               <Plus className="h-4 w-4 mr-2" /> New Contract
             </Button>
           )}
           {canEdit && (
-            <Button onClick={handleLoadingOpen} variant="outline" size="sm">
+            <Button onClick={handleLoadingOpen} variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
               <Truck className="h-4 w-4 mr-2" /> Loading Form
             </Button>
           )}
           {canEdit && (
-            <Button onClick={handleFreightOpen} variant="outline" size="sm">
+            <Button onClick={handleFreightOpen} variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs">
               <FileText className="h-4 w-4 mr-2" /> Freight Detail
             </Button>
           )}
@@ -553,7 +553,7 @@ export default function DomesticContracts2627Page() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5">
         <SummaryCard
           icon={Scale}
           label="Total Quantity"
@@ -566,33 +566,35 @@ export default function DomesticContracts2627Page() {
           value={loadingList ? "" : `₹ ${summary.totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
           loading={loadingList}
         />
-        <SummaryCard
-          icon={TrendingUp}
-          label="Average Rate"
-          value={loadingList ? "" : `₹ ${summary.avgRate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/MTS`}
-          loading={loadingList}
-        />
+        <div className="col-span-2 lg:col-span-1">
+          <SummaryCard
+            icon={TrendingUp}
+            label="Average Rate"
+            value={loadingList ? "" : `₹ ${summary.avgRate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/MTS`}
+            loading={loadingList}
+          />
+        </div>
       </div>
 
       {/* Table */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
+        <CardHeader className="px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <CardTitle>Contracts</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Contracts</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {filteredRows.length !== rows.length
                   ? `${filteredRows.length} of ${rows.length} records`
                   : `${rows.length} records`}
               </CardDescription>
             </div>
-            <div className="relative w-72">
+            <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search PO, product, vendor..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-9 pr-8"
+                className="pl-9 pr-8 h-8 sm:h-9 text-xs sm:text-sm"
               />
               {search && (
                 <button
@@ -606,26 +608,26 @@ export default function DomesticContracts2627Page() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 pt-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-3">
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground shrink-0">PO Date</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground shrink-0">PO Date</Label>
               <DatePicker
                 value={filterPoDateFrom}
                 onChange={(v) => { setFilterPoDateFrom(v); setPage(1); }}
                 placeholder="From"
-                className="h-9 w-[150px]"
+                className="h-8 sm:h-9 w-[130px] sm:w-[150px] text-[10px] sm:text-sm"
               />
-              <span className="text-xs text-muted-foreground">to</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">to</span>
               <DatePicker
                 value={filterPoDateTo}
                 onChange={(v) => { setFilterPoDateTo(v); setPage(1); }}
                 placeholder="To"
-                className="h-9 w-[150px]"
+                className="h-8 sm:h-9 w-[130px] sm:w-[150px] text-[10px] sm:text-sm"
               />
             </div>
 
             <Select value={filterProduct} onValueChange={(v) => { setFilterProduct(v); setPage(1); }}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="h-8 sm:h-9 w-[170px] sm:w-[200px] text-[10px] sm:text-sm">
                 <SelectValue placeholder="Product" />
               </SelectTrigger>
               <SelectContent>
@@ -637,7 +639,7 @@ export default function DomesticContracts2627Page() {
             </Select>
 
             <Select value={filterVendor} onValueChange={(v) => { setFilterVendor(v); setPage(1); }}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="h-8 sm:h-9 w-[170px] sm:w-[200px] text-[10px] sm:text-sm">
                 <SelectValue placeholder="Vendor" />
               </SelectTrigger>
               <SelectContent>
@@ -649,7 +651,7 @@ export default function DomesticContracts2627Page() {
             </Select>
 
             <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="h-8 sm:h-9 w-[140px] sm:w-[160px] text-[10px] sm:text-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -664,7 +666,7 @@ export default function DomesticContracts2627Page() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-muted-foreground"
+                className="h-8 text-[10px] sm:text-xs text-muted-foreground px-2.5 sm:px-3"
                 onClick={() => { setFilterPoDateFrom(""); setFilterPoDateTo(""); setFilterProduct("all"); setFilterVendor("all"); setFilterStatus("all"); setPage(1); }}
               >
                 <X className="h-3 w-3 mr-1" />
