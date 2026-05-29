@@ -9,14 +9,14 @@ export const STATUS_CHOICES = [
   "UNDER_LOADING",
   "AT_REFINERY",
   "OTW_TO_REFINERY",
-  "KANDLA_STORAGE",
+  // "KANDLA_STORAGE",
   "MUNDRA_PORT",
   "ON_THE_SEA",
   "IN_CONTRACT",
-  "DELIVERED",
-  "IN_TRANSIT",
-  "PENDING",
-  "PROCESSING",
+  // "DELIVERED",
+  // "IN_TRANSIT",
+  // "PENDING",
+  // "PROCESSING",
 ] as const;
 
 export type StockStatusChoice = (typeof STATUS_CHOICES)[number];
@@ -58,6 +58,7 @@ export interface StockStatusPayload {
   vehicle_number?: string;
   location?: string;
   eta?: string;
+  arrival_date?: string;
   transporter?: string;
   bility_number?: string;
   grpo_number?: string;
@@ -238,6 +239,7 @@ export interface VehicleReportItem {
   total_quantity_in_litre: number;
   total_quantity_in_mts: number;
   eta: string | null;
+  arrival_date?: string | null;
   status: string;
   job_work: string | null;
   rate?: number | null;

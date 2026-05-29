@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Pencil, Trash2, Search, Lock, CalendarClock } from "lucide-react";
+import { CalendarClock, Check, ChevronLeft, ChevronRight, Lock, Pencil, Search, Trash2 } from "lucide-react";
 
 import {
   updateStockStatus,
@@ -65,6 +65,8 @@ interface Props {
   onDelete: (row: StockStatus) => void;
 }
 
+const STEPS = ["Stock Information", "Vehicle & Location", "Confirm"];
+
 export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSaved, onDelete }: Props) {
   const [eStatus, setEStatus] = useState<StockStatusChoice>("PENDING");
   const [eRate, setERate] = useState("");
@@ -83,11 +85,12 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [jobWorkOpen, setJobWorkOpen] = useState(false);
   const [eContractStart, setEContractStart] = useState("");
   const [eContractEnd, setEContractEnd] = useState("");
+  const [step, setStep] = useState(0);
   const [editing, setEditing] = useState(false);
 
   // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
   const jobWorkLocked = data?.status === "AT_REFINERY" && !!data?.job_work_vendor;
-  const showOutsideFactoryArrivalDate = eStatus !== data?.status && eStatus === "OUT_SIDE_FACTORY";
+  const isOutsideFactory = eStatus === "OUT_SIDE_FACTORY";
 
   // Filtered vendor list for job work combobox
   const filteredVendors = useMemo(() => {
@@ -109,7 +112,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEVehicleNumber(data.vehicle_number ?? "");
       setELocation(data.location ?? "");
       setEEta(data.eta ?? "");
-      setEArrivalDate(data.arrival_date ?? "");
+      setEArrivalDate(data.arrival_date ?? (data.status === "OUT_SIDE_FACTORY" ? data.eta ?? "" : ""));
       setETransporterName(data.transporter ?? "");
       setETransferType("");
       setEAction("");
@@ -119,11 +122,12 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setJobWorkSearch("");
       setEContractStart(data.contract_start ?? "");
       setEContractEnd(data.contract_end ?? "");
+      setStep(0);
     }
   }, [data]);
 
-  async function handleEdit() {
-    if (!data) return;
+  function validateStockStep(showToast = true) {
+    if (!data) return false;
 
     const oldQty = Number(data.quantity);
     const newQty = Number(eQuantity.trim());
@@ -142,7 +146,27 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       grpoNumber: eGrpoNumber,
     });
     const err = getZodError(result);
-    if (err) { toast.error(err); return; }
+    if (err) {
+      if (showToast) toast.error(err);
+      return false;
+    }
+    return true;
+  }
+
+  function goNext() {
+    if (step === 0 && !validateStockStep()) return;
+    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+  }
+
+  async function handleEdit() {
+    if (!data) return;
+
+    const oldQty = Number(data.quantity);
+    const newQty = Number(eQuantity.trim());
+    const isNoDiff = oldQty === newQty;
+    const finalAction = isNoDiff ? "TOLERATE" : eAction;
+
+    if (!validateStockStep()) return;
 
     setEditing(true);
     try {
@@ -196,7 +220,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           quantity: eQuantity.trim(),
           vehicle_number: eVehicleNumber.trim() || undefined,
           location: eLocation.trim() || undefined,
-          eta: eEta.trim() || undefined,
+          eta: isOutsideFactory ? undefined : eEta.trim() || undefined,
+          arrival_date: isOutsideFactory ? eArrivalDate.trim() || undefined : undefined,
           transporter: eTransporterName.trim() || undefined,
           created_by: email,
           bility_number: eBilityNumber.trim() || undefined,
@@ -216,6 +241,9 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   }
 
   const vendor = vendors.find((v) => v.card_code === data?.vendor_code);
+  const item = tankItems.find((i) => i.tank_item_code === data?.item_code);
+  const dateLabel = isOutsideFactory ? "Arrival Date" : "ETA";
+  const dateValue = isOutsideFactory ? eArrivalDate : eEta;
 
   return (
     <Dialog open={!!data} onOpenChange={() => onClose()}>
@@ -230,6 +258,34 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            {STEPS.map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                className={`rounded-md border px-2 py-2 text-left transition-colors ${
+                  step === index
+                    ? "border-primary bg-primary/10 text-primary"
+                    : index < step
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+                      : "border-border bg-muted/30 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  if (index <= step) {
+                    setStep(index);
+                  } else if (step === 0 ? validateStockStep() : true) {
+                    setStep(index);
+                  }
+                }}
+              >
+                <span className="block text-[10px] font-semibold uppercase tracking-wider">Step {index + 1}</span>
+                <span className="block truncate text-xs font-medium">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {step === 0 && (
+            <>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-muted-foreground">Item Code</p>
@@ -365,17 +421,6 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               )}
 
               {/* Job Work Vendor — combobox: type freely or pick from vendor list */}
-              {showOutsideFactoryArrivalDate && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Label htmlFor="e-arrival-date">Arrival Date</Label>
-                  <DateInput
-                    id="e-arrival-date"
-                    value={eArrivalDate}
-                    onChange={(e) => setEArrivalDate(e.target.value)}
-                  />
-                </div>
-              )}
-
               {eStatus === "AT_REFINERY" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Job Work Vendor *</Label>
@@ -519,6 +564,10 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               onChange={(e) => setERate(e.target.value)}
             />
           </div>
+            </>
+          )}
+          {step === 1 && (
+            <>
           <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -549,14 +598,135 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="e-eta">ETA</Label>
+              <Label htmlFor={isOutsideFactory ? "e-arrival-date" : "e-eta"}>{dateLabel}</Label>
               <DateInput
-                id="e-eta"
-                value={eEta}
-                onChange={(e) => setEEta(e.target.value)}
+                id={isOutsideFactory ? "e-arrival-date" : "e-eta"}
+                value={dateValue}
+                onChange={(e) => {
+                  if (isOutsideFactory) {
+                    setEArrivalDate(e.target.value);
+                  } else {
+                    setEEta(e.target.value);
+                  }
+                }}
               />
             </div>
           </div>
+            </>
+          )}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-4">
+                <h3 className="mb-3 text-sm font-semibold">Stock Information</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Item Code</p>
+                    <p className="font-medium">{data?.item_code ?? "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Item Name</p>
+                    <p className="font-medium">{item?.tank_item_name ?? "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <p className="font-medium">{formatStatus(eStatus)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vendor</p>
+                    <p className="font-medium">{data?.vendor_code ? `${data.vendor_code} - ${vendor?.card_name ?? ""}` : "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rate</p>
+                    <p className="font-medium">&#8377; {eRate || "0"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantity</p>
+                    <p className="font-medium">{eQuantity || "0"} KG</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="font-semibold">&#8377; {(Number(eRate || 0) * Number(eQuantity || 0)).toFixed(2)}</p>
+                  </div>
+                  {eStatus !== data?.status && (
+                    <>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Transfer Type</p>
+                        <p className="font-medium">{eTransferType ? eTransferType : "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Action</p>
+                        <p className="font-medium">{eAction || "-"}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {(eStatus === "IN_CONTRACT" || eStatus === "AT_REFINERY" || eStatus === "IN_TANK" || eStatus === "IN_WAREHOUSE") && (
+                <div className="rounded-md border bg-muted/30 p-4">
+                  <h3 className="mb-3 text-sm font-semibold">Additional Details</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {eStatus === "IN_CONTRACT" && (
+                      <>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Contract Start</p>
+                          <p className="font-medium">{eContractStart || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Contract End</p>
+                          <p className="font-medium">{eContractEnd || "-"}</p>
+                        </div>
+                      </>
+                    )}
+                    {eStatus === "AT_REFINERY" && (
+                      <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground">Job Work Vendor</p>
+                        <p className="font-medium">{eJobWorkVendor || "-"}</p>
+                      </div>
+                    )}
+                    {(eStatus === "IN_TANK" || eStatus === "IN_WAREHOUSE") && (
+                      <>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Bility Number</p>
+                          <p className="font-medium">{eBilityNumber || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">GRPO Number</p>
+                          <p className="font-medium">{eGrpoNumber || "-"}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-md border bg-muted/30 p-4">
+                <h3 className="mb-3 text-sm font-semibold">Vehicle & Location</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                    <p className="font-medium">{eVehicleNumber || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transporter</p>
+                    <p className="font-medium">{eTransporterName || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="font-medium">{eLocation || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{dateLabel}</p>
+                    <p className="font-medium">{dateValue || "-"}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Updated By</p>
+                    <p className="font-medium">{email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter className="flex-row justify-between sm:justify-between">
           <Button
@@ -572,15 +742,45 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             Delete
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
             <Button
-              onClick={handleEdit}
-              disabled={editing || !eQuantity.trim()}
+              variant="outline"
+              onClick={() => {
+                if (step === 0) {
+                  onClose();
+                } else {
+                  setStep((current) => Math.max(current - 1, 0));
+                }
+              }}
             >
-              {editing ? "Saving..." : "Save Changes"}
+              {step === 0 ? (
+                "Cancel"
+              ) : (
+                <>
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </>
+              )}
             </Button>
+            {step < 2 ? (
+              <Button onClick={goNext} disabled={step === 0 && !eQuantity.trim()}>
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleEdit}
+                disabled={editing || !eQuantity.trim()}
+              >
+                {editing ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>
