@@ -259,14 +259,14 @@ export default function EximAccountPage() {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
              Oil Dr/Cr Outstanding
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Oil Dr/Cr outstanding balances from SAP
             {syncedAt && (
               <span className="text-muted-foreground/60">
@@ -280,34 +280,44 @@ export default function EximAccountPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full sm:w-auto flex-nowrap items-center justify-start sm:justify-end gap-1.5 sm:gap-2">
           {synced && entries.length > 0 && (
             <Button
               variant={blinkEnabled ? "default" : "outline"}
-              className="btn-press"
+              className="btn-press h-8 sm:h-9 px-2 sm:px-3 text-[9px] sm:text-xs whitespace-nowrap"
               onClick={() => setBlinkEnabled((prev) => !prev)}
             >
               {blinkEnabled ? "Hide Overdue Highlight" : "Highlight Overdue Outstanding"}
             </Button>
           )}
           <Button
-            className="btn-press"
+            className="btn-press h-8 sm:h-9 gap-1 sm:gap-2 px-2 sm:px-3 text-[9px] sm:text-xs whitespace-nowrap"
             onClick={handleSync}
             disabled={syncing}
           >
             <RefreshCw
               className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
-            {syncing ? "Syncing..." : "Sync Balance Sheet"}
+            {syncing ? (
+              <>
+                <span className="sm:hidden">Syncing</span>
+                <span className="hidden sm:inline">Syncing...</span>
+              </>
+            ) : (
+              <>
+                <span className="sm:hidden">Sync</span>
+                <span className="hidden sm:inline">Sync Balance Sheet</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-5">
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Total Parties
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -321,7 +331,7 @@ export default function EximAccountPage() {
 
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Total Receivable
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
@@ -338,7 +348,7 @@ export default function EximAccountPage() {
 
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Total Payable
             </CardTitle>
             <TrendingDown className="h-4 w-4 text-red-500" />
@@ -355,7 +365,7 @@ export default function EximAccountPage() {
 
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Net Balance
             </CardTitle>
             <Scale className="h-4 w-4 text-muted-foreground" />
@@ -373,7 +383,7 @@ export default function EximAccountPage() {
           </CardContent>
         </Card>
 
-        <Card className={cn("card-hover", staleCount > 0 && "border-red-400 dark:border-red-700")}>
+        <Card className={cn("col-span-2 lg:col-span-1 card-hover", staleCount > 0 && "border-red-400 dark:border-red-700")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Stale (&gt;25d)
@@ -404,11 +414,11 @@ export default function EximAccountPage() {
         <TabsContent value="outstanding">
       {/* Table Card */}
       <Card className="card-hover shimmer-hover">
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Oil Dr/Cr Outstanding</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Oil Dr/Cr Outstanding</CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs">
                 {synced
                   ? hasFilters
                     ? `${filteredEntries.length} of ${entries.length} parties`
@@ -417,15 +427,15 @@ export default function EximAccountPage() {
               </CardDescription>
             </div>
             {synced && entries.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
                 {/* Search */}
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search parties..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8 h-9 w-48 sm:w-56"
+                    className="pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-56"
                   />
                 </div>
 
@@ -434,7 +444,7 @@ export default function EximAccountPage() {
                   value={typeFilter}
                   onValueChange={(v) => setTypeFilter(v as BalanceType)}
                 >
-                  <SelectTrigger className="h-9 w-40">
+                  <SelectTrigger className="h-8 sm:h-9 w-32 sm:w-40 text-[10px] sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -457,7 +467,7 @@ export default function EximAccountPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-muted-foreground"
+                className="h-8 text-[10px] sm:text-xs text-muted-foreground px-2.5 sm:px-3"
                 onClick={clearFilters}
               >
                 Clear all filters

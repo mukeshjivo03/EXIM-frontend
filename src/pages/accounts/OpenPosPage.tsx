@@ -111,51 +111,51 @@ export default function OpenPosPage() {
 
   return (
     <Guard resource="balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open POS.</div>}>
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-        <div className="flex items-center gap-2">
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+        <div className="flex items-start gap-2 sm:items-center">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Open POS</h1>
-            <p className="text-sm text-muted-foreground">Open purchase orders from SAP</p>
+            <h1 className="text-lg sm:text-2xl font-bold">Open POS</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Open purchase orders from SAP</p>
           </div>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
           <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Open Value</p>
-                <p className="text-xl font-bold mt-1">{fmtInr(totalOpenValue)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{fmtInr(totalOpenValue)}</p>
               </div>
               <CircleDollarSign className="h-5 w-5 text-emerald-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-blue-700 dark:text-blue-300">Pending Qty</p>
-                <p className="text-xl font-bold mt-1">{fmtNum(totalPendingQty)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{fmtNum(totalPendingQty)}</p>
               </div>
               <Package className="h-5 w-5 text-blue-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">Vendors</p>
-                <p className="text-xl font-bold mt-1">{vendorCount}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{vendorCount}</p>
               </div>
               <Building2 className="h-5 w-5 text-amber-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-rose-50/60 dark:bg-rose-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300">Aging PO (30+ Days)</p>
-                <p className="text-xl font-bold mt-1">{staleCount}</p>
-                <p className="text-[11px] text-rose-700/80 dark:text-rose-300/80 mt-0.5">Avg Days Open: {fmtNum(avgDaysOpen)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{staleCount}</p>
+                <p className="text-[10px] sm:text-[11px] text-rose-700/80 dark:text-rose-300/80 mt-0.5">Avg Days Open: {fmtNum(avgDaysOpen)}</p>
               </div>
               <Clock3 className="h-5 w-5 text-rose-600" />
             </CardContent>
@@ -164,7 +164,7 @@ export default function OpenPosPage() {
 
         <Card className="card-hover shimmer-hover">
           <CardHeader>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
                 <CardTitle>Open POS List</CardTitle>
                 <CardDescription>
@@ -172,13 +172,13 @@ export default function OpenPosPage() {
                   {search ? ` (filtered from ${rows.length})` : ""}
                 </CardDescription>
               </div>
-              <div className="w-full sm:w-auto flex items-center gap-2">
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search PO / vendor / item / warehouse"
                     value={search}
-                    className="pl-8"
+                    className="h-8 pl-8 text-xs sm:h-9 sm:text-sm"
                     onChange={(e) => {
                       setSearch(e.target.value);
                       setPage(1);
@@ -194,7 +194,7 @@ export default function OpenPosPage() {
                       setSearch("");
                       setPage(1);
                     }}
-                    className="shrink-0"
+                    className="h-8 px-2 text-xs shrink-0 sm:h-9 sm:px-3 sm:text-sm"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Clear

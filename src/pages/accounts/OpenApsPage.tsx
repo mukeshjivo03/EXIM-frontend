@@ -129,41 +129,41 @@ export default function OpenApsPage() {
 
   return (
     <Guard resource="balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open APs.</div>}>
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-      <div className="flex items-center gap-2">
+    <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+      <div className="flex items-start gap-2 sm:items-center">
         <ReceiptText className="h-5 w-5 text-muted-foreground" />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Open APs</h1>
-          <p className="text-sm text-muted-foreground">Open vendor payable invoices from SAP</p>
+          <h1 className="text-lg sm:text-2xl font-bold">Open APs</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Open vendor payable invoices from SAP</p>
         </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
         <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
-          <CardContent className="p-5 flex items-center justify-between">
+          <CardContent className="p-3 sm:p-5 flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Total Invoice (INR)</p>
-              <p className="text-xl font-bold mt-1">{fmtInr(totalInr)}</p>
+              <p className="text-sm sm:text-xl font-bold mt-1">{fmtInr(totalInr)}</p>
             </div>
             <CircleDollarSign className="h-5 w-5 text-emerald-600" />
           </CardContent>
         </Card>
         <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-          <CardContent className="p-5 flex items-center justify-between">
+          <CardContent className="p-3 sm:p-5 flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-wider text-blue-700 dark:text-blue-300">Amount Paid</p>
-              <p className="text-xl font-bold mt-1">{fmtInr(totalPaid)}</p>
+              <p className="text-sm sm:text-xl font-bold mt-1">{fmtInr(totalPaid)}</p>
             </div>
             <Wallet className="h-5 w-5 text-blue-600" />
           </CardContent>
         </Card>
-        <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm">
-          <CardContent className="p-5 flex items-center justify-between">
+        <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm col-span-2 lg:col-span-1">
+          <CardContent className="p-3 sm:p-5 flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">Active Vendors</p>
-              <p className="text-xl font-bold mt-1">{vendorCount}</p>
+              <p className="text-sm sm:text-xl font-bold mt-1">{vendorCount}</p>
             </div>
             <Building2 className="h-5 w-5 text-amber-600" />
           </CardContent>
@@ -172,7 +172,7 @@ export default function OpenApsPage() {
 
       <Card className="card-hover shimmer-hover">
         <CardHeader>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <CardTitle>Open AP List</CardTitle>
             <Badge variant="secondary" className="font-medium">
               {hasFilters ? "Filtered View" : "All Records"}
@@ -189,7 +189,7 @@ export default function OpenApsPage() {
               <Filter className="h-3.5 w-3.5" />
               Filters
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
             <div className="space-y-1.5">
               <Label>Search</Label>
               <div className="relative">
@@ -197,7 +197,7 @@ export default function OpenApsPage() {
                 <Input
                   placeholder="Vendor / Code / Invoice No"
                   value={search}
-                  className="pl-8"
+                  className="h-8 pl-8 text-xs sm:h-9 sm:text-sm"
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 />
               </div>
@@ -208,6 +208,7 @@ export default function OpenApsPage() {
                 list="open-aps-vendors"
                 placeholder="Select vendor"
                 value={vendor}
+                className="h-8 text-xs sm:h-9 sm:text-sm"
                 onChange={(e) => { setVendor(e.target.value); setPage(1); }}
               />
               <datalist id="open-aps-vendors">
@@ -221,6 +222,7 @@ export default function OpenApsPage() {
               <Input
                 placeholder="e.g. 626044195"
                 value={invoiceNumber}
+                className="h-8 text-xs sm:h-9 sm:text-sm"
                 onChange={(e) => { setInvoiceNumber(e.target.value); setPage(1); }}
               />
             </div>
@@ -233,7 +235,7 @@ export default function OpenApsPage() {
               <div className="flex gap-2">
                 <DatePicker value={toDate} onChange={(v) => { setToDate(v || ""); setPage(1); }} />
                 {hasFilters && (
-                  <Button type="button" variant="outline" onClick={clearFilters}>
+                  <Button type="button" variant="outline" className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" onClick={clearFilters}>
                     Clear
                   </Button>
                 )}

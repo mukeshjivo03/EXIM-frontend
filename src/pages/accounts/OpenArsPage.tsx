@@ -86,50 +86,50 @@ export default function OpenArsPage() {
 
   return (
     <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open ARs.</div>}>
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-        <div className="flex items-center gap-2">
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
+        <div className="flex items-start gap-2 sm:items-center">
           <ReceiptText className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Open ARs</h1>
-            <p className="text-sm text-muted-foreground">Open customer receivable invoices from SAP</p>
+            <h1 className="text-lg sm:text-2xl font-bold">Open ARs</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Open customer receivable invoices from SAP</p>
           </div>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
           <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Total Invoice</p>
-                <p className="text-xl font-bold mt-1">{fmtInr(totalInvoice)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{fmtInr(totalInvoice)}</p>
               </div>
               <CircleDollarSign className="h-5 w-5 text-emerald-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-rose-50/60 dark:bg-rose-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300">Total Balance</p>
-                <p className="text-xl font-bold mt-1">{fmtInr(totalBalance)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{fmtInr(totalBalance)}</p>
               </div>
               <ReceiptText className="h-5 w-5 text-rose-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-blue-50/60 dark:bg-blue-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-blue-700 dark:text-blue-300">Customers</p>
-                <p className="text-xl font-bold mt-1">{customerCount}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{customerCount}</p>
               </div>
               <Wallet className="h-5 w-5 text-blue-600" />
             </CardContent>
           </Card>
           <Card className="border-none bg-amber-50/60 dark:bg-amber-950/20 shadow-sm">
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">Avg Days Open</p>
-                <p className="text-xl font-bold mt-1">{fmtNum(avgDaysOpen)}</p>
+                <p className="text-sm sm:text-xl font-bold mt-1">{fmtNum(avgDaysOpen)}</p>
               </div>
               <Clock className="h-5 w-5 text-amber-600" />
             </CardContent>
@@ -138,7 +138,7 @@ export default function OpenArsPage() {
 
         <Card className="card-hover shimmer-hover">
           <CardHeader>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
                 <CardTitle>Open AR List</CardTitle>
                 <CardDescription>
@@ -151,7 +151,7 @@ export default function OpenArsPage() {
                 <Input
                   placeholder="Search invoice no / customer code / customer name"
                   value={search}
-                  className="pl-8"
+                  className="h-8 pl-8 text-xs sm:h-9 sm:text-sm"
                   onChange={(e) => {
                     setSearch(e.target.value);
                     setPage(1);
@@ -241,4 +241,3 @@ export default function OpenArsPage() {
     </Guard>
   );
 }
-
