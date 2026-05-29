@@ -747,12 +747,15 @@ input, select, textarea, button {
   .daily-price-print-root,
   .daily-price-print-root *,
   .jivo-rate-print-root,
-  .jivo-rate-print-root * {
+  .jivo-rate-print-root *,
+  .open-pos-print-root,
+  .open-pos-print-root * {
     visibility: visible !important;
   }
 
   .daily-price-print-root,
-  .jivo-rate-print-root {
+  .jivo-rate-print-root,
+  .open-pos-print-root {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -763,13 +766,15 @@ input, select, textarea, button {
   }
 
   .daily-price-print-table,
-  .jivo-rate-print-table {
+  .jivo-rate-print-table,
+  .open-pos-print-table {
     width: 100% !important;
     margin: 0 !important;
   }
 
   .daily-price-print-table table,
-  .jivo-rate-print-table table {
+  .jivo-rate-print-table table,
+  .open-pos-print-table table {
     width: 100% !important;
     border-collapse: separate !important;
     border-spacing: 3px 0 !important;
@@ -778,12 +783,14 @@ input, select, textarea, button {
   }
 
   .daily-price-print-table thead tr,
-  .jivo-rate-print-table thead tr {
+  .jivo-rate-print-table thead tr,
+  .open-pos-print-table thead tr {
     background: transparent !important;
   }
 
   .daily-price-print-table th,
-  .jivo-rate-print-table th {
+  .jivo-rate-print-table th,
+  .open-pos-print-table th {
     background: #ff9901 !important;
     color: #000 !important;
     font-weight: 700 !important;
@@ -794,7 +801,8 @@ input, select, textarea, button {
   }
 
   .daily-price-print-table td,
-  .jivo-rate-print-table td {
+  .jivo-rate-print-table td,
+  .open-pos-print-table td {
     background: #cfd8dc !important;
     border: 1px solid #111 !important;
     padding: 10px 8px !important;
@@ -806,7 +814,10 @@ input, select, textarea, button {
   .daily-price-print-table .font-medium,
   .jivo-rate-print-table .font-semibold,
   .jivo-rate-print-table .font-bold,
-  .jivo-rate-print-table .font-medium {
+  .jivo-rate-print-table .font-medium,
+  .open-pos-print-table .font-semibold,
+  .open-pos-print-table .font-bold,
+  .open-pos-print-table .font-medium {
     font-weight: 600 !important;
   }
 
@@ -817,7 +828,99 @@ input, select, textarea, button {
   .jivo-rate-print-table .rounded-md,
   .jivo-rate-print-table .rounded,
   .jivo-rate-print-table .rounded-lg,
-  .jivo-rate-print-table .rounded-xl {
+  .jivo-rate-print-table .rounded-xl,
+  .open-pos-print-table .rounded-md,
+  .open-pos-print-table .rounded,
+  .open-pos-print-table .rounded-lg,
+  .open-pos-print-table .rounded-xl {
     border-radius: 0 !important;
+  }
+
+  /* Open POS print: rotate the printed list horizontally and keep readable text */
+  @page open-pos-rotated {
+    size: A4 landscape;
+    page-orientation: rotate-left;
+    margin: 6mm;
+  }
+
+  .open-pos-print-root .card-hover,
+  .open-pos-print-root .shimmer-hover {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .open-pos-print-root {
+    page: open-pos-rotated;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  body.open-pos-print-mode nav,
+  body.open-pos-print-mode aside,
+  body.open-pos-print-mode footer,
+  body.open-pos-print-mode [data-sonner-toaster],
+  body.open-pos-print-mode [data-radix-portal] {
+    display: none !important;
+  }
+
+  body.open-pos-print-mode #root > div {
+    min-height: auto !important;
+  }
+
+  body.open-pos-print-mode main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.open-pos-print-mode .open-pos-print-root {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table {
+    overflow: visible !important;
+    border: 1px solid #111 !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table table {
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    font-size: 10.5pt !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table thead {
+    display: table-header-group !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table tbody {
+    display: table-row-group !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table th,
+  .open-pos-print-root .open-pos-print-table td {
+    padding: 8px 6px !important;
+    line-height: 1.25 !important;
+    vertical-align: top !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table th {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table td {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+  }
+
+  .open-pos-print-root .open-pos-print-table tr,
+  .open-pos-print-root .open-pos-print-table th,
+  .open-pos-print-root .open-pos-print-table td {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

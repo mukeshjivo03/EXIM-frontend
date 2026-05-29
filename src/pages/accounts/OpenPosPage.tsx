@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Search, Building2, Package, CircleDollarSign, Clock3, X } from "lucide-react";
+import { FileText, Search, Building2, Package, CircleDollarSign, Clock3, X, Printer } from "lucide-react";
 
 import { getOpenPos, type OpenPosEntry } from "@/api/sapSync";
 import { getErrorMessage } from "@/lib/errors";
@@ -48,11 +48,14 @@ function getDaysOpenTone(daysOpen: number | null): "default" | "amber" | "rose" 
 }
 
 export default function OpenPosPage() {
+  const printModeClass = "open-pos-print-mode";
   const [rows, setRows] = useState<OpenPosEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [printRequested, setPrintRequested] = useState(false);
+  const [printAllRows, setPrintAllRows] = useState(false);
   const perPage = 20;
 
   useEffect(() => {
@@ -108,21 +111,80 @@ export default function OpenPosPage() {
     [filtered]
   );
   const hasFilters = search.trim().length > 0;
+  const displayRows = printAllRows ? filtered : paginated;
+
+  useEffect(() => {
+    const onBeforePrint = () => {
+      document.body.classList.add(printModeClass);
+      setPrintAllRows(true);
+    };
+    const onAfterPrint = () => {
+      document.body.classList.remove(printModeClass);
+      setPrintAllRows(false);
+      setPrintRequested(false);
+    };
+    window.addEventListener("beforeprint", onBeforePrint);
+    window.addEventListener("afterprint", onAfterPrint);
+    return () => {
+      document.body.classList.remove(printModeClass);
+      window.removeEventListener("beforeprint", onBeforePrint);
+      window.removeEventListener("afterprint", onAfterPrint);
+    };
+  }, [printModeClass]);
+
+  useEffect(() => {
+    if (!printRequested) return;
+    setPrintAllRows(true);
+  }, [printRequested]);
+
+  useEffect(() => {
+    if (!printRequested || !printAllRows) return;
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        window.print();
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+    };
+  }, [printRequested, printAllRows, filtered.length]);
+
+  function handlePrint() {
+    if (loading || filtered.length === 0) return;
+    document.body.classList.add(printModeClass);
+    setPrintRequested(true);
+  }
 
   return (
     <Guard resource="balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open POS.</div>}>
-      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
-        <div className="flex items-start gap-2 sm:items-center">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-lg sm:text-2xl font-bold">Open POS</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">Open purchase orders from SAP</p>
+      <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page open-pos-print-root">
+        <div className="flex items-start justify-between gap-3 sm:items-center print:hidden">
+          <div className="flex items-start gap-2 sm:items-center">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold">Open POS</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">Open purchase orders from SAP</p>
+            </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={loading || filtered.length === 0}
+            className="h-8 px-2 text-xs shrink-0 sm:h-9 sm:px-3 sm:text-sm print:hidden"
+          >
+            <Printer className="h-4 w-4 mr-1" />
+            Print
+          </Button>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-sm text-destructive print:hidden">{error}</p>}
 
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 print:hidden">
           <Card className="border-none bg-emerald-50/60 dark:bg-emerald-950/20 shadow-sm">
             <CardContent className="p-3 sm:p-5 flex items-center justify-between">
               <div>
@@ -162,8 +224,8 @@ export default function OpenPosPage() {
           </Card>
         </div>
 
-        <Card className="card-hover shimmer-hover">
-          <CardHeader>
+        <Card className="card-hover shimmer-hover print:shadow-none print:border-none">
+          <CardHeader className="print:hidden">
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
                 <CardTitle>Open POS List</CardTitle>
@@ -194,7 +256,7 @@ export default function OpenPosPage() {
                       setSearch("");
                       setPage(1);
                     }}
-                    className="h-8 px-2 text-xs shrink-0 sm:h-9 sm:px-3 sm:text-sm"
+                    className="h-8 px-2 text-xs shrink-0 sm:h-9 sm:px-3 sm:text-sm print:hidden"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Clear
@@ -203,8 +265,8 @@ export default function OpenPosPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-md border overflow-x-auto">
+          <CardContent className="space-y-4 print:space-y-0 print:p-0">
+            <div className="rounded-md border overflow-x-auto open-pos-print-table">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -234,16 +296,16 @@ export default function OpenPosPage() {
                         ))}
                       </TableRow>
                     ))
-                  ) : paginated.length === 0 ? (
+                  ) : displayRows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={COLS} className="py-16 text-center text-muted-foreground">
                         No Open POS records found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((row, i) => (
+                    displayRows.map((row, i) => (
                       <TableRow key={`${row.PO_NUMBER}-${row.ItemCode}-${i}`} className="hover:bg-muted/40">
-                        <TableCell>{(page - 1) * perPage + i + 1}</TableCell>
+                        <TableCell>{printAllRows ? i + 1 : (page - 1) * perPage + i + 1}</TableCell>
                         <TableCell className="font-medium">{row.PO_NUMBER ?? "-"}</TableCell>
                         <TableCell>{fmtDate(row.PO_DATE)}</TableCell>
                         <TableCell className="text-right">
@@ -259,7 +321,7 @@ export default function OpenPosPage() {
                         <TableCell className="font-mono text-xs">{row.VENDOR_CODE ?? "-"}</TableCell>
                         <TableCell>{row.VENDOR_NAME ?? "-"}</TableCell>
                         <TableCell className="font-mono text-xs">{row.ItemCode ?? "-"}</TableCell>
-                        <TableCell className="max-w-[280px] truncate" title={row.ITEM_NAME ?? ""}>{row.ITEM_NAME ?? "-"}</TableCell>
+                        <TableCell className="max-w-[280px] truncate print:max-w-none print:whitespace-normal print:overflow-visible" title={row.ITEM_NAME ?? ""}>{row.ITEM_NAME ?? "-"}</TableCell>
                         <TableCell className="text-right">{fmtNum(row.ORDERED_QTY ?? 0)}</TableCell>
                         <TableCell className="text-right font-semibold">{fmtNum(row.PENDING_QTY ?? 0)}</TableCell>
                         <TableCell className="text-right">{fmtNum(row.RECEIVED_QTY ?? 0)}</TableCell>
@@ -274,7 +336,7 @@ export default function OpenPosPage() {
               </Table>
             </div>
 
-            {!loading && (
+            {!loading && !printAllRows && (
               <Pagination
                 page={page}
                 totalPages={totalPages}
