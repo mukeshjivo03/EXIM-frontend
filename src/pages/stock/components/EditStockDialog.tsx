@@ -87,7 +87,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
 
   // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
   const jobWorkLocked = data?.status === "AT_REFINERY" && !!data?.job_work_vendor;
-  const showOutsideFactoryArrivalDate = eStatus !== data?.status && eStatus === "OUT_SIDE_FACTORY";
+  const isOutsideFactory = eStatus === "OUT_SIDE_FACTORY";
 
   // Filtered vendor list for job work combobox
   const filteredVendors = useMemo(() => {
@@ -109,7 +109,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEVehicleNumber(data.vehicle_number ?? "");
       setELocation(data.location ?? "");
       setEEta(data.eta ?? "");
-      setEArrivalDate(data.arrival_date ?? "");
+      setEArrivalDate(data.arrival_date ?? (data.status === "OUT_SIDE_FACTORY" ? data.eta ?? "" : ""));
       setETransporterName(data.transporter ?? "");
       setETransferType("");
       setEAction("");
@@ -196,7 +196,8 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           quantity: eQuantity.trim(),
           vehicle_number: eVehicleNumber.trim() || undefined,
           location: eLocation.trim() || undefined,
-          eta: eEta.trim() || undefined,
+          eta: isOutsideFactory ? undefined : eEta.trim() || undefined,
+          arrival_date: isOutsideFactory ? eArrivalDate.trim() || undefined : undefined,
           transporter: eTransporterName.trim() || undefined,
           created_by: email,
           bility_number: eBilityNumber.trim() || undefined,
@@ -365,17 +366,6 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               )}
 
               {/* Job Work Vendor — combobox: type freely or pick from vendor list */}
-              {showOutsideFactoryArrivalDate && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Label htmlFor="e-arrival-date">Arrival Date</Label>
-                  <DateInput
-                    id="e-arrival-date"
-                    value={eArrivalDate}
-                    onChange={(e) => setEArrivalDate(e.target.value)}
-                  />
-                </div>
-              )}
-
               {eStatus === "AT_REFINERY" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label>Job Work Vendor *</Label>
@@ -549,11 +539,19 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="e-eta">ETA</Label>
+              <Label htmlFor={isOutsideFactory ? "e-arrival-date" : "e-eta"}>
+                {isOutsideFactory ? "Arrival Date" : "ETA"}
+              </Label>
               <DateInput
-                id="e-eta"
-                value={eEta}
-                onChange={(e) => setEEta(e.target.value)}
+                id={isOutsideFactory ? "e-arrival-date" : "e-eta"}
+                value={isOutsideFactory ? eArrivalDate : eEta}
+                onChange={(e) => {
+                  if (isOutsideFactory) {
+                    setEArrivalDate(e.target.value);
+                  } else {
+                    setEEta(e.target.value);
+                  }
+                }}
               />
             </div>
           </div>

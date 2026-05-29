@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, X, CalendarClock } from "lucide-react";
+import { CalendarClock, Check, ChevronLeft, ChevronRight, ClipboardList, X } from "lucide-react";
 
 import { createStockStatus, STATUS_CHOICES, type StockStatusChoice } from "@/api/stockStatus";
 import type { TankItem } from "@/api/tank";
@@ -41,6 +41,8 @@ interface Props {
   onCreated: () => void;
 }
 
+const STEPS = ["Stock Information", "Vehicle & Location", "Confirm"];
+
 export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, email, onCreated }: Props) {
   const [cItemCode, setCItemCode] = useState("");
   const [cItemSearch, setCItemSearch] = useState("");
@@ -56,12 +58,15 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
   const [cVehicleNumber, setCVehicleNumber] = useState("");
   const [cLocation, setCLocation] = useState("");
   const [cEta, setCEta] = useState("");
+  const [cArrivalDate, setCArrivalDate] = useState("");
   const [cTransporterName, setCTransporterName] = useState("");
   const [cContractStart, setCContractStart] = useState("");
   const [cContractEnd, setCContractEnd] = useState("");
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   const isContract = cStatus === "IN_CONTRACT";
+  const isOutsideFactory = cStatus === "OUT_SIDE_FACTORY";
 
   // Reset form when opened
   useEffect(() => {
@@ -78,9 +83,11 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
       setCVehicleNumber("");
       setCLocation("");
       setCEta("");
+      setCArrivalDate("");
       setCTransporterName("");
       setCContractStart("");
       setCContractEnd("");
+      setStep(0);
     }
   }, [open]);
 
@@ -110,6 +117,30 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
     );
   }, [vendors, cVendorSearch]);
 
+  const selectedItem = tankItems.find((item) => item.tank_item_code === cItemCode);
+  const selectedVendor = vendors.find((vendor) => vendor.card_code === cVendorCode);
+  const stockInfoComplete =
+    !!cItemCode &&
+    !!cVendorCode &&
+    !!cRate.trim() &&
+    !!cQuantity.trim() &&
+    (!isContract || (!!cContractStart && !!cContractEnd));
+  const dateLabel = isOutsideFactory ? "Arrival Date" : "ETA";
+  const dateValue = isOutsideFactory ? cArrivalDate : cEta;
+
+  function goNext() {
+    if (step === 0) {
+      const result = stockCreateSchema.safeParse({ item_code: cItemCode, vendor_code: cVendorCode, rate: cRate, quantity: cQuantity });
+      const err = getZodError(result);
+      if (err) { toast.error(err); return; }
+      if (isContract && (!cContractStart || !cContractEnd)) {
+        toast.error("Contract start and end dates are required.");
+        return;
+      }
+    }
+    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const result = stockCreateSchema.safeParse({ item_code: cItemCode, vendor_code: cVendorCode, rate: cRate, quantity: cQuantity });
@@ -126,7 +157,8 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
         created_by: email,
         vehicle_number: cVehicleNumber.trim() || undefined,
         location: cLocation.trim() || undefined,
-        eta: cEta.trim() || undefined,
+        eta: isOutsideFactory ? undefined : cEta.trim() || undefined,
+        arrival_date: isOutsideFactory ? cArrivalDate.trim() || undefined : undefined,
         transporter: cTransporterName.trim() || undefined,
         contract_start: isContract ? cContractStart || undefined : undefined,
         contract_end: isContract ? cContractEnd || undefined : undefined,
@@ -152,6 +184,32 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
           <DialogDescription>Create a new stock status entry.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCreate} className="space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            {STEPS.map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                className={`rounded-md border px-2 py-2 text-left transition-colors ${
+                  step === index
+                    ? "border-primary bg-primary/10 text-primary"
+                    : index < step
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+                      : "border-border bg-muted/30 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  if (index <= step || (index === 1 && stockInfoComplete) || (index === 2 && step > 0 && stockInfoComplete)) {
+                    setStep(index);
+                  }
+                }}
+              >
+                <span className="block text-[10px] font-semibold uppercase tracking-wider">Step {index + 1}</span>
+                <span className="block truncate text-xs font-medium">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {step === 0 && (
+            <>
           <div className="space-y-2">
             <Label>Item Code *</Label>
             <div className="relative" ref={cItemRef}>
@@ -352,6 +410,11 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
               </div>
             </>
           )}
+            </>
+          )}
+
+          {step === 1 && (
+            <>
           <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -382,11 +445,17 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="c-eta">ETA</Label>
+              <Label htmlFor={isOutsideFactory ? "c-arrival-date" : "c-eta"}>{dateLabel}</Label>
               <DateInput
-                id="c-eta"
-                value={cEta}
-                onChange={(e) => setCEta(e.target.value)}
+                id={isOutsideFactory ? "c-arrival-date" : "c-eta"}
+                value={dateValue}
+                onChange={(e) => {
+                  if (isOutsideFactory) {
+                    setCArrivalDate(e.target.value);
+                  } else {
+                    setCEta(e.target.value);
+                  }
+                }}
               />
             </div>
           </div>
@@ -394,16 +463,127 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
             <Label>Created By</Label>
             <Input value={email} disabled className="disabled:opacity-70" />
           </div>
+            </>
+          )}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-4">
+                <h3 className="mb-3 text-sm font-semibold">Stock Information</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Item Code</p>
+                    <p className="font-medium">{cItemCode || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Item Name</p>
+                    <p className="font-medium">{selectedItem?.tank_item_name ?? "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <p className="font-medium">{formatStatus(cStatus)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vendor</p>
+                    <p className="font-medium">{cVendorCode ? `${cVendorCode} - ${selectedVendor?.card_name ?? ""}` : "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rate</p>
+                    <p className="font-medium">&#8377; {cRate || "0"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantity</p>
+                    <p className="font-medium">{cQuantity || "0"} KG</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="font-semibold">&#8377; {(Number(cRate || 0) * Number(cQuantity || 0)).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {isContract && (
+                <div className="rounded-md border bg-muted/30 p-4">
+                  <h3 className="mb-3 text-sm font-semibold">Contract Period</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Contract Start</p>
+                      <p className="font-medium">{cContractStart || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Contract End</p>
+                      <p className="font-medium">{cContractEnd || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-md border bg-muted/30 p-4">
+                <h3 className="mb-3 text-sm font-semibold">Vehicle & Location</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                    <p className="font-medium">{cVehicleNumber || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transporter</p>
+                    <p className="font-medium">{cTransporterName || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="font-medium">{cLocation || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{dateLabel}</p>
+                    <p className="font-medium">{dateValue || "-"}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Created By</p>
+                    <p className="font-medium">{email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={submitting || !cItemCode || !cVendorCode || !cRate.trim() || !cQuantity.trim() || (isContract && (!cContractStart || !cContractEnd))}
-            >
-              {submitting ? "Creating..." : "Create"}
-            </Button>
+            <div className="flex w-full items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (step === 0) {
+                    onOpenChange(false);
+                  } else {
+                    setStep((current) => Math.max(current - 1, 0));
+                  }
+                }}
+              >
+                {step === 0 ? (
+                  "Cancel"
+                ) : (
+                  <>
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </>
+                )}
+              </Button>
+              {step < 2 ? (
+                <Button type="button" onClick={goNext} disabled={step === 0 && !stockInfoComplete}>
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={submitting || !stockInfoComplete}>
+                  {submitting ? (
+                    "Creating..."
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Create
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

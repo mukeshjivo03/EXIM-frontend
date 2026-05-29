@@ -58,6 +58,7 @@ export interface StockStatusPayload {
   vehicle_number?: string;
   location?: string;
   eta?: string;
+  arrival_date?: string;
   transporter?: string;
   bility_number?: string;
   grpo_number?: string;
