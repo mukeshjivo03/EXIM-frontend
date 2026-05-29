@@ -48,7 +48,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
   const [cItemSearch, setCItemSearch] = useState("");
   const [cItemOpen, setCItemOpen] = useState(false);
   const cItemRef = useRef<HTMLDivElement>(null);
-  const [cStatus, setCStatus] = useState<StockStatusChoice>("PENDING");
+  const [cStatus, setCStatus] = useState<StockStatusChoice>("IN_CONTRACT");
   const [cVendorCode, setCVendorCode] = useState("");
   const [cVendorSearch, setCVendorSearch] = useState("");
   const [cVendorOpen, setCVendorOpen] = useState(false);
@@ -74,7 +74,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
       setCItemCode("");
       setCItemSearch("");
       setCItemOpen(false);
-      setCStatus("PENDING");
+      setCStatus("IN_CONTRACT");
       setCVendorCode("");
       setCVendorSearch("");
       setCVendorOpen(false);

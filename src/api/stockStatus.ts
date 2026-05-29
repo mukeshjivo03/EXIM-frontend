@@ -9,14 +9,14 @@ export const STATUS_CHOICES = [
   "UNDER_LOADING",
   "AT_REFINERY",
   "OTW_TO_REFINERY",
-  "KANDLA_STORAGE",
+  // "KANDLA_STORAGE",
   "MUNDRA_PORT",
   "ON_THE_SEA",
   "IN_CONTRACT",
-  "DELIVERED",
-  "IN_TRANSIT",
-  "PENDING",
-  "PROCESSING",
+  // "DELIVERED",
+  // "IN_TRANSIT",
+  // "PENDING",
+  // "PROCESSING",
 ] as const;
 
 export type StockStatusChoice = (typeof STATUS_CHOICES)[number];
