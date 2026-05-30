@@ -405,7 +405,9 @@ export default function StockDashboardPage() {
       if (!isGapEntry(code)) return true;
       const previous = arr[index - 1];
       const next = arr[index + 1];
-      return Boolean(previous && next);
+      if (!previous || !next) return false;
+      // Collapse back-to-back separators into a single separator.
+      return !isGapEntry(previous);
     });
 
     return compactEntries.map((code) => {
@@ -413,6 +415,49 @@ export default function StockDashboardPage() {
       return { type: "item" as const, id: code, item: itemMap.get(code)! };
     });
   }, [displayItems, rowOrder]);
+
+  const separatorSubtotals = useMemo(() => {
+    const map = new Map<string, {
+      inFactoryLiters: number;
+      outsideKg: number;
+      statusTotals: Record<string, number>;
+    }>();
+
+    let inFactoryLiters = 0;
+    let outsideKg = 0;
+    let statusTotals: Record<string, number> = {};
+    for (const key of colKeys) statusTotals[key] = 0;
+
+    const snapshot = () => ({
+      inFactoryLiters,
+      outsideKg,
+      statusTotals: { ...statusTotals },
+    });
+
+    const reset = () => {
+      inFactoryLiters = 0;
+      outsideKg = 0;
+      statusTotals = {};
+      for (const key of colKeys) statusTotals[key] = 0;
+    };
+
+    for (const row of orderedDisplayRows) {
+      if (row.type === "item") {
+        const tankVal = tankQtyMap.get(row.item.item_code) ?? 0;
+        inFactoryLiters += tankVal;
+        outsideKg += row.item.outside_factory;
+        for (const key of colKeys) {
+          statusTotals[key] = (statusTotals[key] ?? 0) + (row.item.status_data[key] ?? 0);
+        }
+      } else {
+        map.set(row.id, snapshot());
+        // Start next block totals after this separator.
+        reset();
+      }
+    }
+
+    return map;
+  }, [orderedDisplayRows, colKeys, tankQtyMap]);
 
   function moveRow(itemCode: string, targetCode: string) {
     if (itemCode === targetCode) return;
@@ -473,15 +518,15 @@ export default function StockDashboardPage() {
     toast.success("Separator removed.");
   }
 
+  /* ── Print ───────────────────────────────────────────────── */
+
+  /** Strip RM prefix for cleaner print display: RM000 → , RM00 → , RM0 → , RM → */
   const matrixColCount =
     2 +
     (showFactoryCols ? 4 : 0) +
     statusGroups.reduce((sum, group, index) => sum + group.vendors.length + (index < statusGroups.length - 1 ? 1 : 0), 0) +
     1;
 
-  /* ── Print ───────────────────────────────────────────────── */
-
-  /** Strip RM prefix for cleaner print display: RM000 → , RM00 → , RM0 → , RM → */
   function printRmCode(code: string): string {
     return code.replace(/^RM0{0,3}/, "");
   }
@@ -525,13 +570,7 @@ export default function StockDashboardPage() {
     row1Cells += th("", "background:#B6D7A8;");
 
     // Data rows — custom fixed order with separator gaps for print
-    const itemMap = new Map(displayItems.map((item) => [item.item_code, item]));
     const totalCols = 3 + vendorCols.length + 1; // name + infactory + outside + vendors + total
-
-    // Build ordered list: items from PRINT_ORDER first, then any remaining items
-    const orderedCodes = DEFAULT_PRINT_ORDER.filter((c) => c === "__GAP__" || itemMap.has(c));
-    const orderedSet = new Set(DEFAULT_PRINT_ORDER.filter((c) => c !== "__GAP__"));
-    const extraItems = displayItems.filter((item) => !orderedSet.has(item.item_code));
 
     function buildItemRow(item: typeof displayItems[0]) {
       const tankVal  = tankQtyMap.get(item.item_code) ?? 0;
@@ -548,25 +587,55 @@ export default function StockDashboardPage() {
       return `<tr>${cells}</tr>`;
     }
 
-    const gapRow = `<tr><td colspan="${totalCols}" style="border:none;height:12px;"></td></tr>`;
+    function buildSubtotalRow(subtotal: {
+      inFactoryLiters: number;
+      outsideKg: number;
+      statusTotals: Record<string, number>;
+    }) {
+      const statusKg = colKeys.reduce((sum, k) => sum + (subtotal.statusTotals[k] ?? 0), 0);
+      const subtotalTotal = convertFromLiters(subtotal.inFactoryLiters, EU) + convertUnit(subtotal.outsideKg + statusKg, EU);
 
-    let dataRowsHtml = "";
-    if (rowOrder.length > 0) {
-      dataRowsHtml = orderedDisplayRows
-        .map((row) => row.type === "gap" ? gapRow : buildItemRow(row.item))
-        .join("");
-    } else {
-      dataRowsHtml = orderedCodes.map((code) => {
-        if (code === "__GAP__") return gapRow;
-        const item = itemMap.get(code);
-        return item ? buildItemRow(item) : "";
-      }).join("");
-
-      // Append any items not in the predefined order
-      if (extraItems.length > 0) {
-        dataRowsHtml += gapRow + extraItems.map(buildItemRow).join("");
+      let cells = td("Subtotal", "background:#FFF2CC;font-weight:bold;text-align:left;") +
+        td(fmt(convertFromLiters(subtotal.inFactoryLiters, EU)), "background:#FFF2CC;font-weight:bold;") +
+        td(fmt(convertUnit(subtotal.outsideKg, EU)), "background:#FFF2CC;font-weight:bold;");
+      for (const { key } of vendorCols) {
+        cells += td(fmt(convertUnit(subtotal.statusTotals[key] ?? 0, EU)), "background:#FFF2CC;font-weight:bold;");
       }
+      cells += td(fmt(subtotalTotal), "background:#FFF2CC;font-weight:bold;");
+      return `<tr>${cells}</tr>`;
     }
+
+    function buildSeparatorRow() {
+      return `<tr><td colspan="${totalCols}" style="border:0;height:10px;background:#ffffff;"></td></tr>`;
+    }
+
+    let runningInFactoryLiters = 0;
+    let runningOutsideKg = 0;
+    let runningStatusTotals: Record<string, number> = {};
+    for (const key of colKeys) runningStatusTotals[key] = 0;
+
+    const dataRowsHtml = orderedDisplayRows.map((row) => {
+      if (row.type === "gap") {
+        const html = buildSubtotalRow({
+          inFactoryLiters: runningInFactoryLiters,
+          outsideKg: runningOutsideKg,
+          statusTotals: runningStatusTotals,
+        }) + buildSeparatorRow();
+        runningInFactoryLiters = 0;
+        runningOutsideKg = 0;
+        runningStatusTotals = {};
+        for (const key of colKeys) runningStatusTotals[key] = 0;
+        return html;
+      }
+
+      const tankVal = tankQtyMap.get(row.item.item_code) ?? 0;
+      runningInFactoryLiters += tankVal;
+      runningOutsideKg += row.item.outside_factory;
+      for (const key of colKeys) {
+        runningStatusTotals[key] = (runningStatusTotals[key] ?? 0) + (row.item.status_data[key] ?? 0);
+      }
+      return buildItemRow(row.item);
+    }).join("");
 
     // Grand total row
     const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
@@ -946,52 +1015,98 @@ export default function StockDashboardPage() {
                 <tbody>
                   {orderedDisplayRows.map((row) => {
                     if (row.type === "gap") {
+                      const subtotal = separatorSubtotals.get(row.id) ?? {
+                        inFactoryLiters: 0,
+                        outsideKg: 0,
+                        statusTotals: {},
+                      };
+                      const subtotalStatusKg = colKeys.reduce((sum, k) => sum + (subtotal.statusTotals[k] ?? 0), 0);
+                      const subtotalGrandTotal = showFactoryCols
+                        ? convertFromLiters(subtotal.inFactoryLiters, unit) + convertUnit(subtotal.outsideKg + subtotalStatusKg, unit)
+                        : convertUnit(subtotalStatusKg, unit);
                       return (
-                        <tr
-                          key={row.id}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = "move";
-                            setDragOverRow(row.id);
-                          }}
-                          onDragLeave={() => {
-                            if (dragOverRow === row.id) {
-                              setDragOverRow(null);
-                            }
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            handleRowDrop(row.id);
-                          }}
-                          className={cn(
-                            "h-7 bg-background transition-colors",
-                            dragOverRow === row.id ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
-                          )}
-                        >
-                          <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
-                            <div className={cn(
-                              "flex h-7 items-center justify-center border-y border-dashed border-muted-foreground/30 bg-muted/25",
-                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
-                            )}>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 opacity-60 hover:opacity-100"
-                                title="Remove separator"
-                                onClick={() => removeSeparator(row.id)}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </td>
-                          <td colSpan={matrixColCount - 1} className="border-0 p-0">
-                            <div className={cn(
-                              "h-7 border-y border-dashed border-muted-foreground/30 bg-muted/25",
-                              dragOverRow === row.id && "bg-primary/10 border-primary/60"
-                            )} />
-                          </td>
-                        </tr>
+                        <Fragment key={row.id}>
+                          <tr className="bg-muted/15">
+                            <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
+                              <div className="h-8 border-y border-dashed border-muted-foreground/20 bg-muted/20" />
+                            </td>
+                            <td className="sticky left-[72px] z-20 px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-left border border-dashed border-foreground/30 font-semibold uppercase tracking-wide bg-muted/25">
+                              Subtotal
+                            </td>
+                            {showFactoryCols && <>
+                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 text-blue-600 dark:text-blue-400 font-semibold">
+                                {fmtLiters(subtotal.inFactoryLiters, unit, roundingEnabled)}
+                              </td>
+                              <td className="p-0 bg-background border-x-0" />
+                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 text-amber-600 dark:text-amber-400 font-semibold">
+                                {fmtNum(subtotal.outsideKg, unit, roundingEnabled)}
+                              </td>
+                              <td className="p-0 bg-background border-x-0" />
+                            </>}
+                            {statusGroups.map((group, gi) => (
+                              <Fragment key={group.status}>
+                                {group.vendors.map(({ key }) => (
+                                  <td
+                                    key={key}
+                                    className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 font-semibold"
+                                  >
+                                    {fmtNum(subtotal.statusTotals[key] ?? 0, unit, roundingEnabled)}
+                                  </td>
+                                ))}
+                                {gi < statusGroups.length - 1 && (
+                                  <td className="p-0 bg-background border-x-0" />
+                                )}
+                              </Fragment>
+                            ))}
+                            <td className="px-3 sm:px-4 py-1.5 sm:py-2 text-center tabular-nums text-xs sm:text-sm font-bold bg-primary/15 border border-foreground/30">
+                              {fmtAny(subtotalGrandTotal, roundingEnabled)}
+                            </td>
+                          </tr>
+                          <tr
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                              setDragOverRow(row.id);
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverRow === row.id) {
+                                setDragOverRow(null);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              handleRowDrop(row.id);
+                            }}
+                            className={cn(
+                              "h-6 bg-background transition-colors",
+                              dragOverRow === row.id ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
+                            )}
+                          >
+                            <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
+                              <div className={cn(
+                                "flex h-6 items-center justify-center border-y border-dashed border-muted-foreground/30 bg-muted/10",
+                                dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                              )}>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-60 hover:opacity-100"
+                                  title="Remove separator"
+                                  onClick={() => removeSeparator(row.id)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td colSpan={matrixColCount - 1} className="border-0 p-0">
+                              <div className={cn(
+                                "h-6 border-y border-dashed border-muted-foreground/30 bg-muted/10",
+                                dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                              )} />
+                            </td>
+                          </tr>
+                        </Fragment>
                       );
                     }
                     const item = row.item;
