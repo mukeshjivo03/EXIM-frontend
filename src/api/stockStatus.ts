@@ -239,6 +239,7 @@ export interface VehicleReportItem {
   total_quantity_in_litre: number;
   total_quantity_in_mts: number;
   eta: string | null;
+  contract_end?: string | null;
   arrival_date?: string | null;
   status: string;
   job_work: string | null;

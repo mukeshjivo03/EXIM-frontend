@@ -57,6 +57,7 @@ function flattenVehicles(vehicles: VehicleReport[]): FlatRow[] {
 function daysRemaining(eta: string | null): number | null {
   if (!eta) return null;
   const [y, m, d] = eta.split("-").map(Number);
+  if (!y || !m || !d) return null;
   const etaDate = new Date(y, m - 1, d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -68,12 +69,27 @@ function isOutsideFactoryStatus(status?: string | null) {
 }
 
 function reportDateLabel(status?: string | null) {
+  if (status === "IN_CONTRACT") return "Contract End";
   return isOutsideFactoryStatus(status) ? "Arrival Date" : "ETA";
 }
 
 function reportDate(item: VehicleReportItem, fallbackStatus?: string | null) {
   const status = item.status || fallbackStatus;
+  if (status === "IN_CONTRACT") return item.contract_end || null;
   return isOutsideFactoryStatus(status) ? item.arrival_date || null : item.eta || null;
+}
+
+function daysColumnLabel(status: StatusKey) {
+  return status === "IN_CONTRACT" ? "Expiry Status" : "Days";
+}
+
+function formatDaysStatus(days: number, status: StatusKey) {
+  if (status === "IN_CONTRACT") {
+    if (days < 0) return `Expired ${Math.abs(days)}d ago`;
+    if (days === 0) return "Expires today";
+    return `${days}d left`;
+  }
+  return days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`;
 }
 
 function fmtDate(dateStr: string | null | undefined): string {
@@ -132,7 +148,7 @@ function buildExcelRows(statusLabel: string, statusKey: StatusKey, vehicles: Veh
         Rate: item.rate ?? "",
         "Qty (Litre)": item.total_quantity_in_litre,
         "Qty (MTS)": item.total_quantity_in_mts,
-        "Days Remaining": days ?? "",
+        [daysColumnLabel(statusKey)]: days === null ? "" : formatDaysStatus(days, statusKey),
         [dateLabel]: excelDate(dateValue),
         "Job Work": item.job_work || "-",
       };
@@ -192,6 +208,7 @@ export default function VehicleReportPage() {
               total_quantity_in_litre: parseFloat(s.quantity_in_litre || "0"),
               total_quantity_in_mts: parseFloat(s.quantity) / 1000,
               eta: s.eta || null,
+              contract_end: s.contract_end || null,
               arrival_date: s.arrival_date || null,
               status: s.status,
               job_work: s.job_work_vendor || null,
@@ -268,6 +285,7 @@ export default function VehicleReportPage() {
   const isLoading = loading[activeTab];
   const totalMts = rows.reduce((s, r) => s + r.total_quantity_in_mts, 0);
   const activeDateLabel = reportDateLabel(activeTab);
+  const activeDaysLabel = daysColumnLabel(activeTab);
 
   const insights = useMemo(() => {
     const allVehicles = TABS.flatMap((t) => data[t.key]);
@@ -343,7 +361,7 @@ export default function VehicleReportPage() {
             {Object.values(loading).some(Boolean)
               ? <div className="h-8 w-12 bg-muted/30 animate-pulse rounded mt-1" />
               : <h3 className="text-base sm:text-2xl font-bold leading-tight">{insights.overdueCount}</h3>}
-            <p className="text-[9px] sm:text-xs text-muted-foreground">vehicles past ETA / arrival date</p>
+            <p className="text-[9px] sm:text-xs text-muted-foreground">vehicles past ETA / arrival / contract end</p>
           </CardContent>
         </Card>
 
@@ -424,7 +442,7 @@ export default function VehicleReportPage() {
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Rate</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
-                    <TableHead>Days</TableHead>
+                    <TableHead>{activeDaysLabel}</TableHead>
                     <TableHead>{activeDateLabel}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -454,7 +472,7 @@ export default function VehicleReportPage() {
                               worstDays <= 5 ? "text-yellow-600 dark:text-yellow-500" :
                               "text-green-600 dark:text-green-400"
                             )}>
-                              {worstDays < 0 ? `${Math.abs(worstDays)}d overdue` : `${worstDays}d`}
+                              {formatDaysStatus(worstDays, activeTab)}
                             </span>
                           );
                         })()}
@@ -527,7 +545,7 @@ export default function VehicleReportPage() {
                                     d <= 5 ? "text-yellow-600 dark:text-yellow-500" :
                                     "text-green-600 dark:text-green-400"
                                   )}>
-                                    {d < 0 ? `${Math.abs(d)}d overdue` : `${d}d`}
+                                    {formatDaysStatus(d, activeTab)}
                                   </span>
                                 );
                               })()}
