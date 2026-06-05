@@ -1,114 +1,50 @@
-# EXIM Frontend - Technical Documentation
+# EXIM Frontend Documentation
 
-## Table of Contents
+This folder documents the current frontend codebase in this repository. Backend notes are included only where they help frontend work.
+
+## Documents
 
 | Document | Description |
-|----------|-------------|
-| [Architecture](./architecture/README.md) | Tech stack, project structure, build tooling, theming |
-| [Authentication & Authorization](./auth/README.md) | Login flow, roles, protected routes, token management |
-| [API Layer](./api/README.md) | Axios client, all endpoints, request/response types |
-| [Pages & Routing](./pages/README.md) | Every route, page purpose, CRUD operations, navigation |
-| [Components](./components/README.md) | Shared components, UI library, custom CSS classes |
-| [Setup & Development](./setup/README.md) | Local setup, environment config, build & deployment |
-| **Backend** | |
-| [Backend Overview](./backend/README.md) | Django project structure, apps, config, SAP integration |
-| [Backend Models](./backend/models.md) | All database models, fields, relationships, ER diagram |
-| [Backend Endpoints](./backend/endpoints.md) | Every URL pattern with permissions and response examples |
-| [Backend Services](./backend/services.md) | SAP sync, FIFO rates, auto-calculations, business logic |
+| --- | --- |
+| [Setup & Development](./setup/README.md) | Local setup, environment variables, scripts, build, deployment |
+| [Architecture](./architecture/README.md) | Stack, project structure, provider tree, Vite/PWA config |
+| [State Management](./architecture/state-management.md) | Contexts, localStorage, page data flow |
+| [Authentication & Authorization](./auth/README.md) | Login, token refresh, permissions, route guards |
+| [API Layer](./api/README.md) | Axios client, API modules, frontend-used endpoints |
+| [Pages & Routing](./pages/README.md) | Route map and permission modules from `src/App.tsx` |
+| [Components](./components/README.md) | Layout, navigation, shared components, UI primitives |
+| [Backend Overview](./backend/README.md) | Frontend-facing backend assumptions |
+| [Backend Models](./backend/models.md) | Domain model reference used by frontend features |
+| [Backend Endpoints](./backend/endpoints.md) | Endpoint inventory consumed by `src/api/` |
+| [Backend Services](./backend/services.md) | Business rules that affect frontend behavior |
 
----
+## Product Scope
 
-## What is EXIM?
+JIVO EXIM is an internal export-import operations frontend for:
 
-EXIM is an **Export-Import management system** used internally to track:
+- stock status and movement tracking;
+- tank inventory and FIFO layer visibility;
+- SAP-backed inventory, account, vendor, customer, AP/AR/PO, and GRPO reports;
+- daily commodity pricing, Jivo rates, and exchange rates;
+- domestic contracts across financial years;
+- Advance License and DFIA License workflows;
+- user and sync administration.
 
-- **Stock inventory** across tanks, raw materials, and finished goods
-- **Tank monitoring** with real-time visual representations
-- **Commodity daily prices** with historical charts and delta tracking
-- **Jivo commodity rates** with matrix view and historical browsing
-- **Open GRPOs** monitoring with pending day alerts
-- **Open POs** monitoring with aging (`Days Open`) in Accounts
-- **Domestic contracts** (purchase orders)
-- **EXIM account** balances, ledgers, and open AP/AR/PO views
-- **Advance Licenses** and **DFIA Licenses** with line-level tracking
-- **SAP data synchronization** for raw materials, finished goods, and vendors
-- **User management** with role-based access control
+## Runtime Shape
 
-The frontend is a **React 19 + TypeScript** single-page application that communicates with a Django REST Framework backend via REST APIs.
-
----
-
-## High-Level Architecture
-
-```
+```text
 Browser
-  |
-  v
-React SPA (Vite dev server / static build)
-  |
-  v
-Axios HTTP Client (with JWT auth headers)
-  |
-  v
-Django REST Framework Backend API
-  |
-  v
-PostgreSQL Database
+  -> React SPA served by Vite/static hosting
+  -> Axios client with Bearer access token
+  -> Django REST API
+  -> SAP/PostgreSQL-backed services
 ```
 
----
+## Source Of Truth
 
-## Backend Overview
-
-The backend is a **separate repository** built with:
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Django REST Framework (Python) |
-| Database | PostgreSQL |
-| Authentication | JWT (djangorestframework-simplejwt) |
-| API Style | REST with JSON payloads |
-
-**Deployment:**
-
-| Service | URL |
-|---------|-----|
-| Frontend | `http://103.89.45.75:5003` |
-| Backend API | `http://103.89.45.75:9000` |
-
-**Key points for frontend developers:**
-- Backend runs on port `9000` (configurable via `VITE_API_BASE_URL`)
-- Backend `.env` file lives in the backend repo (not this frontend repo)
-- All API endpoints are documented in [API Layer](./api/README.md)
-- JWT tokens (access + refresh) are issued by `/account/login/`
-- The backend enforces role-based authorization independently of frontend route guards
-
----
-
-## User Roles
-
-| Role | Code | Access Level |
-|------|------|-------------|
-| Admin | `ADM` | Full access: all pages + user management + SAP sync |
-| Manager | `MNG` | Dashboard, stock, contracts, licenses, accounts, daily price, stock logs. No access to sync operations or user management |
-| Factory | `FTR` | Tank pages only: Tank Items (read-only), Tank Data (read + inward/outward, no create/delete), Tank Monitoring (full, no rate breakdown), Tank Logs, Home |
-
----
-
-## Quick Reference: Key File Locations
-
-| Purpose | Path |
-|---------|------|
-| App entry point | `src/main.tsx` |
-| Route definitions | `src/App.tsx` |
-| API client (Axios) | `src/api/client.ts` |
-| Auth context | `src/context/AuthContext.tsx` |
-| Theme context | `src/context/ThemeContext.tsx` |
-| Layout shell | `src/components/Layout.tsx` |
-| Sidebar navigation | `src/components/Sidebar.tsx` |
-| Global styles & theme | `src/index.css` |
-| Utility formatters | `src/lib/formatters.ts` |
-| Error handling | `src/lib/errors.ts` |
-| Zod validation schemas | `src/lib/schemas.ts` |
-| CI/CD workflow | `.github/workflows/frontend-deploy.yml` |
-| Deploy script | `deploy_frontend.bat` |
+- Routes: `src/App.tsx`
+- Navigation visibility: `src/components/Sidebar.tsx`
+- Auth state and permissions: `src/context/AuthContext.tsx`
+- API base client: `src/api/client.ts`
+- API domains and types: `src/api/*.ts`
+- Build/PWA config: `vite.config.ts`

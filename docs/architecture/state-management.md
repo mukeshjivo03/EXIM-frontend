@@ -1,201 +1,68 @@
 # State Management & Data Flow
 
-## Overview
-
-The app uses **React Context** for global state and **local component state** (`useState`) for page-level data. There is no external state library (Redux, Zustand, etc.).
-
----
+The app uses React Context for cross-cutting state and local `useState`/`useEffect` for page data. There is no Redux, Zustand, or query-cache library.
 
 ## Context Providers
 
-### 1. AuthContext (`src/context/AuthContext.tsx`)
+| Provider | File | Responsibility |
+| --- | --- | --- |
+| `AuthProvider` | `src/context/AuthContext.tsx` | User name/email, permissions, login state, permission helpers |
+| `ThemeProvider` | `src/context/ThemeContext.tsx` | Light/dark theme and persistence |
+| `DailyPriceProvider` | `src/context/DailyPriceContext.tsx` | Cached daily commodity price rows |
+| `JivoRateProvider` | `src/context/JivoRateContext.tsx` | Cached Jivo rate rows |
+| `OpenGrpoProvider` | `src/context/OpenGrpoContext.tsx` | Cached open GRPO rows |
 
-**Purpose:** Manages authentication state (user identity + login status).
+## Auth State
 
-**State:**
+`AuthContext` reads and writes:
 
-| Field | Type | Source |
-|-------|------|--------|
-| `role` | `"ADM" \| "FTR" \| "MNG" \| null` | `localStorage.user_role` |
-| `name` | `string \| null` | `localStorage.user_name` |
-| `email` | `string \| null` | `localStorage.user_email` |
+| Key | Purpose |
+| --- | --- |
+| `access_token` | Bearer token for API requests |
+| `refresh_token` | Token used by `src/api/client.ts` after 401 responses |
+| `user_permissions` | JSON object of `{ module: actions[] }` |
+| `user_name` | Display name |
+| `user_email` | Display email |
 
-**Computed:**
-- `isLoggedIn` = `!!localStorage.access_token && role !== null`
+`isLoggedIn` is true only when an access token exists and the permission object is not empty.
 
-**Methods:**
-- `setAuth(name, role, email)` - Called after successful login
-- `clearAuth()` - Called on logout, clears localStorage + state
+## Theme State
 
-**Usage:**
-```typescript
-const { role, name, isLoggedIn, clearAuth } = useAuth();
+`ThemeContext` stores:
+
+| Key | Value |
+| --- | --- |
+| `theme` | `light` or `dark` |
+
+It applies the selected theme by updating the root `dark` class.
+
+## Page Data Pattern
+
+Most pages follow this shape:
+
+```text
+mount
+  -> set loading
+  -> call a function from src/api/*
+  -> store response in local state
+  -> render cards, filters, tables, charts
 ```
 
----
+CRUD pages usually refetch after create, update, delete, move, dispatch, or inward/outward operations.
 
-### 2. ThemeContext (`src/context/ThemeContext.tsx`)
+## Permission Flow
 
-**Purpose:** Manages light/dark theme preference.
-
-**State:**
-
-| Field | Type | Default |
-|-------|------|---------|
-| `theme` | `"light" \| "dark"` | System preference or localStorage |
-
-**Methods:**
-- `toggleTheme()` - Switches between light/dark
-
-**Side Effects:**
-- Toggles `.dark` class on `document.documentElement`
-- Persists to `localStorage`
-
-**Usage:**
-```typescript
-const { theme, toggleTheme } = useTheme();
+```text
+LoginPage
+  -> POST /account/login/
+  -> stores tokens, name, email, permissions
+  -> AuthProvider exposes hasPermission/hasAnyModule
+  -> ProtectedRoute guards routes
+  -> Sidebar filters links and sections
 ```
 
----
+Route guards require the `view` action by default. The user passes if they have `view` on at least one listed module.
 
-### 3. DailyPriceContext (`src/context/DailyPriceContext.tsx`)
+## When To Add Context
 
-**Purpose:** Caches commodity price data to avoid redundant API calls.
-
-**State:**
-
-| Field | Type | Default |
-|-------|------|---------|
-| `prices` | `CommodityPrice[]` | `[]` |
-| `count` | `number` | `0` |
-| `fetched` | `boolean` | `false` |
-
-**Methods:**
-- `setPrices(prices)` - Update cached prices
-- `setCount(count)` - Update count
-- `setFetched(fetched)` - Mark as fetched
-- `clear()` - Reset all state
-
-**How it's used:**
-The DailyPricePage checks `fetched` before calling the API. If already fetched, it uses the cached data.
-
----
-
-### 4. JivoRateContext (`src/context/JivoRateContext.tsx`)
-
-**Purpose:** Caches Jivo commodity rate data shared across components.
-
----
-
-### 5. OpenGrpoContext (`src/context/OpenGrpoContext.tsx`)
-
-**Purpose:** Caches open GRPO data to avoid re-fetching when navigating between pages.
-
----
-
-## Data Flow Patterns
-
-### Pattern 1: Page-Level Fetch
-
-Most pages fetch data on mount and manage it locally:
-
-```
-Component Mount
-  |-> useEffect with fetchData()
-  |-> API call via src/api/*.ts
-  |-> setState with response
-  |-> Render table/cards
-```
-
-```typescript
-const [data, setData] = useState<Type[]>([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
-
-async function fetchData() {
-  setLoading(true);
-  try {
-    const result = await apiCall();
-    setData(result);
-  } catch (err) {
-    setError(getErrorMessage(err));
-  } finally {
-    setLoading(false);
-  }
-}
-
-useEffect(() => { fetchData(); }, []);
-```
-
-### Pattern 2: CRUD with Dialog
-
-Pages with create/edit/delete operations:
-
-```
-List View
-  |
-  |-> [Create] -> Open dialog -> Fill form -> API POST -> Close dialog -> Refetch list
-  |
-  |-> [Edit]   -> Open dialog with existing data -> API PUT/PATCH -> Close -> Refetch
-  |
-  |-> [Delete] -> Confirmation dialog -> API DELETE -> Refetch
-```
-
-Each operation triggers `fetchData()` on success to refresh the list.
-
-### Pattern 3: Cross-Component Communication
-
-The Navbar search can delete items across domains. Since the list pages aren't always mounted, custom DOM events are used:
-
-```
-Navbar                          SyncRawMaterialDataPage
-  |                                     |
-  |-- deleteRmItem(code) ------->       |
-  |-- dispatch("rm-items-updated") -->  |
-  |                              addEventListener("rm-items-updated")
-  |                                     |-> fetchData()
-```
-
-### Pattern 4: Master-Detail Navigation
-
-License pages use a two-level navigation:
-
-```
-AdvanceLicensePage (list of headers)
-  |
-  |-> Click row -> navigate("/license/advance-license/:licenseNo")
-  |
-  v
-AdvanceLicenseDetailPage (lines for that header)
-  |
-  |-> useParams() to get licenseNo
-  |-> Fetch header (includes nested lines)
-  |-> Render lines table with create/edit
-```
-
----
-
-## localStorage Keys
-
-| Key | Set By | Read By | Purpose |
-|-----|--------|---------|---------|
-| `access_token` | LoginPage, client.ts | client.ts, AuthContext | JWT access token |
-| `refresh_token` | LoginPage, client.ts | client.ts, auth.ts | JWT refresh token |
-| `user_role` | LoginPage | AuthContext | User role code |
-| `user_name` | LoginPage | AuthContext | Display name |
-| `user_email` | LoginPage | AuthContext | Email address |
-| `theme` | ThemeContext | ThemeContext | "light" or "dark" |
-
----
-
-## No Global State Library
-
-The app deliberately avoids Redux/Zustand. State is managed at two levels:
-
-1. **Global (Context):** Auth, theme, and cached daily prices
-2. **Local (useState):** All page data, form state, dialog state, loading/error state
-
-This works well because:
-- Pages are independent - they don't share data
-- List data is always re-fetched when navigating to a page
-- The only truly shared state is auth/theme (which rarely changes)
+Prefer local page state unless data must survive navigation or be shared by unrelated components. Existing shared caches are limited to daily prices, Jivo rates, and open GRPOs.
