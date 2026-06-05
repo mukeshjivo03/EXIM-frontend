@@ -27,6 +27,7 @@ import {
   History,
   AlertTriangle,
   ArrowRight,
+  ExternalLink,
   Globe,
   Warehouse,
   Sun,
@@ -39,12 +40,19 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { useHasPermission } from "@/hooks/useHasPermission";
-import { getStockSummary, getStockLogs } from "@/api/stockStatus";
+import { getStockSummary, getStockLogs, getStockStatuses } from "@/api/stockStatus";
 import { getTankSummary } from "@/api/tank";
 import { getSyncLogs } from "@/api/sapSync";
 import { fmtDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /* ── Types & Constants ────────────────────────────────────── */
 
@@ -55,6 +63,21 @@ interface ActivityItem {
   subtitle: string;
   time: string;
   status?: "SUCCESS" | "FAILURE" | string;
+}
+
+interface ContractAlert {
+  id: number;
+  itemCode: string;
+  itemName: string;
+  vendorCode: string;
+  vendorName: string;
+  quantity: string;
+  rate: string;
+  location?: string;
+  contractEnd: string;
+  daysRemaining: number;
+  isExpired: boolean;
+  isUrgent: boolean;
 }
 
 interface QuickLink {
@@ -115,6 +138,39 @@ const CATEGORY_STYLES = {
   Commercials: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white",
   Administration: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white",
 };
+
+const CONTRACT_EXPIRY_SOON_DAYS = 7;
+
+function dateOnly(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+}
+
+function getDaysRemaining(dateText?: string | null) {
+  if (!dateText) return null;
+  const [year, month, day] = dateText.split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  const endDate = new Date(year, month - 1, day);
+  const today = dateOnly(new Date());
+  return Math.ceil((dateOnly(endDate).getTime() - today.getTime()) / 86_400_000);
+}
+
+function formatContractAging(daysRemaining: number) {
+  if (daysRemaining < 0) return `Expired ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) === 1 ? "" : "s"} ago`;
+  if (daysRemaining === 0) return "Expires today";
+  if (daysRemaining === 1) return "Expires tomorrow";
+  return `${daysRemaining} days remaining`;
+}
+
+function formatDateOnly(dateText: string) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  if (!year || !month || !day) return dateText;
+  return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 /* ── Weather badge helpers ───────────────────────────────── */
 interface WeatherData { temp: number; condition: string; city: string; Icon: React.ElementType; color: string; }
@@ -267,6 +323,8 @@ export default function HomePage() {
   const [stockStats, setStockStats] = useState({ count: 0, val: 0 });
   const [tankStats, setTankStats] = useState({ count: 0, util: 0 });
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [contractAlerts, setContractAlerts] = useState<ContractAlert[]>([]);
+  const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
@@ -300,6 +358,41 @@ export default function HomePage() {
       getTankSummary()
         .then((res) => setTankStats({ count: res.tank_count, util: res.utilisation_rate }))
         .catch(() => { });
+
+      if (hasPermission("stockstatus", "view")) {
+        getStockStatuses({ status: "IN_CONTRACT" })
+          .then((res) => {
+            const alerts = res
+              .filter((contract) => !contract.deleted)
+              .map((contract) => {
+                const daysRemaining = getDaysRemaining(contract.contract_end);
+                if (daysRemaining === null) return null;
+
+                return {
+                  id: contract.id,
+                  itemCode: contract.item_code,
+                  itemName: contract.item_name || contract.item_code,
+                  vendorCode: contract.vendor_code,
+                  vendorName: contract.vendor_name || contract.vendor_code,
+                  quantity: contract.quantity,
+                  rate: contract.rate,
+                  location: contract.location,
+                  contractEnd: contract.contract_end || "",
+                  daysRemaining,
+                  isExpired: daysRemaining < 0,
+                  isUrgent: daysRemaining <= 2,
+                };
+              })
+              .filter((alert): alert is ContractAlert => Boolean(alert))
+              .filter((alert) => alert.daysRemaining <= CONTRACT_EXPIRY_SOON_DAYS)
+              .sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+            setContractAlerts(alerts);
+          })
+          .catch(() => setContractAlerts([]));
+      } else {
+        setContractAlerts([]);
+      }
 
       // Load Activity based on permissions
       if (hasPermission("synclogs", "view")) {
@@ -522,39 +615,75 @@ export default function HomePage() {
 
           {/* Alerts Card */}
           <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
-            <div className="bg-red-50 dark:bg-red-950/20 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-red-100 dark:border-red-900/30">
+            <button
+              type="button"
+              onClick={() => setAlertsModalOpen(true)}
+              className="w-full text-left bg-red-50 dark:bg-red-950/20 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-red-100 dark:border-red-900/30 hover:bg-red-100/70 dark:hover:bg-red-950/30 transition-colors"
+            >
               <h3 className="text-xs font-bold uppercase tracking-widest text-red-600 flex items-center gap-2">
                 <Bell className="h-3.5 w-3.5" /> Alerts
               </h3>
-              <Badge variant="destructive" className="rounded-full px-2 py-0 h-5 text-[10px]">
-                {"2"}
-              </Badge>
-            </div>
-            <div className="p-4 space-y-3">
-              {hasPermission("synclogs", "view") ? (
-                <>
-                  <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/30 transition-all cursor-pointer">
-                    <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-medium leading-tight">Sync failed for Raw Material at 10:30 AM</p>
+              <span className="flex items-center gap-2">
+                <Badge variant="destructive" className="rounded-full px-2 py-0 h-5 text-[10px]">
+                  {contractAlerts.length}
+                </Badge>
+                <ArrowRight className="h-3.5 w-3.5 text-red-500" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAlertsModalOpen(true)}
+              className="w-full p-4 space-y-3 text-left"
+            >
+              {contractAlerts.length > 0 ? (
+                contractAlerts.slice(0, 3).map((contract) => (
+                  <div
+                    key={contract.id}
+                    className={cn(
+                      "flex gap-3 p-3 rounded-xl border transition-all",
+                      contract.isExpired || contract.isUrgent
+                        ? "bg-red-50/80 border-red-200 hover:bg-red-50 dark:bg-red-950/20 dark:border-red-900/40"
+                        : "bg-amber-50/80 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40"
+                    )}
+                  >
+                    {contract.isExpired || contract.isUrgent ? (
+                      <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-bold leading-tight truncate">{contract.itemName}</p>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                            contract.isExpired || contract.isUrgent
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+                          )}
+                        >
+                          {formatContractAging(contract.daysRemaining)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground truncate">{contract.vendorName}</p>
+                      <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                        Contract end: {formatDateOnly(contract.contractEnd)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-amber-200 dark:hover:border-amber-900/30 transition-all cursor-pointer">
-                    <div className="h-2 w-2 rounded-full bg-amber-500 mt-1 shrink-0" />
-                    <p className="text-xs font-medium leading-tight">3 contracts expiring in next 7 days</p>
-                  </div>
-                </>
+                ))
               ) : (
-                <>
-                  <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/30 transition-all cursor-pointer">
-                    <History className="h-4 w-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-medium leading-tight">Advance License #AL-992 expiring soon</p>
-                  </div>
-                  <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-900/30 transition-all cursor-pointer">
-                    <TrendingUp className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <p className="text-xs font-medium leading-tight">Daily prices updated for {new Date().toLocaleDateString()}</p>
-                  </div>
-                </>
+                <div className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-transparent">
+                  <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
+                  <p className="text-xs font-medium leading-tight">No contracts expiring in the next {CONTRACT_EXPIRY_SOON_DAYS} days</p>
+                </div>
               )}
-            </div>
+              {contractAlerts.length > 3 && (
+                <p className="text-center text-[10px] font-bold uppercase tracking-widest text-primary">
+                  View all {contractAlerts.length} expiring contracts
+                </p>
+              )}
+            </button>
           </div>
 
           {/* Activity Feed */}
@@ -599,6 +728,125 @@ export default function HomePage() {
 
         </div>
       </div>
+
+      <Dialog open={alertsModalOpen} onOpenChange={setAlertsModalOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] xl:max-w-[1400px] max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b bg-red-50/80 dark:bg-red-950/20">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Expiring In-Contract Stocks
+            </DialogTitle>
+            <DialogDescription>
+              Contracts with an end date within the next {CONTRACT_EXPIRY_SOON_DAYS} days.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[68vh] overflow-y-auto px-4 sm:px-6 py-4">
+            {contractAlerts.length > 0 ? (
+              <>
+                <div className="hidden md:block rounded-xl border">
+                  <table className="w-full table-fixed text-sm">
+                    <thead className="bg-muted/60 text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="w-[18%] px-3 py-3 text-left font-bold">Item</th>
+                        <th className="w-[22%] px-3 py-3 text-left font-bold">Vendor</th>
+                        <th className="w-[10%] px-3 py-3 text-left font-bold">Qty</th>
+                        <th className="w-[9%] px-3 py-3 text-left font-bold">Rate</th>
+                        <th className="w-[12%] px-3 py-3 text-left font-bold">Location</th>
+                        <th className="w-[13%] px-3 py-3 text-left font-bold">Contract End</th>
+                        <th className="w-[16%] px-3 py-3 text-left font-bold">Aging</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {contractAlerts.map((contract) => (
+                        <tr key={contract.id} className="hover:bg-muted/30">
+                          <td className="px-3 py-3">
+                            <p className="font-semibold truncate">{contract.itemName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{contract.itemCode}</p>
+                          </td>
+                          <td className="px-3 py-3">
+                            <p className="font-medium truncate">{contract.vendorName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{contract.vendorCode}</p>
+                          </td>
+                          <td className="px-3 py-3 font-medium whitespace-nowrap">{contract.quantity}</td>
+                          <td className="px-3 py-3 font-medium whitespace-nowrap">{contract.rate}</td>
+                          <td className="px-3 py-3 text-muted-foreground truncate">{contract.location || "-"}</td>
+                          <td className="px-3 py-3 whitespace-nowrap">{formatDateOnly(contract.contractEnd)}</td>
+                          <td className="px-3 py-3">
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap",
+                                contract.isExpired || contract.isUrgent
+                                  ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200"
+                                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+                              )}
+                            >
+                              {formatContractAging(contract.daysRemaining)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="md:hidden space-y-3">
+                  {contractAlerts.map((contract) => (
+                    <div
+                      key={contract.id}
+                      className={cn(
+                        "rounded-xl border p-3",
+                        contract.isExpired || contract.isUrgent
+                          ? "bg-red-50/80 border-red-200 dark:bg-red-950/20 dark:border-red-900/40"
+                          : "bg-amber-50/80 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">{contract.itemName}</p>
+                          <p className="text-xs text-muted-foreground">{contract.itemCode}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                            contract.isExpired || contract.isUrgent
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+                          )}
+                        >
+                          {formatContractAging(contract.daysRemaining)}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <p><span className="text-muted-foreground">Vendor:</span> {contract.vendorName}</p>
+                        <p><span className="text-muted-foreground">Qty:</span> {contract.quantity}</p>
+                        <p><span className="text-muted-foreground">Rate:</span> {contract.rate}</p>
+                        <p><span className="text-muted-foreground">End:</span> {formatDateOnly(contract.contractEnd)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  to="/stock/stock-status"
+                  onClick={() => setAlertsModalOpen(false)}
+                  className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary hover:underline"
+                >
+                  Open Stock Status <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            ) : (
+              <div className="py-10 text-center">
+                <Clock className="h-8 w-8 text-emerald-500 mx-auto mb-3" />
+                <p className="text-sm font-semibold">No contracts expiring soon</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nothing ends within the next {CONTRACT_EXPIRY_SOON_DAYS} days.
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
