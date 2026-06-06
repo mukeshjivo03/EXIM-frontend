@@ -62,6 +62,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const SUB_GROUP_CHOICES = [
+  "SOYABEAN",
+  "OILVE",
+  "CANOLA",
+  "MUSTARD",
+  "GROUNDNUT",
+  "GHEE",
+  "SUNFLOWER",
+  "RICE BRAN",
+  "COCONUT",
+  "SESAME",
+  "EXTRA VIRGIN",
+  "COTTON SEED",
+  "BLENDED",
+] as const;
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -93,6 +116,7 @@ export default function TankItemsPage() {
   const [tankItemCode, setTankItemCode] = useState("");
   const [tankItemName, setTankItemName] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Custom color
@@ -111,6 +135,7 @@ export default function TankItemsPage() {
     return (
       item.tank_item_code.toLowerCase().includes(q) ||
       item.tank_item_name.toLowerCase().includes(q) ||
+      item.category?.toLowerCase().includes(q) ||
       item.created_by?.toLowerCase().includes(q)
     );
   });
@@ -139,6 +164,7 @@ export default function TankItemsPage() {
   const [editCode, setEditCode] = useState("");
   const [editColor, setEditColor] = useState("");
   const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("");
   const [editing, setEditing] = useState(false);
 
 
@@ -211,6 +237,10 @@ export default function TankItemsPage() {
       toast.error("Please select a color.");
       return;
     }
+    if (!selectedCategory) {
+      toast.error("Please select a category.");
+      return;
+    }
     setSubmitting(true);
     try {
       await createTankItem({
@@ -219,11 +249,13 @@ export default function TankItemsPage() {
         is_active: true,
         created_by: email ?? "",
         color: selectedColor,
+        category: selectedCategory,
       });
       toast.success(`Tank item "${code}" created successfully.`);
       setTankItemCode("");
       setTankItemName("");
       setSelectedColor("");
+      setSelectedCategory("");
       setCreateOpen(false);
       await fetchItems();
     } catch (err) {
@@ -292,20 +324,23 @@ export default function TankItemsPage() {
     setEditCode(item.tank_item_code);
     setEditColor(findPaletteColor(item.color, customColors));
     setEditName(item.tank_item_name);
+    setEditCategory(item.category || "");
   }
 
   async function handleEdit() {
-    if (!editTarget || !editCode.trim() || !editColor || !editName.trim()) return;
+    if (!editTarget || !editCode.trim() || !editColor || !editName.trim() || !editCategory) return;
     setEditing(true);
     try {
       await updateTankItem(
         editTarget.id,
         editColor,
         editName.trim(),
-        editCode.trim()
+        editCode.trim(),
+        editCategory
       );
       toast.success(`Tank item "${editTarget.tank_item_name}" updated.`);
       setEditTarget(null);
+      setEditCategory("");
       await fetchItems();
     } catch (err) {
       toastApiError(err, "Failed to update tank item.");
@@ -402,7 +437,7 @@ export default function TankItemsPage() {
     );
   }
 
-  const colCount = canDelete ? 8 : 6;
+  const colCount = canDelete ? 9 : 7;
 
   return (
     <Guard
@@ -514,6 +549,7 @@ export default function TankItemsPage() {
                       {canDelete && <TableHead className="w-10" />}
                       <TableHead className="w-12">S.No</TableHead>
                       <TableHead>Color</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Item Name</TableHead>
                       <TableHead>Created By</TableHead>
@@ -536,6 +572,9 @@ export default function TankItemsPage() {
                         </TableCell>
                         <TableCell>
                           <Skeleton className="h-6 w-20 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-24" />
                         </TableCell>
                         <TableCell>
                           <Skeleton className="h-4 w-20" />
@@ -593,6 +632,7 @@ export default function TankItemsPage() {
                     )}
                     <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Color</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Item Code</TableHead>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Created By</TableHead>
@@ -658,6 +698,15 @@ export default function TankItemsPage() {
                         </TableCell>
                         <TableCell>
                           <ColorPill item={item} />
+                        </TableCell>
+                        <TableCell>
+                          {item.category ? (
+                            <Badge variant="secondary" className="rounded-full">
+                              {item.category}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="font-mono">
                           {item.tank_item_code}
@@ -806,6 +855,11 @@ export default function TankItemsPage() {
                           <span className="text-[11px] text-muted-foreground">
                             {colorName}
                           </span>
+                          {item.category && (
+                            <Badge variant="secondary" className="rounded-full text-[10px]">
+                              {item.category}
+                            </Badge>
+                          )}
                         </div>
 
                         {/* Info */}
@@ -875,6 +929,21 @@ export default function TankItemsPage() {
                 onChange={(e) => setTankItemName(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Category *</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUB_GROUP_CHOICES.map((choice) => (
+                    <SelectItem key={choice} value={choice}>
+                      {choice}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <ColorPicker
               selectedColor={selectedColor}
               onSelect={setSelectedColor}
@@ -894,7 +963,7 @@ export default function TankItemsPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={submitting || !tankItemCode.trim() || !selectedColor}
+                disabled={submitting || !tankItemCode.trim() || !selectedColor || !selectedCategory}
               >
                 {submitting ? "Creating..." : "Create"}
               </Button>
@@ -988,6 +1057,21 @@ export default function TankItemsPage() {
                 onChange={(e) => setEditName(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Category *</Label>
+              <Select value={editCategory} onValueChange={setEditCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUB_GROUP_CHOICES.map((choice) => (
+                    <SelectItem key={choice} value={choice}>
+                      {choice}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <ColorPicker
               selectedColor={editColor}
               onSelect={setEditColor}
@@ -1004,7 +1088,7 @@ export default function TankItemsPage() {
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={editing || !editCode.trim() || !editColor || !editName.trim()}
+              disabled={editing || !editCode.trim() || !editColor || !editName.trim() || !editCategory}
             >
               {editing ? "Saving..." : "Save Changes"}
             </Button>

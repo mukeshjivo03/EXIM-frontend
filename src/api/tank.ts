@@ -6,6 +6,7 @@ export interface TankItemPayload {
   is_active: boolean;
   created_by: string;
   color: string;
+  category: string;
 }
 
 export interface TankItem {
@@ -16,6 +17,7 @@ export interface TankItem {
   created_at: string;
   created_by: string;
   color: string;
+  category?: string;
 }
 
 export async function getTankItems(): Promise<TankItem[]> {
@@ -41,12 +43,14 @@ export async function updateTankItem(
   tankItemId: string,
   color: string,
   tankItemName: string,
-  tankItemCode?: string
+  tankItemCode?: string,
+  category?: string
 ): Promise<void> {
   await api.put(`/tank/item/update-color/${tankItemId}/`, {
     color,
     tank_item_name: tankItemName,
     ...(tankItemCode ? { tank_item_code: tankItemCode } : {}),
+    ...(category ? { category } : {}),
   });
 }
 
