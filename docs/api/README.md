@@ -1,58 +1,53 @@
 # API Layer
 
-Source of truth: `src/api/` and Axios client in `src/api/client.ts`.
-
----
+Source of truth: `src/api/`.
 
 ## Base Client
 
-- File: `src/api/client.ts`
-- Base URL: `VITE_API_BASE_URL`
-- Auth header: `Authorization: Bearer <access_token>`
-- Automatic refresh flow using `refresh_token` on 401
+`src/api/client.ts` creates the shared Axios instance.
 
----
+| Setting | Value |
+| --- | --- |
+| Base URL | `import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"` |
+| Default content type | `application/json` |
+| Auth header | `Authorization: Bearer <access_token>` when token exists |
+| Refresh endpoint | `/account/login/refresh/` |
+
+401 responses are retried once after token refresh. Concurrent requests wait for the same refresh request.
 
 ## API Modules
 
-| File | Purpose | Key Functions |
-|---|---|---|
-| `auth.ts` | Login/logout | `login`, `logout` |
-| `users.ts` | User CRUD | `getUsers`, `createUser`, `updateUser`, `deleteUser` |
-| `dashboard.ts` | Dashboard aggregates | `getCapacityInsights`, `getStockDashboard` |
-| `stockStatus.ts` | Stock lifecycle and logs | `getStockStatuses`, `createStockStatus`, `updateStockStatus`, `softDeleteStockStatus`, `getStockInsights`, `getStockSummary`, `getStockLogs`, `getVehicleReport`, `getDebitEntries`, `getDebitInsights` |
-| `tank.ts` | Tank inventory and operations | `getTankItems`, `createTankItem`, `updateTankItem`, `deleteTankItem`, `getTanks`, `createTank`, `updateTank`, `deleteTank`, `tankInward`, `tankOutward`, `getTankSummary`, `getItemWiseTankSummary`, `getTankLogs`, `getTankLayers` |
-| `dailyPrice.ts` | Daily commodity prices | `fetchDailyPrices`, `saveDailyPrices`, `getDailyPricesByDate`, `getDailyPricesByRange`, `getPriceTrends` |
-| `jivoRate.ts` | Jivo rates | `fetchJivoRates`, `saveJivoRates`, `getJivoRatesByRange` |
-| `customRates.ts` | Exchange rates | `fetchCustomRates`, `fetchExternalExchangeRates` |
-| `openGrpo.ts` | Open GRPO list | `getOpenGrpos` |
-| `oldContracts.ts` | Legacy/old contracts | `getOldContracts` |
-| `domesticContracts26.ts` | FY 26-27 contracts endpoints | FY 26-27 contract APIs |
-| `license.ts` | Advance + DFIA licenses | header/line CRUD functions for both license types |
-| `sapSync.ts` | SAP sync and accounts datasets | RM/FG/vendor sync functions, PO sync, balance-sheet helpers, customer/vendor ledgers, open AP/AR/PO helpers |
+| File | Domain |
+| --- | --- |
+| `auth.ts` | Login and logout |
+| `users.ts` | User listing, create, update, delete |
+| `dashboard.ts` | Capacity insights, stock dashboard, director inventory |
+| `stockStatus.ts` | Stock status CRUD, movements, reports, dashboard, logs, debit entries |
+| `tank.ts` | Tank items, tanks, summaries, layers, in-tank items, logs |
+| `sapSync.ts` | SAP items, vendors, purchase orders, sync logs, warehouse inventory, ledgers, open AP/AR/PO, customer/vendor balances |
+| `dailyPrice.ts` | Fetch/save daily prices, date/range reads, high-low, trends |
+| `jivoRate.ts` | Fetch/save Jivo rates, range reads, trends |
+| `customRates.ts` | Custom EXIM exchange rates and external exchange rates |
+| `openGrpo.ts` | Open GRPO list |
+| `domesticContracts26.ts` | Domestic contracts workflow for financial-year pages |
+| `oldContracts.ts` | Legacy contract list |
+| `license.ts` | Advance License and DFIA License headers/lines |
 
----
+## Common Patterns
 
-## Accounts-related SAP Endpoints Used
+- API modules export TypeScript interfaces beside the request functions.
+- List functions normalize wrapped and unwrapped array responses where the backend varies.
+- Date filters are sent as query parameters.
+- Stock soft delete uses PATCH through `softDeleteStockStatus()`.
+- Auth refresh is centralized in `client.ts`; page code should not implement token refresh.
 
-From `src/api/sapSync.ts`:
+## Endpoint Inventory
 
-| Function | Endpoint |
-|---|---|
-| `syncBalanceSheet` | `/sap-sync/balance-sheet/` |
-| `getOpenAps` | `/sap-sync/open-ap/` |
-| `getOpenArs` | `/sap-sync/open-ar/` |
-| `getOpenPos` | `/sap-sync/open-pos/` |
-| `getCustomerOutstanding` | `/sap-sync/custa/balance-sheet/` |
-| `getCustomerOutstandingBalance` | `/sap-sync/customer/balance/` |
-| `getCustomerLedger` | `/sap-sync/customer/ledger` |
-| `getCustomerAgingBalance` | `/sap-sync/customer-aging-balance/` |
-| `getVendorOutstanding` | `/sap-sync/vendor/balance-sheet/` |
-| `getReconciliation` | `/sap-sync/vendor/ledger` |
+See [Backend Endpoints](../backend/endpoints.md) for the frontend-used endpoint list grouped by feature.
 
----
+## Adding API Calls
 
-## Notes
-
-- Backend response shapes are normalized in API functions (for array/wrapper variants).
-- Some backend routes use both hyphen and underscore styles; frontend handles both where needed.
+1. Add the type/interface next to the function in the relevant `src/api/*.ts` file.
+2. Use the shared `api` instance from `src/api/client.ts`.
+3. Normalize backend response wrappers in the API module, not in pages.
+4. Keep page components focused on loading, filters, state, and rendering.

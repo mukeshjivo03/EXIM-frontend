@@ -1,61 +1,54 @@
 # Components
 
-This document reflects the current shared component usage in `src/components/`.
-
----
-
-## Core Layout Components
+## Layout Components
 
 | Component | File | Purpose |
-|---|---|---|
-| Layout | `src/components/Layout.tsx` | App shell with sidebar/navbar/footer and outlet |
-| Sidebar | `src/components/Sidebar.tsx` | Collapsible, module-aware navigation |
-| Navbar | `src/components/Navbar.tsx` | Top header and app controls |
-| Footer | `src/components/Footer.tsx` | Bottom footer |
-| ProtectedRoute | `src/components/ProtectedRoute.tsx` | Route auth + module gate |
-| Guard | `src/components/Guard.tsx` | In-page permission guard for sections/pages |
+| --- | --- | --- |
+| `Layout` | `src/components/Layout.tsx` | Main shell around routed pages |
+| `Sidebar` | `src/components/Sidebar.tsx` | Collapsible, permission-filtered navigation |
+| `Navbar` | `src/components/Navbar.tsx` | Top bar and app controls |
+| `Footer` | `src/components/Footer.tsx` | Fixed app footer |
+| `ProtectedRoute` | `src/components/ProtectedRoute.tsx` | Auth and module/action route guard |
+| `Guard` | `src/components/Guard.tsx` | Permission guard for in-page sections |
+| `InstallPWA` | `src/components/InstallPWA.tsx` | PWA install/update prompt |
 
----
+## Sidebar Sections
 
-## Sidebar Sections (Current)
+Defined in `SIDEBAR_SECTIONS` inside `src/components/Sidebar.tsx`.
 
-From `SIDEBAR_SECTIONS` in `src/components/Sidebar.tsx`:
+| Section | Main Links |
+| --- | --- |
+| Reports | Dashboard, Stock Dashboard, Director Dashboard, Warehouse Inventory, Vehicle Report |
+| Stock | Stock Status, Shortage Report, Contractual History, Tank Items, Tank Monitoring, Tank Data, In Tank Breakdown, Tank Logs |
+| Domestic Contracts | FY 2025-2026, FY 2026-2027 |
+| Accounts | Oil Dr/Cr Outstanding, Vendor/Customer Outstanding, Customer Aging, Open ARs/APs/POs/GRPOs |
+| Commodity Price | Daily Price, Jivo Rates |
+| Custom Exchange Rates | Exchange Rates |
+| License | Advance License, DFIA License |
+| Administration | Users, SAP sync pages, Sync Logs, Stock Updation Logs |
 
-- Reports
-- Stock
-- Domestic Contracts
-- Accounts
-- Commodity Price
-- Custom Exchange Rates
-- License
-- Administration
+Each link can declare permission modules; the link renders if the user has `view` on any listed module.
 
-Accounts currently includes:
-
-- Oil Dr/Cr Outstanding
-- Vendor Outstanding
-- Customer Outstanding
-- Customer Aging
-- Open ARs
-- Open APs
-- Open POs
-- Open GRPOs
-
----
-
-## Reusable UI Components
+## Shared Domain Components
 
 | Component | File |
-|---|---|
-| Pagination | `src/components/Pagination.tsx` |
-| SummaryCard | `src/components/SummaryCard.tsx` |
-| StatusHero | `src/components/StatusHero.tsx` |
-| StatusHeroBanner | `src/components/StatusHeroBanner.tsx` |
-| InstallPWA | `src/components/InstallPWA.tsx` |
-| ColorPicker | `src/components/ColorPicker.tsx` |
+| --- | --- |
+| `Pagination` | `src/components/Pagination.tsx` |
+| `SummaryCard` | `src/components/SummaryCard.tsx` |
+| `StatusHero` | `src/components/StatusHero.tsx` |
+| `StatusHeroBanner` | `src/components/StatusHeroBanner.tsx` |
+| `ColorPicker` | `src/components/ColorPicker.tsx` |
+| Stock dialogs and stock sheet | `src/pages/stock/components/*` |
+| Stock dashboard KPI card | `src/pages/dashboard/components/KPICard.tsx` |
 
----
+## UI Primitives
 
-## UI Primitive Library
+Local UI primitives live in `src/components/ui/`:
 
-The project uses local shadcn-based primitives under `src/components/ui/` (`button`, `card`, `table`, `dialog`, `select`, `badge`, `input`, `calendar`, `sheet`, `tabs`, etc.).
+```text
+badge, button, calendar, card, checkbox, date-input, date-picker,
+dialog, input, label, popover, select, separator, sheet, skeleton,
+sonner, table, tabs
+```
+
+Use these primitives for new pages before introducing new component libraries.

@@ -1,73 +1,80 @@
 # Authentication & Authorization
 
-This document is synced to current frontend behavior (`src/context/AuthContext.tsx`, `src/components/ProtectedRoute.tsx`, `src/api/client.ts`).
+Source files:
 
----
+- `src/api/auth.ts`
+- `src/api/client.ts`
+- `src/context/AuthContext.tsx`
+- `src/components/ProtectedRoute.tsx`
+- `src/hooks/useHasPermission.ts`
+- `src/components/Sidebar.tsx`
 
-## Auth Flow
+## Login Flow
 
-1. User logs in from `/login`.
-2. Backend returns access/refresh token and user details.
-3. Frontend stores auth values in `localStorage`.
-4. Protected routes render inside `<ProtectedRoute>`.
+1. `LoginPage` validates email/password with Zod.
+2. `login()` posts to `/account/login/`.
+3. The response supplies `access`, `refresh`, `permissions`, and `name`.
+4. The page stores auth values in `localStorage`.
+5. `AuthContext.setAuth()` updates in-memory state.
+6. The user is sent to `/`.
 
----
+## Stored Values
 
-## Stored Keys
-
-| Key | Purpose |
-|---|---|
-| `access_token` | JWT access token for API calls |
-| `refresh_token` | JWT refresh token |
-| `user_role` | Role code (`ADM`, `MNG`, `FTR`) |
-| `user_name` | Display name |
-| `user_email` | Display email |
-
----
+| Key | Used by |
+| --- | --- |
+| `access_token` | Axios request interceptor, `AuthContext.isLoggedIn` |
+| `refresh_token` | Axios response interceptor |
+| `user_permissions` | `AuthContext`, `useHasPermission`, route/sidebar guards |
+| `user_name` | Profile/sidebar display |
+| `user_email` | Profile/sidebar display |
+| `login-remember-email` | Login page remember-me field |
 
 ## Token Refresh
 
-`src/api/client.ts` retries 401 requests by calling refresh endpoint once and queueing concurrent failed requests during refresh.
+`src/api/client.ts` attaches `Authorization: Bearer <access_token>` to requests.
 
-If refresh fails, auth state is cleared and user is redirected to `/login`.
+When an API request returns 401:
 
----
+- login and refresh requests are ignored;
+- one refresh call is made to `/account/login/refresh/`;
+- concurrent failed requests queue while refresh is in progress;
+- the new access token is stored and queued requests retry;
+- if refresh fails, auth keys are cleared and the browser redirects to `/login`.
 
-## Route Protection Model
+## Permission Model
 
-- All app routes (except `/login`) are wrapped by `<ProtectedRoute>`.
-- Route-level module checks use `requiredModules` and pass if user has at least one module with `view` action.
+Permissions are stored as:
 
----
+```ts
+type Permissions = Record<string, string[]>;
+```
 
-## Sidebar Visibility Model
+Example:
 
-Sidebar links in `src/components/Sidebar.tsx` also use module-based visibility:
+```json
+{
+  "stockstatus": ["view", "add", "change", "delete"],
+  "tankdata": ["view"]
+}
+```
 
-- If `modules` is absent, link is visible.
-- If present, user must match at least one module.
-- Entire section hides if all its links are hidden.
+`ProtectedRoute` accepts:
 
----
+| Prop | Meaning |
+| --- | --- |
+| `requiredModules` | User needs at least one listed module |
+| `requiredAction` | Action required for the module, default `view` |
 
-## Current Route Access Matrix (By Modules)
+If permission fails, the user is redirected to `/`.
 
-Use [Pages & Routing](../pages/README.md) as source of truth for route-to-module mapping.
+## Sidebar Visibility
 
-Role access (`ADM`, `MNG`, `FTR`) is determined by backend-assigned modules, not only role name.
+`Sidebar.tsx` uses the same permission model:
 
----
+- links without `modules` are visible to all authenticated users;
+- links with `modules` are visible when the user has `view` on at least one module;
+- a section is hidden when all of its links are hidden.
 
-## Current Accounts Navigation (Module Guarded)
+## Logout
 
-| Link | Modules |
-|---|---|
-| `Oil Dr/Cr Outstanding` (`/exim-account`) | `debitentry` |
-| `Vendor Outstanding` | `debitentry`, `party` |
-| `Customer Outstanding` | `customer_balance_sheet` |
-| `Customer Aging` | `customer_balance_sheet` |
-| `Open ARs` | `customer_balance_sheet` |
-| `Open APs` | `balance_sheet` |
-| `Open POs` | `balance_sheet` |
-| `Open GRPOs` | `open_grpos` |
-
+The sidebar calls `/account/logout/` through `logout()`. Even if the API call fails, `clearAuth()` removes local auth state and navigates to `/login`.

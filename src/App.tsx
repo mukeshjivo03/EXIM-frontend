@@ -27,6 +27,8 @@ import ShortageReportPage from "@/pages/stock/ShortageReportPage";
 import ContractualHistoryPage from "@/pages/stock/ContractualHistoryPage";
 import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
+import ContractsReportPage from "@/pages/reports/ContractsReportPage";
+import PlanningReportPage from "@/pages/reports/PlanningReportPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
@@ -94,6 +96,22 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["vehicle_report"]}>
                   <VehicleReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/contracts"
+              element={
+                <ProtectedRoute requiredModules={["stockstatus"]}>
+                  <ContractsReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/planning"
+              element={
+                <ProtectedRoute requiredModules={["domesticreports", "stockstatus"]}>
+                  <PlanningReportPage />
                 </ProtectedRoute>
               }
             />

@@ -36,6 +36,7 @@ import {
   CloudSnow,
   Zap,
   MapPin,
+  CalendarRange,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -97,6 +98,8 @@ const quickLinks: QuickLink[] = [
   { to: "/reports/director-dashboard", label: "Director Dashboard", icon: Crown, desc: "Stage-wise inventory snapshot", category: "Reports", modules: ["director_report", "director_inventory", "director_inventorty", "domesticreports"] },
   { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse, desc: "Live inventory by warehouse", category: "Reports", modules: ["inventory", "stockstatus"] },
   { to: "/reports/vehicle-report", label: "Vehicle Report", icon: Truck, desc: "Vehicle-wise stock movement", category: "Reports", modules: ["vehicle_report"] },
+  { to: "/reports/contracts", label: "Contracts", icon: FileText, desc: "Expiring in-contract stock", category: "Reports", modules: ["stockstatus"] },
+  { to: "/reports/planning", label: "Planning", icon: CalendarRange, desc: "Monthly SAP planning", category: "Reports", modules: ["domesticreports", "stockstatus"] },
 
   // Operations
   { to: "/stock/stock-status", label: "Stock Status", icon: ClipboardList, desc: "Track stock statuses", category: "Operations", modules: ["stockstatus"] },
@@ -828,11 +831,11 @@ export default function HomePage() {
                 </div>
 
                 <Link
-                  to="/stock/stock-status"
+                  to="/reports/contracts"
                   onClick={() => setAlertsModalOpen(false)}
                   className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary hover:underline"
                 >
-                  Open Stock Status <ExternalLink className="h-3.5 w-3.5" />
+                  Open Contracts Report <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
               </>
             ) : (

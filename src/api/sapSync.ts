@@ -511,3 +511,40 @@ export async function getOpenPos(): Promise<OpenPosEntry[]> {
   const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
   return key ? d[key] : [];
 }
+
+// Planning
+
+export interface PlannedMonth {
+  AbsID: number;
+  Code: string;
+  Name: string;
+  UserSign: number;
+  StartDate: string;
+  EndDate: string;
+  FormView: string;
+}
+
+export interface MonthlyPlanningEntry {
+  U_Sub_Group: string;
+  Quantity: number;
+}
+
+export async function getPlannedMonths(): Promise<PlannedMonth[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/planned-months/");
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.Planned_months)) return d.Planned_months;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
+
+export async function getMonthlyPlanning(monthId: number): Promise<MonthlyPlanningEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await api.get<any>("/sap-sync/monthly-planning/", { params: { monthId } });
+  const d = res.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.monthly_planning)) return d.monthly_planning;
+  const key = Object.keys(d ?? {}).find((k) => Array.isArray(d[k]));
+  return key ? d[key] : [];
+}
