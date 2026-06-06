@@ -5,13 +5,29 @@ on:
     branches:
       - production
 
+env:
+  GITHUB_RESOLVE_IP: 140.82.114.4
+  DEPLOY_DIR: /home/superadmin/exim/EXIM-frontend
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Configure GitHub HTTPS fallback
+        run: |
+          set -euo pipefail
+          if [ -n "${GITHUB_RESOLVE_IP}" ]; then
+            git config --global --add http.curloptResolve "github.com:443:${GITHUB_RESOLVE_IP}"
+          fi
+          git config --global http.lowSpeedLimit 1
+          git config --global http.lowSpeedTime 60
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,10 +47,9 @@ jobs:
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          
 
       - name: Compress Build
-        run: tar -czf build.tar.gz dist
+        run: tar -czf build.tar.gz -C dist .
 
       - name: Upload Build
         uses: appleboy/scp-action@v0.1.7
@@ -52,8 +67,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo rm -rf /home/superadmin/exim/EXIM-frontend/*
-            sudo mkdir -p /home/superadmin/exim/EXIM-frontend/dist
-            sudo tar -xzf /tmp/build.tar.gz -C /home/superadmin/exim/EXIM-frontend/dist --strip-components=1
-            sudo rm /tmp/build.tar.gz
-            sudo systemctl restart nginx
+            set -euo pipefail
+            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
+            DIST_DIR="${DEPLOY_DIR}/dist"
+
+            sudo mkdir -p "${DIST_DIR}"
+            sudo find "${DIST_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            sudo tar -xzf /tmp/build.tar.gz -C "${DIST_DIR}"
+            sudo rm -f /tmp/build.tar.gz
+            sudo nginx -t
+            sudo systemctl reload nginx
