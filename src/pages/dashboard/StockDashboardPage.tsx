@@ -504,6 +504,7 @@ export default function StockDashboardPage() {
     }
 
     
+
     const insertIndex = itemIndexes[itemIndexes.length - 1];
     const nextOrder = [...currentOrder];
     nextOrder.splice(insertIndex, 0, `__GAP__:custom:${Date.now()}`);
