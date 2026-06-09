@@ -544,7 +544,7 @@ export default function StockDashboardPage() {
     const td = (content: string | number, style = "") =>
       `<td style="border:1px solid #ccc;padding:5px 8px;text-align:center;${style}">${content}</td>`;
     const th = (content: string | number, extra = "") =>
-      `<th style="border:1px solid #999;padding:6px 8px;text-align:center;${extra}">${content}</th>`;
+      `<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-size:13px;${extra}">${content}</th>`;
 
     const fmt = (val: number) => {
       const text = fmtAny(val, roundingEnabled);
@@ -558,7 +558,7 @@ export default function StockDashboardPage() {
       th("Qty MTS", "background:#F4CCCC;font-weight:bold;") +
       th("Outside Factory", "background:#F4CCCC;font-weight:bold;");
     for (const group of statusGroups) {
-      row0Cells += `<th colspan="${group.vendors.length}" style="border:1px solid #999;padding:6px 8px;text-align:center;background:#F4CCCC;font-weight:bold;">${group.status.replace(/_/g, " ")}</th>`;
+      row0Cells += `<th colspan="${group.vendors.length}" style="border:1px solid #999;padding:6px 8px;text-align:center;font-size:13px;background:#F4CCCC;font-weight:bold;">${group.status.replace(/_/g, " ")}</th>`;
     }
     row0Cells += th("Total MTS", "background:#F4CCCC;font-weight:bold;");
 
@@ -567,7 +567,8 @@ export default function StockDashboardPage() {
       th("Qty MTS", "background:#B6D7A8;font-weight:bold;") +
       th("Outside Factory", "background:#B6D7A8;font-weight:bold;");
     for (const { vendor } of vendorCols) {
-      row1Cells += th(vendor, "background:#B6D7A8;font-weight:bold;");
+      const shortVendor = vendor.trim().split(/\s+/).slice(0, 2).join(" ");
+      row1Cells += th(shortVendor, "background:#B6D7A8;font-weight:bold;");
     }
     row1Cells += th("", "background:#B6D7A8;");
 
@@ -597,13 +598,15 @@ export default function StockDashboardPage() {
       const statusKg = colKeys.reduce((sum, k) => sum + (subtotal.statusTotals[k] ?? 0), 0);
       const subtotalTotal = convertFromLiters(subtotal.inFactoryLiters, EU) + convertUnit(subtotal.outsideKg + statusKg, EU);
 
-      let cells = td("Subtotal", "background:#FFF2CC;font-weight:bold;text-align:left;") +
-        td(fmt(convertFromLiters(subtotal.inFactoryLiters, EU)), "background:#FFF2CC;font-weight:bold;") +
-        td(fmt(convertUnit(subtotal.outsideKg, EU)), "background:#FFF2CC;font-weight:bold;");
+      const subtotalStyle = "background:#FFF2CC;font-weight:900;font-size:14px;border:3px double #000;";
+
+      let cells = td("Subtotal", subtotalStyle + "text-align:left;") +
+        td(fmt(convertFromLiters(subtotal.inFactoryLiters, EU)), subtotalStyle) +
+        td(fmt(convertUnit(subtotal.outsideKg, EU)), subtotalStyle);
       for (const { key } of vendorCols) {
-        cells += td(fmt(convertUnit(subtotal.statusTotals[key] ?? 0, EU)), "background:#FFF2CC;font-weight:bold;");
+        cells += td(fmt(convertUnit(subtotal.statusTotals[key] ?? 0, EU)), subtotalStyle);
       }
-      cells += td(fmt(subtotalTotal), "background:#FFF2CC;font-weight:bold;");
+      cells += td(fmt(subtotalTotal), subtotalStyle);
       return `<tr>${cells}</tr>`;
     }
 
@@ -639,19 +642,21 @@ export default function StockDashboardPage() {
       return buildItemRow(row.item);
     }).join("");
 
-    // Grand total row
+    // G Total row
     const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
       convertUnit((data.totals.outside_factory ?? 0) + colKeys.reduce((s, k) => s + (data.totals.status_vendor_totals[k] ?? 0), 0), EU);
 
-    let gtCells = td("Grand Total", "background:#CFE2F3;font-weight:bold;") +
-      td(fmt(convertFromLiters(tankInFactoryTotal, EU)), "background:#CFE2F3;font-weight:bold;") +
-      td(fmt(convertUnit(data.totals.outside_factory, EU)), "background:#CFE2F3;font-weight:bold;");
+    const gtStyle = "background:#CFE2F3;font-weight:900;font-size:14px;border:3px double #000;";
+
+    let gtCells = td("G Total", gtStyle) +
+      td(fmt(convertFromLiters(tankInFactoryTotal, EU)), gtStyle) +
+      td(fmt(convertUnit(data.totals.outside_factory, EU)), gtStyle);
     for (const group of statusGroups) {
       const st = data.totals.status_totals?.[group.status] ??
         group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
-      gtCells += `<td colspan="${group.vendors.length}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;background:#CFE2F3;font-weight:bold;">${fmt(convertUnit(st, EU))}</td>`;
+      gtCells += `<td colspan="${group.vendors.length}" style="padding:5px 8px;text-align:center;${gtStyle}">${fmt(convertUnit(st, EU))}</td>`;
     }
-    gtCells += td(fmt(gtTotal), "background:#CFE2F3;font-weight:bold;");
+    gtCells += td(fmt(gtTotal), gtStyle);
 
     const html = `<!DOCTYPE html><html><head><title>Stock Dashboard</title>
 <style>
@@ -1222,9 +1227,9 @@ export default function StockDashboardPage() {
                     );
                   })}
 
-                  {/* Grand Total Row */}
+                  {/* G Total Row */}
                   <tr className="bg-muted/50 text-xs sm:text-base border-t-2 border-border font-semibold">
-                    <td className="sticky left-0 z-30 bg-muted/60 px-3 sm:px-4 py-3 sm:py-4 text-center border border-foreground/30 uppercase tracking-wide sm:tracking-wider" colSpan={2}>Grand Total</td>
+                    <td className="sticky left-0 z-30 bg-muted/60 px-3 sm:px-4 py-3 sm:py-4 text-center border border-foreground/30 uppercase tracking-wide sm:tracking-wider" colSpan={2}>G Total</td>
                     {showFactoryCols && <>
                       <td className="px-2 py-3 sm:py-4 text-center tabular-nums border border-foreground/30 text-blue-600 dark:text-blue-400">
                         {fmtLiters(tankInFactoryTotal, unit, roundingEnabled)}
