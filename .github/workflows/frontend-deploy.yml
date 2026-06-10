@@ -5,75 +5,51 @@ on:
     branches:
       - production
 
-env:
-  GITHUB_RESOLVE_IP: 140.82.114.4
-  DEPLOY_DIR: /home/superadmin/exim/EXIM-frontend
+# Don't let two deploys (pull + reset + build) overlap on the server.
+concurrency:
+  group: frontend-deploy
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Configure GitHub HTTPS fallback
-        run: |
-          set -euo pipefail
-          if [ -n "${GITHUB_RESOLVE_IP}" ]; then
-            git config --global --add http.curloptResolve "github.com:443:${GITHUB_RESOLVE_IP}"
-          fi
-          git config --global http.lowSpeedLimit 1
-          git config --global http.lowSpeedTime 60
-
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Cache Node Modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Build Project
-        run: npm run build
+      # The build runs ON the target server (it already has Node 22 and the repo
+      # cloned at DEPLOY_DIR). We only open a single SSH command session — the same
+      # kind that already connects reliably — and never push bytes into the server's
+      # public, brute-force-flooded SSH port. All network here is outbound from the
+      # server (git fetch + npm registry over HTTPS), which is fast and reliable.
+      - name: Pull, build and reload on server
+        uses: appleboy/ssh-action@v1.0.3
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-
-      - name: Compress Build
-        run: tar -czf build.tar.gz -C dist .
-
-      - name: Upload Build
-        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "build.tar.gz"
-          target: "/tmp"
-
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 30s
+          command_timeout: 15m
+          envs: VITE_API_BASE_URL
           script: |
             set -euo pipefail
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            DIST_DIR="${DEPLOY_DIR}/dist"
 
-            sudo mkdir -p "${DIST_DIR}"
-            sudo find "${DIST_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-            sudo tar -xzf /tmp/build.tar.gz -C "${DIST_DIR}"
-            sudo rm -f /tmp/build.tar.gz
+            DEPLOY_DIR="/home/superadmin/exim/EXIM-frontend"
+            cd "${DEPLOY_DIR}"
+
+            # Sync the working tree to the pushed commit on production.
+            git fetch --depth 1 origin production
+            git reset --hard origin/production
+
+            # Install exactly what package-lock pins, then build (dist/ is the nginx root).
+            # The server's local .env supplies all VITE_* vars; the secret below overrides
+            # VITE_API_BASE_URL to match CI configuration.
+            npm ci
+            VITE_API_BASE_URL="${VITE_API_BASE_URL}" npm run build
+
+            # Validate and reload nginx (superadmin has passwordless sudo for these).
             sudo nginx -t
             sudo systemctl reload nginx
+
+            echo "Deployed $(git rev-parse --short HEAD) at $(date -u +%FT%TZ)"
