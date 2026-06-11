@@ -562,15 +562,16 @@ export default function StockDashboardPage() {
     }
     row0Cells += th("Total MTS", "background:#F4CCCC;font-weight:bold;");
 
-    // Row 1 — sub-headers (green)
-    let row1Cells = th("Name", "background:#B6D7A8;font-weight:bold;") +
-      th("Qty MTS", "background:#B6D7A8;font-weight:bold;") +
-      th("Outside Factory", "background:#B6D7A8;font-weight:bold;");
+    // Row 1 — sub-headers (green) with double bottom border (like subtotal row)
+    const dblBorder = "border:3px double #000;";
+    let row1Cells = th("Name", `background:#B6D7A8;font-weight:bold;${dblBorder}`) +
+      th("Qty MTS", `background:#B6D7A8;font-weight:bold;${dblBorder}`) +
+      th("Outside Factory", `background:#B6D7A8;font-weight:bold;${dblBorder}`);
     for (const { vendor } of vendorCols) {
       const shortVendor = vendor.trim().split(/\s+/).slice(0, 2).join(" ");
-      row1Cells += th(shortVendor, "background:#B6D7A8;font-weight:bold;");
+      row1Cells += th(shortVendor, `background:#B6D7A8;font-weight:bold;${dblBorder}`);
     }
-    row1Cells += th("", "background:#B6D7A8;");
+    row1Cells += th("", `background:#B6D7A8;${dblBorder}`);
 
     // Data rows — custom fixed order with separator gaps for print
     const totalCols = 3 + vendorCols.length + 1; // name + infactory + outside + vendors + total
