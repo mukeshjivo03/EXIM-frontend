@@ -16,6 +16,8 @@ export async function getCapacityInsights(): Promise<CapacityInsight> {
 export interface StockDashboardItem {
   item_code: string;
   item_name: string;
+  /** DB id of this item's dashboard-order row — used to update its position. */
+  dashboard_id?: number;
   in_factory: number;
   outside_factory: number;
   status_data: Record<string, number>;
@@ -54,6 +56,21 @@ export async function getStockDashboard(filters?: StockDashboardFilters): Promis
   if (filters?.rounding !== undefined) params.rounding = filters.rounding;
   const res = await api.get<StockDashboardResponse>("/stock-status/stock-dashboard/", { params });
   return res.data;
+}
+
+export interface DashboardOrderEntry {
+  item_code: string;
+  order_number: number;
+}
+
+/** Persist a single item's row position to the shared dashboard order. */
+export async function saveDashboardOrder(entry: DashboardOrderEntry): Promise<void> {
+  await api.post("/stock-status/dashboard-order/", entry);
+}
+
+/** Update an existing dashboard-order row's position by its DB id. */
+export async function updateDashboardOrder(id: number, entry: DashboardOrderEntry): Promise<void> {
+  await api.patch(`/stock-status/dashboard-order/${id}/`, entry);
 }
 
 export type DirectorInventoryLiter = number | { total_liter?: number };
