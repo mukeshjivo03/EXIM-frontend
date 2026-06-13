@@ -13,7 +13,10 @@ import {
   AlertTriangle,
   Filter,
   ChevronDown,
+  FileSpreadsheet,
 } from "lucide-react";
+
+import * as XLSX from "xlsx";
 
 import {
   getTanks,
@@ -463,6 +466,75 @@ export default function TankMonitoringPage() {
     });
   }
 
+  /**
+   * Export the Item-wise Tank Summary to an .xlsx file.
+   * When an item is stored across multiple tanks, each tank gets its own row
+   * (with that tank's individual quantity/capacity); item-level fields are repeated.
+   */
+  function handleExportExcel() {
+    if (itemSummary.length === 0) {
+      toast.error("No data to export.");
+      return;
+    }
+
+    const tankByCode = new Map(tanks.map((t) => [t.tank_code, t]));
+    const toUnitNum = (liters: number) =>
+      unit === "MT" ? Number((liters / L_PER_MT).toFixed(3)) : Number(liters.toFixed(3));
+
+    const rateLabel = unit === "MT" ? "MTS" : "LTR";
+    const header = [
+      "Item Code",
+      "Item Name",
+      "Tank Number",
+      `Quantity (${unit})`,
+      `Capacity (${unit})`,
+      `Avg Price / ${rateLabel}`,
+      "Tank Count",
+      "Color",
+    ];
+
+    const rows: (string | number)[][] = [];
+    for (const item of itemSummary) {
+      const avg = itemAverages.get(item.tank_item_code);
+      const avgRate = getUnitAverage(avg, unit);
+      const avgRateCell: string | number = avgRate == null ? "" : Number(avgRate.toFixed(2));
+      const itemName = nameMap.get(item.tank_item_code) ?? item.tank_item_name ?? "";
+
+      // One row per tank; fall back to a single item-total row if no tanks listed.
+      const tankCodes: (string | null)[] = item.tank_numbers.length > 0 ? item.tank_numbers : [null];
+      for (const tankCode of tankCodes) {
+        const tank = tankCode ? tankByCode.get(tankCode) : undefined;
+        const qtyLiters = tank
+          ? Number(tank.current_capacity ?? 0)
+          : tankCode ? 0 : item.quantity_in_liters;
+        const capLiters = tank
+          ? Number(tank.tank_capacity ?? 0)
+          : tankCode ? 0 : item.total_capacity;
+
+        rows.push([
+          item.tank_item_code,
+          itemName,
+          tankCode ?? "—",
+          toUnitNum(qtyLiters),
+          toUnitNum(capLiters),
+          avgRateCell,
+          item.tank_count,
+          item.color ?? "",
+        ]);
+      }
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws["!cols"] = [
+      { wch: 14 }, { wch: 28 }, { wch: 14 }, { wch: 16 },
+      { wch: 16 }, { wch: 18 }, { wch: 12 }, { wch: 12 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tank Summary");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Tank-Summary-${dateStr}.xlsx`);
+  }
+
   /* ── kiosk toggle ──────────────────────────────────────── */
 
   useEffect(() => {
@@ -798,9 +870,21 @@ export default function TankMonitoringPage() {
       {/* Item-wise Tank Summary */}
       {!kiosk && (
         <Card className="card-hover shimmer-hover">
-          <CardHeader>
-            <CardTitle>Item-wise Tank Summary</CardTitle>
-            <CardDescription>{itemSummary.length} items</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+            <div className="space-y-1.5">
+              <CardTitle>Item-wise Tank Summary</CardTitle>
+              <CardDescription>{itemSummary.length} items</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-8 shrink-0"
+              onClick={handleExportExcel}
+              disabled={itemSummaryLoading || itemSummary.length === 0}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Export Excel
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {itemSummaryLoading ? (
