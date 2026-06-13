@@ -11,12 +11,12 @@ import {
   Info,
   Printer,
   GripVertical,
-  RotateCcw,
   Plus,
   X,
+  Save,
 } from "lucide-react";
 
-import { getStockDashboard, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
+import { getStockDashboard, updateDashboardOrder, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -156,6 +156,8 @@ export default function StockDashboardPage() {
   const [hoveredCol, setHoveredCol] = useState<string | null>(null);
   const [draggedRow, setDraggedRow] = useState<string | null>(null);
   const [dragOverRow, setDragOverRow] = useState<string | null>(null);
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
   const [rowOrder, setRowOrder] = useState<RowOrderEntry[]>(() => {
     try {
       const saved = localStorage.getItem(ROW_ORDER_STORAGE_KEY);
@@ -459,6 +461,23 @@ export default function StockDashboardPage() {
     return map;
   }, [orderedDisplayRows, colKeys, tankQtyMap]);
 
+  /**
+   * Persist the given item order to the shared DB by updating each item's
+   * dashboard-order row (by its dashboard_id) with its new 1-based position.
+   * Synthetic tank-only rows without a dashboard_id are skipped.
+   */
+  async function persistRowOrder(orderedItemCodes: string[]) {
+    if (!data) return;
+    const idMap = new Map(data.items.map((item) => [item.item_code, item.dashboard_id]));
+    const updates = orderedItemCodes
+      .map((code, index) => ({ id: idMap.get(code), code, order_number: index + 1 }))
+      .filter((u): u is { id: number; code: string; order_number: number } => typeof u.id === "number");
+
+    await Promise.all(
+      updates.map((u) => updateDashboardOrder(u.id, { item_code: u.code, order_number: u.order_number }))
+    );
+  }
+
   function moveRow(itemCode: string, targetCode: string) {
     if (itemCode === targetCode) return;
 
@@ -476,6 +495,27 @@ export default function StockDashboardPage() {
       const hiddenCodes = prev.filter((code) => !isGapEntry(code) && !nextVisibleOrder.includes(code));
       return [...nextVisibleOrder, ...hiddenCodes];
     });
+
+    // Mark the order as changed — it's persisted only when the user clicks "Save Order".
+    setOrderDirty(true);
+  }
+
+  /** Send all PATCH requests for the current order, then clear the dirty flag. */
+  async function saveRowOrder() {
+    const itemOnlyOrder = orderedDisplayRows
+      .filter((row) => row.type === "item")
+      .map((row) => row.id);
+
+    setSavingOrder(true);
+    try {
+      await persistRowOrder(itemOnlyOrder);
+      setOrderDirty(false);
+      toast.success("Stock dashboard order saved.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to save order"));
+    } finally {
+      setSavingOrder(false);
+    }
   }
 
   function handleRowDrop(targetCode: string) {
@@ -484,11 +524,6 @@ export default function StockDashboardPage() {
     }
     setDraggedRow(null);
     setDragOverRow(null);
-  }
-
-  function resetRowOrder() {
-    setRowOrder([]);
-    toast.success("Stock dashboard row order reset.");
   }
 
   function addSeparator() {
@@ -839,43 +874,56 @@ export default function StockDashboardPage() {
       {/* ── Table Matrix ── */}
       <Card className="border shadow-xl bg-card overflow-hidden">
         <CardHeader className="border-b bg-muted/30 px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-base sm:text-lg">Inventory Matrix</CardTitle>
-              <CardDescription className="text-[10px] sm:text-xs">RM × Status × Vendor Pivot</CardDescription>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Inventory Matrix</CardTitle>
+                <CardDescription className="text-[10px] sm:text-xs">RM × Status × Vendor Pivot</CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {/* Save Order — highlights when the order has unsaved changes */}
+                <Button
+                  variant={orderDirty ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-8 gap-1.5 rounded-lg text-[10px] sm:text-xs uppercase tracking-wider transition-all",
+                    orderDirty
+                      ? "shadow-md shadow-primary/30 ring-2 ring-primary/30"
+                      : "text-muted-foreground"
+                  )}
+                  onClick={saveRowOrder}
+                  disabled={!orderDirty || savingOrder}
+                >
+                  <Save className={cn("h-3.5 w-3.5", savingOrder && "animate-spin")} />
+                  {savingOrder ? "Saving…" : orderDirty ? "Save Order" : "Saved"}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg text-[10px] sm:text-xs uppercase tracking-wider"
+                  onClick={addSeparator}
+                  disabled={loading || orderedDisplayRows.filter((row) => row.type === "item").length < 2}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Separator
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 sm:h-8 gap-1 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider"
-                onClick={addSeparator}
-                disabled={loading || orderedDisplayRows.filter((row) => row.type === "item").length < 2}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Separator
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 sm:h-8 gap-1 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider"
-                onClick={resetRowOrder}
-                disabled={rowOrder.length === 0}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset Order
-              </Button>
-              <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-wider text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
-                  <span className="hidden sm:inline">Hover Row/Col to highlight</span>
-                  <span className="sm:hidden">Hover</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
-                  <span className="hidden sm:inline">Heatmap intensity</span>
-                  <span className="sm:hidden">Heatmap</span>
-                </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-blue-500/20 border border-blue-500/50" />
+                <span>Hover row/col to highlight</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-primary/40 shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
+                <span>Heatmap intensity</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <GripVertical className="h-3 w-3 opacity-60" />
+                <span>Drag rows to reorder</span>
               </div>
             </div>
           </div>
@@ -1034,19 +1082,31 @@ export default function StockDashboardPage() {
                         : convertUnit(subtotalStatusKg, unit);
                       return (
                         <Fragment key={row.id}>
-                          <tr className="bg-muted/15">
-                            <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
-                              <div className="h-8 border-y border-dashed border-muted-foreground/20 bg-muted/20" />
+                          {/* Subtotal row — clear accent, with remove control in the order cell */}
+                          <tr className="bg-amber-50/50 dark:bg-amber-950/15">
+                            <td className="sticky left-0 z-20 w-[72px] border border-foreground/30 bg-amber-50/70 dark:bg-amber-950/25 p-0">
+                              <div className="flex h-full items-center justify-center">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-full text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10"
+                                  title="Remove separator"
+                                  onClick={() => removeSeparator(row.id)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </td>
-                            <td className="sticky left-[72px] z-20 px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-left border border-dashed border-foreground/30 font-semibold uppercase tracking-wide bg-muted/25">
+                            <td className="sticky left-[72px] z-20 px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-left border border-foreground/30 font-bold uppercase tracking-wider bg-amber-50/70 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400">
                               Subtotal
                             </td>
                             {showFactoryCols && <>
-                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 text-blue-600 dark:text-blue-400 font-semibold">
+                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 text-blue-600 dark:text-blue-400 font-semibold">
                                 {fmtLiters(subtotal.inFactoryLiters, unit, roundingEnabled)}
                               </td>
                               <td className="p-0 bg-background border-x-0" />
-                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 text-amber-600 dark:text-amber-400 font-semibold">
+                              <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 text-amber-600 dark:text-amber-400 font-semibold">
                                 {fmtNum(subtotal.outsideKg, unit, roundingEnabled)}
                               </td>
                               <td className="p-0 bg-background border-x-0" />
@@ -1056,7 +1116,7 @@ export default function StockDashboardPage() {
                                 {group.vendors.map(({ key }) => (
                                   <td
                                     key={key}
-                                    className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-muted/20 font-semibold"
+                                    className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 font-semibold"
                                   >
                                     {fmtNum(subtotal.statusTotals[key] ?? 0, unit, roundingEnabled)}
                                   </td>
@@ -1070,6 +1130,7 @@ export default function StockDashboardPage() {
                               {fmtAny(subtotalGrandTotal, roundingEnabled)}
                             </td>
                           </tr>
+                          {/* Slim drop-zone spacer between groups */}
                           <tr
                             onDragOver={(e) => {
                               e.preventDefault();
@@ -1085,32 +1146,11 @@ export default function StockDashboardPage() {
                               e.preventDefault();
                               handleRowDrop(row.id);
                             }}
-                            className={cn(
-                              "h-6 bg-background transition-colors",
-                              dragOverRow === row.id ? "outline outline-2 outline-primary outline-offset-[-2px]" : ""
-                            )}
                           >
-                            <td className="sticky left-0 z-20 w-[72px] border-0 bg-card p-0">
+                            <td colSpan={matrixColCount} className="border-0 p-0">
                               <div className={cn(
-                                "flex h-6 items-center justify-center border-y border-dashed border-muted-foreground/30 bg-muted/10",
-                                dragOverRow === row.id && "bg-primary/10 border-primary/60"
-                              )}>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 opacity-60 hover:opacity-100"
-                                  title="Remove separator"
-                                  onClick={() => removeSeparator(row.id)}
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </td>
-                            <td colSpan={matrixColCount - 1} className="border-0 p-0">
-                              <div className={cn(
-                                "h-6 border-y border-dashed border-muted-foreground/30 bg-muted/10",
-                                dragOverRow === row.id && "bg-primary/10 border-primary/60"
+                                "h-3 transition-colors",
+                                dragOverRow === row.id ? "bg-primary/20" : "bg-transparent"
                               )} />
                             </td>
                           </tr>
