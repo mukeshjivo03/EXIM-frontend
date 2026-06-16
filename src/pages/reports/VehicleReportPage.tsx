@@ -1,7 +1,7 @@
 ﻿import { Fragment, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown, FileDown } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown, FileDown, GripVertical } from "lucide-react";
 
 import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
 import { getErrorMessage } from "@/lib/errors";
@@ -167,6 +167,47 @@ function appendJsonSheet(workbook: XLSX.WorkBook, name: string, rows: Record<str
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const [tabOrder, setTabOrder] = useState<StatusKey[]>(() => {
+    const defaultOrder = TABS.map((t) => t.key);
+    try {
+      const stored = localStorage.getItem("vehicleReportTabOrder");
+      if (stored) {
+        const parsed = JSON.parse(stored) as StatusKey[];
+        // Keep only valid keys and append any new keys not yet stored.
+        const valid = parsed.filter((k) => defaultOrder.includes(k));
+        const merged = [...valid, ...defaultOrder.filter((k) => !valid.includes(k))];
+        if (merged.length === defaultOrder.length) return merged;
+      }
+    } catch {
+      // ignore malformed storage
+    }
+    return defaultOrder;
+  });
+  const [dragKey, setDragKey] = useState<StatusKey | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("vehicleReportTabOrder", JSON.stringify(tabOrder));
+  }, [tabOrder]);
+
+  const orderedTabs = useMemo(
+    () => tabOrder.map((key) => TABS.find((t) => t.key === key)!).filter(Boolean),
+    [tabOrder]
+  );
+
+  function handleTabDrop(targetKey: StatusKey) {
+    if (!dragKey || dragKey === targetKey) {
+      setDragKey(null);
+      return;
+    }
+    setTabOrder((prev) => {
+      const next = prev.filter((k) => k !== dragKey);
+      const targetIndex = next.indexOf(targetKey);
+      next.splice(targetIndex, 0, dragKey);
+      return next;
+    });
+    setDragKey(null);
+  }
 
   function toggleExpand(vehicleKey: string) {
     setExpanded((prev) => {
@@ -380,20 +421,29 @@ export default function VehicleReportPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => {
+        {orderedTabs.map((t) => {
           const count = data[t.key].length;
           const isActive = activeTab === t.key;
+          const isDragging = dragKey === t.key;
           return (
             <button
               key={t.key}
+              draggable
+              onDragStart={() => setDragKey(t.key)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleTabDrop(t.key)}
+              onDragEnd={() => setDragKey(null)}
               onClick={() => setActiveTab(t.key)}
+              title="Drag to reorder"
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border text-[10px] sm:text-sm font-medium transition-all",
+                "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border text-[10px] sm:text-sm font-medium transition-all cursor-grab active:cursor-grabbing",
                 isActive
                   ? t.color + " shadow-sm"
-                  : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/30"
+                  : "bg-muted/30 text-muted-foreground border-border hover:border-foreground/30",
+                isDragging && "opacity-50 ring-2 ring-primary/50"
               )}
             >
+              <GripVertical className="h-3 w-3 opacity-40 shrink-0" />
               <Truck className="h-3.5 w-3.5" />
               {t.label}
               {!loading[t.key] && (

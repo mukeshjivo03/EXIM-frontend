@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import {
   Plus,
   Container,
@@ -13,6 +14,7 @@ import {
   Pencil,
   DatabaseZap,
   PackageOpen,
+  FileDown,
 } from "lucide-react";
 import Guard from "@/components/Guard";
 import { useHasPermission } from "@/hooks/useHasPermission";
@@ -401,6 +403,33 @@ export default function TankDataPage() {
     }
   }
 
+  /* ── Excel export ────────────────────────────────── */
+
+  // Strip the leading "RM" prefix and the zeros that follow it for export.
+  // e.g. "RM00CD" -> "CD", "RM0MKD" -> "MKD", "RM000DD" -> "DD"
+  function formatItemCode(code: string | null): string {
+    if (!code) return "";
+    return code.replace(/^RM0*/i, "");
+  }
+
+  function handleExport() {
+    if (filteredTanks.length === 0) {
+      toast.error("No tanks to export.");
+      return;
+    }
+    const rows = filteredTanks.map((t) => ({
+      "Tank Number": t.tank_code,
+      "Item Code": formatItemCode(t.item_code),
+      "Current Capacity (L)": t.current_capacity ? Number(t.current_capacity) : 0,
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 20 }];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Tank Data");
+    XLSX.writeFile(workbook, "tank-data.xlsx");
+    toast.success(`Exported ${rows.length} tanks.`);
+  }
+
   /* ── render ──────────────────────────────────────── */
 
   return (
@@ -551,6 +580,17 @@ export default function TankDataPage() {
                   className="pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-56"
                 />
               </div>
+              {/* Export */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 gap-1.5 text-xs sm:text-sm shrink-0"
+                onClick={handleExport}
+                title="Export to Excel"
+              >
+                <FileDown className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
               {/* View toggle */}
               <div className="flex items-center border rounded-md">
                 <Button
