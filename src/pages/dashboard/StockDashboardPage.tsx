@@ -10,11 +10,13 @@ import {
   ChevronRight,
   Info,
   Printer,
+  Download,
   GripVertical,
   Plus,
   X,
   Save,
 } from "lucide-react";
+import * as XLSX from "xlsx-js-style";
 
 import { getStockDashboard, updateDashboardOrder, type StockDashboardFilters, type StockDashboardResponse } from "@/api/dashboard";
 import { getItemWiseTankSummary, type ItemWiseTankSummary } from "@/api/tank";
@@ -719,6 +721,216 @@ export default function StockDashboardPage() {
     win.print();
   }
 
+  /* ── Excel export ────────────────────────────────────────── */
+  /**
+   * Export the matrix as a styled .xlsx, mirroring the print layout:
+   * fixed MTS unit, same row order / separators / subtotals, and G Total.
+   */
+  function handleExportExcel() {
+    if (!data) return;
+
+    const EU: Unit = "MTS";
+    const vendorCols = statusGroups.flatMap((g) =>
+      g.vendors.map(({ key, vendor }) => ({ key, vendor, status: g.status }))
+    );
+    const colCount = 3 + vendorCols.length + 1; // name + in-factory + outside + vendors + total
+    const numFmt = roundingEnabled ? "#,##0" : "#,##0.###";
+
+    // Blank for zero (matches print), otherwise a real number Excel can sum/format.
+    const numVal = (val: number): number | string => {
+      const v = roundingEnabled ? Math.round(val) : Number(val.toFixed(3));
+      return v === 0 ? "" : v;
+    };
+
+    const aoa: (string | number)[][] = [];
+    const rowMeta: ("title" | "group" | "sub" | "item" | "subtotal" | "separator" | "gtotal")[] = [];
+
+    // Title
+    aoa.push([`Stock Dashboard — MTS — ${new Date().toLocaleDateString("en-IN")}`]);
+    rowMeta.push("title");
+
+    // Group header row (pink)
+    const groupRow: (string | number)[] = ["In Factory", "Qty MTS", "Outside Factory"];
+    for (const group of statusGroups) {
+      groupRow.push(group.status.replace(/_/g, " "));
+      for (let i = 1; i < group.vendors.length; i++) groupRow.push("");
+    }
+    groupRow.push("Total MTS");
+    aoa.push(groupRow);
+    rowMeta.push("group");
+
+    // Sub-header row (green) with vendor names
+    const subRow: (string | number)[] = ["Name", "Qty MTS", "Outside Factory"];
+    for (const { vendor } of vendorCols) {
+      subRow.push(vendor.trim().split(/\s+/).slice(0, 2).join(" "));
+    }
+    subRow.push("");
+    aoa.push(subRow);
+    rowMeta.push("sub");
+
+    const buildItemCells = (item: typeof displayItems[0]): (string | number)[] => {
+      const tankVal = tankQtyMap.get(item.item_code) ?? 0;
+      const statusKg = colKeys.reduce((sum, k) => sum + (item.status_data[k] ?? 0), 0);
+      const rowTotal = convertFromLiters(tankVal, EU) + convertUnit(item.outside_factory + statusKg, EU);
+      const cells: (string | number)[] = [
+        printRmCode(item.item_code),
+        numVal(convertFromLiters(tankVal, EU)),
+        numVal(convertUnit(item.outside_factory, EU)),
+      ];
+      for (const { key } of vendorCols) cells.push(numVal(convertUnit(item.status_data[key] ?? 0, EU)));
+      cells.push(numVal(rowTotal));
+      return cells;
+    };
+
+    const buildSubtotalCells = (sub: {
+      inFactoryLiters: number;
+      outsideKg: number;
+      statusTotals: Record<string, number>;
+    }): (string | number)[] => {
+      const statusKg = colKeys.reduce((sum, k) => sum + (sub.statusTotals[k] ?? 0), 0);
+      const total = convertFromLiters(sub.inFactoryLiters, EU) + convertUnit(sub.outsideKg + statusKg, EU);
+      const cells: (string | number)[] = [
+        "Subtotal",
+        numVal(convertFromLiters(sub.inFactoryLiters, EU)),
+        numVal(convertUnit(sub.outsideKg, EU)),
+      ];
+      for (const { key } of vendorCols) cells.push(numVal(convertUnit(sub.statusTotals[key] ?? 0, EU)));
+      cells.push(numVal(total));
+      return cells;
+    };
+
+    // Data rows — same running-subtotal logic as print.
+    let runningInFactoryLiters = 0;
+    let runningOutsideKg = 0;
+    let runningStatusTotals: Record<string, number> = {};
+    for (const key of colKeys) runningStatusTotals[key] = 0;
+
+    for (const row of orderedDisplayRows) {
+      if (row.type === "gap") {
+        aoa.push(buildSubtotalCells({
+          inFactoryLiters: runningInFactoryLiters,
+          outsideKg: runningOutsideKg,
+          statusTotals: runningStatusTotals,
+        }));
+        rowMeta.push("subtotal");
+        aoa.push(new Array(colCount).fill(""));
+        rowMeta.push("separator");
+        runningInFactoryLiters = 0;
+        runningOutsideKg = 0;
+        runningStatusTotals = {};
+        for (const key of colKeys) runningStatusTotals[key] = 0;
+        continue;
+      }
+      const tankVal = tankQtyMap.get(row.item.item_code) ?? 0;
+      runningInFactoryLiters += tankVal;
+      runningOutsideKg += row.item.outside_factory;
+      for (const key of colKeys) {
+        runningStatusTotals[key] = (runningStatusTotals[key] ?? 0) + (row.item.status_data[key] ?? 0);
+      }
+      aoa.push(buildItemCells(row.item));
+      rowMeta.push("item");
+    }
+
+    // G Total row
+    const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
+      convertUnit((data.totals.outside_factory ?? 0) + colKeys.reduce((s, k) => s + (data.totals.status_vendor_totals[k] ?? 0), 0), EU);
+    const gtCells: (string | number)[] = [
+      "G Total",
+      numVal(convertFromLiters(tankInFactoryTotal, EU)),
+      numVal(convertUnit(data.totals.outside_factory, EU)),
+    ];
+    for (const group of statusGroups) {
+      const st = data.totals.status_totals?.[group.status] ??
+        group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
+      gtCells.push(numVal(convertUnit(st, EU)));
+      for (let i = 1; i < group.vendors.length; i++) gtCells.push("");
+    }
+    gtCells.push(numVal(gtTotal));
+    aoa.push(gtCells);
+    rowMeta.push("gtotal");
+
+    const sheet = XLSX.utils.aoa_to_sheet(aoa);
+    sheet["!cols"] = [{ wch: 22 }, { wch: 12 }, { wch: 16 }, ...vendorCols.map(() => ({ wch: 16 })), { wch: 14 }];
+
+    // Merges: title, status-group spans in the header row and the G Total row.
+    const merges: XLSX.Range[] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } }];
+    const gtRowIndex = aoa.length - 1;
+    let cursor = 3; // first vendor column
+    for (const group of statusGroups) {
+      const len = group.vendors.length;
+      if (len > 1) {
+        merges.push({ s: { r: 1, c: cursor }, e: { r: 1, c: cursor + len - 1 } });
+        merges.push({ s: { r: gtRowIndex, c: cursor }, e: { r: gtRowIndex, c: cursor + len - 1 } });
+      }
+      cursor += len;
+    }
+    sheet["!merges"] = merges;
+
+    const border = (color = "999999") => ({
+      top: { style: "thin", color: { rgb: color } },
+      bottom: { style: "thin", color: { rgb: color } },
+      left: { style: "thin", color: { rgb: color } },
+      right: { style: "thin", color: { rgb: color } },
+    });
+    const dblBorder = (color = "000000") => ({
+      top: { style: "double", color: { rgb: color } },
+      bottom: { style: "double", color: { rgb: color } },
+      left: { style: "thin", color: { rgb: "999999" } },
+      right: { style: "thin", color: { rgb: "999999" } },
+    });
+    const center = { horizontal: "center", vertical: "center" };
+
+    for (let r = 0; r < aoa.length; r++) {
+      const meta = rowMeta[r];
+      if (meta === "separator") continue; // leave blank spacer unstyled
+      for (let c = 0; c < colCount; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!sheet[addr]) sheet[addr] = { t: "s", v: "" };
+        const isLabelCol = c === 0;
+        if (meta === "title") {
+          sheet[addr].s = { font: { bold: true, sz: 14 }, alignment: center };
+        } else if (meta === "group") {
+          sheet[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: "F4CCCC" } }, alignment: center, border: border() };
+        } else if (meta === "sub") {
+          sheet[addr].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "B6D7A8" } },
+            alignment: center,
+            border: { ...border(), bottom: { style: "double", color: { rgb: "000000" } } },
+          };
+        } else if (meta === "item") {
+          sheet[addr].s = {
+            font: { bold: true },
+            alignment: { horizontal: isLabelCol ? "left" : "center", vertical: "center" },
+            border: border("CCCCCC"),
+            numFmt: isLabelCol ? undefined : numFmt,
+          };
+        } else if (meta === "subtotal") {
+          sheet[addr].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "FFF2CC" } },
+            alignment: { horizontal: isLabelCol ? "left" : "center", vertical: "center" },
+            border: dblBorder(),
+            numFmt: isLabelCol ? undefined : numFmt,
+          };
+        } else if (meta === "gtotal") {
+          sheet[addr].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "CFE2F3" } },
+            alignment: { horizontal: isLabelCol ? "left" : "center", vertical: "center" },
+            border: dblBorder(),
+            numFmt: isLabelCol ? undefined : numFmt,
+          };
+        }
+      }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Stock Dashboard");
+    XLSX.writeFile(workbook, `stock-dashboard-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Stock dashboard Excel downloaded.");
+  }
+
   return (
     <div className="p-2.5 sm:p-4 md:p-6 space-y-5 sm:space-y-6 lg:space-y-8 animate-page pb-20">
       {/* Header */}
@@ -771,6 +983,10 @@ export default function StockDashboardPage() {
           <Button variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={handlePrint} disabled={!data}>
             <Printer className="h-4 w-4" />
             Print
+          </Button>
+          <Button variant="outline" className="btn-press h-8 sm:h-9 gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl border-2 text-[10px] sm:text-xs" onClick={handleExportExcel} disabled={!data}>
+            <Download className="h-4 w-4" />
+            Excel
           </Button>
         </div>
       </div>
