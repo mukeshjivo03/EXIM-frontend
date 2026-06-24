@@ -172,6 +172,15 @@ export default function StockDashboardPage() {
     }
   });
 
+  // Whether the auto subtotal for the final block (just above G Total) is shown.
+  const [showTrailingSubtotal, setShowTrailingSubtotal] = useState<boolean>(() => {
+    return localStorage.getItem("stock_dashboard_trailing_subtotal") !== "false";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("stock_dashboard_trailing_subtotal", String(showTrailingSubtotal));
+  }, [showTrailingSubtotal]);
+
   const [unit, setUnit] = useState<Unit>(() => {
     const saved = localStorage.getItem("stock_dashboard_unit");
     return (saved === "KG" || saved === "MTS" || saved === "LTR") ? saved : "MTS";
@@ -408,10 +417,9 @@ export default function StockDashboardPage() {
     const compactEntries = visibleEntries.filter((code, index, arr) => {
       if (!isGapEntry(code)) return true;
       const previous = arr[index - 1];
-      const next = arr[index + 1];
-      if (!previous || !next) return false;
-      // Collapse back-to-back separators into a single separator.
-      return !isGapEntry(previous);
+      if (!previous) return false;            // drop a leading separator
+      if (isGapEntry(previous)) return false; // collapse back-to-back separators
+      return true;                            // keep, including a trailing separator
     });
 
     return compactEntries.map((code) => {
@@ -461,6 +469,39 @@ export default function StockDashboardPage() {
     }
 
     return map;
+  }, [orderedDisplayRows, colKeys, tankQtyMap]);
+
+  /**
+   * Running subtotal for the final block of items (after the last separator) —
+   * rendered just above the G Total so the last group gets its own subtotal too.
+   * `hasRows` is false when the list is empty or already ends on a separator.
+   */
+  const trailingSubtotal = useMemo(() => {
+    let inFactoryLiters = 0;
+    let outsideKg = 0;
+    const statusTotals: Record<string, number> = {};
+    for (const key of colKeys) statusTotals[key] = 0;
+    let hasRows = false;
+
+    for (const row of orderedDisplayRows) {
+      if (row.type === "item") {
+        const tankVal = tankQtyMap.get(row.item.item_code) ?? 0;
+        inFactoryLiters += tankVal;
+        outsideKg += row.item.outside_factory;
+        for (const key of colKeys) {
+          statusTotals[key] = (statusTotals[key] ?? 0) + (row.item.status_data[key] ?? 0);
+        }
+        hasRows = true;
+      } else {
+        // Reset at each separator — keep only the block after the last one.
+        inFactoryLiters = 0;
+        outsideKg = 0;
+        for (const key of colKeys) statusTotals[key] = 0;
+        hasRows = false;
+      }
+    }
+
+    return { inFactoryLiters, outsideKg, statusTotals, hasRows };
   }, [orderedDisplayRows, colKeys, tankQtyMap]);
 
   /**
@@ -542,7 +583,8 @@ export default function StockDashboardPage() {
 
     
 
-    const insertIndex = itemIndexes[itemIndexes.length - 1];
+    // Append the separator at the very bottom (after the last item).
+    const insertIndex = itemIndexes[itemIndexes.length - 1] + 1;
     const nextOrder = [...currentOrder];
     nextOrder.splice(insertIndex, 0, `__GAP__:custom:${Date.now()}`);
     setRowOrder(nextOrder);
@@ -680,6 +722,17 @@ export default function StockDashboardPage() {
       return buildItemRow(row.item);
     }).join("");
 
+    // Final subtotal (for the last group not followed by a gap) + separator above G Total
+    const hasTrailingRows = runningInFactoryLiters !== 0 || runningOutsideKg !== 0 ||
+      colKeys.some((k) => (runningStatusTotals[k] ?? 0) !== 0);
+    const finalSubtotalHtml = hasTrailingRows
+      ? buildSubtotalRow({
+          inFactoryLiters: runningInFactoryLiters,
+          outsideKg: runningOutsideKg,
+          statusTotals: runningStatusTotals,
+        }) + buildSeparatorRow()
+      : "";
+
     // G Total row
     const gtTotal = convertFromLiters(tankInFactoryTotal, EU) +
       convertUnit((data.totals.outside_factory ?? 0) + colKeys.reduce((s, k) => s + (data.totals.status_vendor_totals[k] ?? 0), 0), EU);
@@ -709,7 +762,7 @@ export default function StockDashboardPage() {
     <tr>${row0Cells}</tr>
     <tr>${row1Cells}</tr>
   </thead>
-  <tbody>${dataRowsHtml}<tr>${gtCells}</tr></tbody>
+  <tbody>${dataRowsHtml}${finalSubtotalHtml}<tr>${gtCells}</tr></tbody>
 </table>
 </body></html>`;
 
@@ -1124,6 +1177,18 @@ export default function StockDashboardPage() {
                   <Plus className="h-3.5 w-3.5" />
                   Add Separator
                 </Button>
+
+                {!showTrailingSubtotal && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 rounded-lg text-[10px] sm:text-xs uppercase tracking-wider"
+                    onClick={() => setShowTrailingSubtotal(true)}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Show Subtotal
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1483,6 +1548,70 @@ export default function StockDashboardPage() {
                       </tr>
                     );
                   })}
+
+                  {/* Trailing subtotal (last block) + separator above G Total */}
+                  {trailingSubtotal.hasRows && showTrailingSubtotal && (() => {
+                    const subtotalStatusKg = colKeys.reduce((sum, k) => sum + (trailingSubtotal.statusTotals[k] ?? 0), 0);
+                    const subtotalGrandTotal = showFactoryCols
+                      ? convertFromLiters(trailingSubtotal.inFactoryLiters, unit) + convertUnit(trailingSubtotal.outsideKg + subtotalStatusKg, unit)
+                      : convertUnit(subtotalStatusKg, unit);
+                    return (
+                      <Fragment>
+                        <tr className="bg-amber-50/50 dark:bg-amber-950/15">
+                          <td className="sticky left-0 z-20 w-[72px] border border-foreground/30 bg-amber-50/70 dark:bg-amber-950/25 p-0">
+                            <div className="flex h-full items-center justify-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 rounded-full text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10"
+                                title="Remove subtotal"
+                                onClick={() => setShowTrailingSubtotal(false)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                          <td className="sticky left-[72px] z-20 px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-left border border-foreground/30 font-bold uppercase tracking-wider bg-amber-50/70 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400">
+                            Subtotal
+                          </td>
+                          {showFactoryCols && <>
+                            <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 text-blue-600 dark:text-blue-400 font-semibold">
+                              {fmtLiters(trailingSubtotal.inFactoryLiters, unit, roundingEnabled)}
+                            </td>
+                            <td className="p-0 bg-background border-x-0" />
+                            <td className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 text-amber-600 dark:text-amber-400 font-semibold">
+                              {fmtNum(trailingSubtotal.outsideKg, unit, roundingEnabled)}
+                            </td>
+                            <td className="p-0 bg-background border-x-0" />
+                          </>}
+                          {statusGroups.map((group, gi) => (
+                            <Fragment key={group.status}>
+                              {group.vendors.map(({ key }) => (
+                                <td
+                                  key={key}
+                                  className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 font-semibold"
+                                >
+                                  {fmtNum(trailingSubtotal.statusTotals[key] ?? 0, unit, roundingEnabled)}
+                                </td>
+                              ))}
+                              {gi < statusGroups.length - 1 && (
+                                <td className="p-0 bg-background border-x-0" />
+                              )}
+                            </Fragment>
+                          ))}
+                          <td className="px-3 sm:px-4 py-1.5 sm:py-2 text-center tabular-nums text-xs sm:text-sm font-bold bg-primary/15 border border-foreground/30">
+                            {fmtAny(subtotalGrandTotal, roundingEnabled)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan={matrixColCount} className="border-0 p-0">
+                            <div className="h-3 bg-transparent" />
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })()}
 
                   {/* G Total Row */}
                   <tr className="bg-muted/50 text-xs sm:text-base border-t-2 border-border font-semibold">
