@@ -15,6 +15,8 @@ import {
   Plus,
   X,
   Save,
+  Users,
+  Layers,
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
@@ -77,6 +79,11 @@ function fmtAny(val: number, roundingEnabled: boolean) {
 
 function formatStatusLabel(status: string) {
   return status.replace(/_/g, " ");
+}
+
+/** Sum the values of the given keys within a numeric record. */
+function sumKeys(rec: Record<string, number> | undefined, keys: string[]): number {
+  return keys.reduce((sum, k) => sum + (rec?.[k] ?? 0), 0);
 }
 
 
@@ -190,6 +197,15 @@ export default function StockDashboardPage() {
     const saved = localStorage.getItem("stock_dashboard_rounding");
     return saved === null ? true : saved === "true";
   });
+
+  // When true, columns are grouped by status only (vendor sub-columns are aggregated away).
+  const [statusOnly, setStatusOnly] = useState<boolean>(() => {
+    return localStorage.getItem("stock_dashboard_status_only") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("stock_dashboard_status_only", String(statusOnly));
+  }, [statusOnly]);
 
   useEffect(() => {
     localStorage.setItem("stock_dashboard_unit", unit);
@@ -339,6 +355,28 @@ export default function StockDashboardPage() {
     }
     return groups;
   }, [colKeys]);
+
+  /**
+   * The columns actually rendered, grouped by status.
+   * - Vendor view: one column per vendor (sourceKeys = [vendorKey]).
+   * - Status-only view: a single column per status aggregating all its vendors.
+   * Accumulation everywhere else stays keyed by the raw vendor-level `colKeys`;
+   * each rendered column sums its `sourceKeys` out of those accumulated totals.
+   */
+  const viewGroups = useMemo(
+    () =>
+      statusGroups.map((group) => ({
+        status: group.status,
+        columns: statusOnly
+          ? [{
+              key: group.status,
+              label: group.status.replace(/_/g, " "),
+              sourceKeys: group.vendors.map((v) => v.key),
+            }]
+          : group.vendors.map((v) => ({ key: v.key, label: v.vendor, sourceKeys: [v.key] })),
+      })),
+    [statusGroups, statusOnly]
+  );
 
   // When filtering by status, In Factory and Outside Factory are irrelevant — hide them
   const showFactoryCols = !filters.status;
@@ -605,7 +643,7 @@ export default function StockDashboardPage() {
   const matrixColCount =
     2 +
     (showFactoryCols ? 4 : 0) +
-    statusGroups.reduce((sum, group, index) => sum + group.vendors.length + (index < statusGroups.length - 1 ? 1 : 0), 0) +
+    viewGroups.reduce((sum, group, index) => sum + group.columns.length + (index < viewGroups.length - 1 ? 1 : 0), 0) +
     1;
 
   function printRmCode(code: string): string {
@@ -616,8 +654,8 @@ export default function StockDashboardPage() {
     if (!data) return;
 
     const EU: Unit = "MTS";
-    const vendorCols = statusGroups.flatMap((g) =>
-      g.vendors.map(({ key, vendor }) => ({ key, vendor, status: g.status }))
+    const vendorCols = viewGroups.flatMap((g) =>
+      g.columns.map((col) => ({ key: col.key, vendor: col.label, sourceKeys: col.sourceKeys, status: g.status }))
     );
 
     const td = (content: string | number, style = "") =>
@@ -636,8 +674,8 @@ export default function StockDashboardPage() {
     let row0Cells = th("In Factory", "background:#F4CCCC;font-weight:bold;") +
       th("Qty MTS", "background:#F4CCCC;font-weight:bold;") +
       th("Outside Factory", "background:#F4CCCC;font-weight:bold;");
-    for (const group of statusGroups) {
-      row0Cells += `<th colspan="${group.vendors.length}" style="border:1px solid #999;padding:6px 8px;text-align:center;font-size:13px;background:#F4CCCC;font-weight:bold;">${group.status.replace(/_/g, " ")}</th>`;
+    for (const group of viewGroups) {
+      row0Cells += `<th colspan="${group.columns.length}" style="border:1px solid #999;padding:6px 8px;text-align:center;font-size:13px;background:#F4CCCC;font-weight:bold;">${group.status.replace(/_/g, " ")}</th>`;
     }
     row0Cells += th("Total MTS", "background:#F4CCCC;font-weight:bold;");
 
@@ -647,7 +685,7 @@ export default function StockDashboardPage() {
       th("Qty MTS", `background:#B6D7A8;font-weight:bold;${dblBorder}`) +
       th("Outside Factory", `background:#B6D7A8;font-weight:bold;${dblBorder}`);
     for (const { vendor } of vendorCols) {
-      const shortVendor = vendor.trim().split(/\s+/).slice(0, 2).join(" ");
+      const shortVendor = statusOnly ? "" : vendor.trim().split(/\s+/).slice(0, 2).join(" ");
       row1Cells += th(shortVendor, `background:#B6D7A8;font-weight:bold;${dblBorder}`);
     }
     row1Cells += th("", `background:#B6D7A8;${dblBorder}`);
@@ -663,8 +701,8 @@ export default function StockDashboardPage() {
       let cells = td(printRmCode(item.item_code), "font-weight:bold;text-align:left;") +
         td(fmt(convertFromLiters(tankVal, EU)), numCellStyle) +
         td(fmt(convertUnit(item.outside_factory, EU)), numCellStyle);
-      for (const { key } of vendorCols) {
-        cells += td(fmt(convertUnit(item.status_data[key] ?? 0, EU)), numCellStyle);
+      for (const { sourceKeys } of vendorCols) {
+        cells += td(fmt(convertUnit(sumKeys(item.status_data, sourceKeys), EU)), numCellStyle);
       }
       cells += td(fmt(rowTotal), numCellStyle);
       return `<tr>${cells}</tr>`;
@@ -683,8 +721,8 @@ export default function StockDashboardPage() {
       let cells = td("Subtotal", subtotalStyle + "text-align:left;") +
         td(fmt(convertFromLiters(subtotal.inFactoryLiters, EU)), subtotalStyle) +
         td(fmt(convertUnit(subtotal.outsideKg, EU)), subtotalStyle);
-      for (const { key } of vendorCols) {
-        cells += td(fmt(convertUnit(subtotal.statusTotals[key] ?? 0, EU)), subtotalStyle);
+      for (const { sourceKeys } of vendorCols) {
+        cells += td(fmt(convertUnit(sumKeys(subtotal.statusTotals, sourceKeys), EU)), subtotalStyle);
       }
       cells += td(fmt(subtotalTotal), subtotalStyle);
       return `<tr>${cells}</tr>`;
@@ -742,10 +780,10 @@ export default function StockDashboardPage() {
     let gtCells = td("G Total", gtStyle) +
       td(fmt(convertFromLiters(tankInFactoryTotal, EU)), gtStyle) +
       td(fmt(convertUnit(data.totals.outside_factory, EU)), gtStyle);
-    for (const group of statusGroups) {
+    for (const group of viewGroups) {
       const st = data.totals.status_totals?.[group.status] ??
-        group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
-      gtCells += `<td colspan="${group.vendors.length}" style="padding:5px 8px;text-align:center;${gtStyle}">${fmt(convertUnit(st, EU))}</td>`;
+        sumKeys(data.totals.status_vendor_totals, group.columns.flatMap((c) => c.sourceKeys));
+      gtCells += `<td colspan="${group.columns.length}" style="padding:5px 8px;text-align:center;${gtStyle}">${fmt(convertUnit(st, EU))}</td>`;
     }
     gtCells += td(fmt(gtTotal), gtStyle);
 
@@ -783,8 +821,8 @@ export default function StockDashboardPage() {
     if (!data) return;
 
     const EU: Unit = "MTS";
-    const vendorCols = statusGroups.flatMap((g) =>
-      g.vendors.map(({ key, vendor }) => ({ key, vendor, status: g.status }))
+    const vendorCols = viewGroups.flatMap((g) =>
+      g.columns.map((col) => ({ key: col.key, vendor: col.label, sourceKeys: col.sourceKeys, status: g.status }))
     );
     const colCount = 3 + vendorCols.length + 1; // name + in-factory + outside + vendors + total
     const numFmt = roundingEnabled ? "#,##0" : "#,##0.###";
@@ -804,18 +842,18 @@ export default function StockDashboardPage() {
 
     // Group header row (pink)
     const groupRow: (string | number)[] = ["In Factory", "Qty MTS", "Outside Factory"];
-    for (const group of statusGroups) {
+    for (const group of viewGroups) {
       groupRow.push(group.status.replace(/_/g, " "));
-      for (let i = 1; i < group.vendors.length; i++) groupRow.push("");
+      for (let i = 1; i < group.columns.length; i++) groupRow.push("");
     }
     groupRow.push("Total MTS");
     aoa.push(groupRow);
     rowMeta.push("group");
 
-    // Sub-header row (green) with vendor names
+    // Sub-header row (green) with vendor names (blank in status-only view)
     const subRow: (string | number)[] = ["Name", "Qty MTS", "Outside Factory"];
     for (const { vendor } of vendorCols) {
-      subRow.push(vendor.trim().split(/\s+/).slice(0, 2).join(" "));
+      subRow.push(statusOnly ? "" : vendor.trim().split(/\s+/).slice(0, 2).join(" "));
     }
     subRow.push("");
     aoa.push(subRow);
@@ -830,7 +868,7 @@ export default function StockDashboardPage() {
         numVal(convertFromLiters(tankVal, EU)),
         numVal(convertUnit(item.outside_factory, EU)),
       ];
-      for (const { key } of vendorCols) cells.push(numVal(convertUnit(item.status_data[key] ?? 0, EU)));
+      for (const { sourceKeys } of vendorCols) cells.push(numVal(convertUnit(sumKeys(item.status_data, sourceKeys), EU)));
       cells.push(numVal(rowTotal));
       return cells;
     };
@@ -847,7 +885,7 @@ export default function StockDashboardPage() {
         numVal(convertFromLiters(sub.inFactoryLiters, EU)),
         numVal(convertUnit(sub.outsideKg, EU)),
       ];
-      for (const { key } of vendorCols) cells.push(numVal(convertUnit(sub.statusTotals[key] ?? 0, EU)));
+      for (const { sourceKeys } of vendorCols) cells.push(numVal(convertUnit(sumKeys(sub.statusTotals, sourceKeys), EU)));
       cells.push(numVal(total));
       return cells;
     };
@@ -892,11 +930,11 @@ export default function StockDashboardPage() {
       numVal(convertFromLiters(tankInFactoryTotal, EU)),
       numVal(convertUnit(data.totals.outside_factory, EU)),
     ];
-    for (const group of statusGroups) {
+    for (const group of viewGroups) {
       const st = data.totals.status_totals?.[group.status] ??
-        group.vendors.reduce((sum, v) => sum + (data.totals.status_vendor_totals[v.key] ?? 0), 0);
+        sumKeys(data.totals.status_vendor_totals, group.columns.flatMap((c) => c.sourceKeys));
       gtCells.push(numVal(convertUnit(st, EU)));
-      for (let i = 1; i < group.vendors.length; i++) gtCells.push("");
+      for (let i = 1; i < group.columns.length; i++) gtCells.push("");
     }
     gtCells.push(numVal(gtTotal));
     aoa.push(gtCells);
@@ -909,8 +947,8 @@ export default function StockDashboardPage() {
     const merges: XLSX.Range[] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } }];
     const gtRowIndex = aoa.length - 1;
     let cursor = 3; // first vendor column
-    for (const group of statusGroups) {
-      const len = group.vendors.length;
+    for (const group of viewGroups) {
+      const len = group.columns.length;
       if (len > 1) {
         merges.push({ s: { r: 1, c: cursor }, e: { r: 1, c: cursor + len - 1 } });
         merges.push({ s: { r: gtRowIndex, c: cursor }, e: { r: gtRowIndex, c: cursor + len - 1 } });
@@ -1004,8 +1042,18 @@ export default function StockDashboardPage() {
               {roundingEnabled ? "Rounding On" : "Rounding Off"}
             </Button>
             <div className="hidden sm:block w-[1px] h-4 bg-border mx-0.5 sm:mx-1" />
-            <Button 
-              variant={hideZeroRows ? "secondary" : "ghost"} 
+            <Button
+              variant={statusOnly ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 sm:h-8 rounded-md sm:rounded-lg gap-1 text-[10px] sm:text-xs uppercase tracking-wide shrink-0"
+              onClick={() => setStatusOnly(!statusOnly)}
+            >
+              {statusOnly ? <Layers className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+              {statusOnly ? "Status Only" : "By Vendor"}
+            </Button>
+            <div className="hidden sm:block w-[1px] h-4 bg-border mx-0.5 sm:mx-1" />
+            <Button
+              variant={hideZeroRows ? "secondary" : "ghost"}
               size="sm" 
               className="h-7 sm:h-8 rounded-md sm:rounded-lg gap-1 text-[10px] sm:text-xs uppercase tracking-wide shrink-0"
               onClick={() => setHideZeroRows(!hideZeroRows)}
@@ -1232,10 +1280,10 @@ export default function StockDashboardPage() {
                     <col style={{ width: 2 }} />
                   </>}
                   {/* status group cols + inter-group spacers */}
-                  {statusGroups.map((group, gi) => (
+                  {viewGroups.map((group, gi) => (
                     <Fragment key={group.status}>
-                      {group.vendors.map(({ key }) => <col key={key} style={{ width: 145 }} />)}
-                      {gi < statusGroups.length - 1 && <col style={{ width: 2 }} />}
+                      {group.columns.map((col) => <col key={col.key} style={{ width: 145 }} />)}
+                      {gi < viewGroups.length - 1 && <col style={{ width: 2 }} />}
                     </Fragment>
                   ))}
                   <col style={{ width: 170 }} />
@@ -1289,12 +1337,13 @@ export default function StockDashboardPage() {
                       <th className="p-0 bg-background border-x-0" rowSpan={2} />
                     </>}
                     {/* status groups */}
-                    {statusGroups.map((group, gi) => {
+                    {viewGroups.map((group, gi) => {
                       const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
                       return (
                         <Fragment key={group.status}>
                           <th
-                            colSpan={group.vendors.length}
+                            colSpan={group.columns.length}
+                            rowSpan={statusOnly ? 2 : 1}
                             onClick={() => navigate(`/stock-dashboard/${group.status}`)}
                             onMouseEnter={() => setHoveredCol(group.status)}
                             onMouseLeave={() => setHoveredCol(null)}
@@ -1311,7 +1360,7 @@ export default function StockDashboardPage() {
                               <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all" />
                             </div>
                           </th>
-                          {gi < statusGroups.length - 1 && (
+                          {gi < viewGroups.length - 1 && (
                             <th className="p-0 bg-background border-x-0" rowSpan={2} />
                           )}
                         </Fragment>
@@ -1327,7 +1376,7 @@ export default function StockDashboardPage() {
                       <th className="border border-foreground/30 bg-muted/20 py-1 text-[10px] sm:text-sm text-center text-muted-foreground uppercase" />
                       <th className="border border-foreground/30 bg-muted/20 py-1 text-[10px] sm:text-sm text-center text-muted-foreground uppercase" />
                     </>}
-                    {statusGroups.map((group, gi) => {
+                    {!statusOnly && statusGroups.map((group, gi) => {
                       const palette = STATUS_PALETTE[gi % STATUS_PALETTE.length];
                       return group.vendors.map(({ key, vendor }) => (
                         <th
@@ -1392,17 +1441,17 @@ export default function StockDashboardPage() {
                               </td>
                               <td className="p-0 bg-background border-x-0" />
                             </>}
-                            {statusGroups.map((group, gi) => (
+                            {viewGroups.map((group, gi) => (
                               <Fragment key={group.status}>
-                                {group.vendors.map(({ key }) => (
+                                {group.columns.map((col) => (
                                   <td
-                                    key={key}
+                                    key={col.key}
                                     className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 font-semibold"
                                   >
-                                    {fmtNum(subtotal.statusTotals[key] ?? 0, unit, roundingEnabled)}
+                                    {fmtNum(sumKeys(subtotal.statusTotals, col.sourceKeys), unit, roundingEnabled)}
                                   </td>
                                 ))}
-                                {gi < statusGroups.length - 1 && (
+                                {gi < viewGroups.length - 1 && (
                                   <td className="p-0 bg-background border-x-0" />
                                 )}
                               </Fragment>
@@ -1514,18 +1563,17 @@ export default function StockDashboardPage() {
                           <td className="p-0 bg-background border-x-0" />
                         </>}
                         {/* status groups */}
-                        {statusGroups.map((group, gi) => (
+                        {viewGroups.map((group, gi) => (
                           <Fragment key={group.status}>
-                            {group.vendors.map(({ key }) => {
-                              const val = item.status_data[key] ?? 0;
+                            {group.columns.map((col) => {
+                              const val = sumKeys(item.status_data, col.sourceKeys);
                               const intensity = maxCellValue > 0 ? val / maxCellValue : 0;
-                              const status = key.split("__")[0];
                               return (
                                 <td
-                                  key={key}
+                                  key={col.key}
                                   className={cn(
                                     "px-2 py-2 sm:py-3 text-center tabular-nums transition-all relative group/cell border border-foreground/30",
-                                    hoveredCol === key || hoveredCol === status ? "bg-muted/50" : ""
+                                    hoveredCol === col.key || hoveredCol === group.status ? "bg-muted/50" : ""
                                   )}
                                 >
                                   {val > 0 ? (
@@ -1537,7 +1585,7 @@ export default function StockDashboardPage() {
                                 </td>
                               );
                             })}
-                            {gi < statusGroups.length - 1 && (
+                            {gi < viewGroups.length - 1 && (
                               <td className="p-0 bg-background border-x-0" />
                             )}
                           </Fragment>
@@ -1585,17 +1633,17 @@ export default function StockDashboardPage() {
                             </td>
                             <td className="p-0 bg-background border-x-0" />
                           </>}
-                          {statusGroups.map((group, gi) => (
+                          {viewGroups.map((group, gi) => (
                             <Fragment key={group.status}>
-                              {group.vendors.map(({ key }) => (
+                              {group.columns.map((col) => (
                                 <td
-                                  key={key}
+                                  key={col.key}
                                   className="px-2 py-1.5 sm:py-2 text-center tabular-nums border border-foreground/30 bg-amber-50/40 dark:bg-amber-950/10 font-semibold"
                                 >
-                                  {fmtNum(trailingSubtotal.statusTotals[key] ?? 0, unit, roundingEnabled)}
+                                  {fmtNum(sumKeys(trailingSubtotal.statusTotals, col.sourceKeys), unit, roundingEnabled)}
                                 </td>
                               ))}
-                              {gi < statusGroups.length - 1 && (
+                              {gi < viewGroups.length - 1 && (
                                 <td className="p-0 bg-background border-x-0" />
                               )}
                             </Fragment>
@@ -1626,23 +1674,23 @@ export default function StockDashboardPage() {
                       </td>
                       <td className="p-0 bg-background border-x-0" />
                     </>}
-                    {statusGroups.map((group, gi) => (
+                    {viewGroups.map((group, gi) => (
                       <Fragment key={group.status}>
                         <td
-                          colSpan={group.vendors.length}
+                          colSpan={group.columns.length}
                           className="px-2 py-3 sm:py-4 text-center tabular-nums border border-foreground/30 font-semibold"
                         >
                           {fmtNum(
                             data?.totals.status_totals?.[group.status] ??
-                            group.vendors.reduce(
-                              (sum, v) => sum + (data?.totals.status_vendor_totals[v.key] ?? 0),
-                              0
+                            sumKeys(
+                              data?.totals.status_vendor_totals,
+                              group.columns.flatMap((c) => c.sourceKeys)
                             ),
                             unit,
                             roundingEnabled
                           )}
                         </td>
-                        {gi < statusGroups.length - 1 && (
+                        {gi < viewGroups.length - 1 && (
                           <td className="p-0 bg-background border-x-0" />
                         )}
                       </Fragment>
