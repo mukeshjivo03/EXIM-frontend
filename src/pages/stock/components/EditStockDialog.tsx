@@ -198,6 +198,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             action: finalAction,
             created_by: email,
             arrival_date: eStatus === "OUT_SIDE_FACTORY" ? eArrivalDate.trim() || todayISO() : undefined,
+            location: eLocation.trim() || undefined,
           });
           toast.success("Stock moved (Bulk).");
         } else if (eTransferType === "batch") {
