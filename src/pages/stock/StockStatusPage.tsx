@@ -302,6 +302,7 @@ export default function StockStatusPage() {
             new_status: "IN_TANK",
             action: "TOLERATE",
             created_by: email ?? "SYSTEM",
+            location: row.location ?? undefined,
           });
         })
       );
