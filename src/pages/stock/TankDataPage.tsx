@@ -405,11 +405,13 @@ export default function TankDataPage() {
 
   /* ── Excel export ────────────────────────────────── */
 
-  // Strip the leading "RM" prefix and the zeros that follow it for export.
-  // e.g. "RM00CD" -> "CD", "RM0MKD" -> "MKD", "RM000DD" -> "DD"
-  function formatItemCode(code: string | null): string {
-    if (!code) return "";
-    return code.replace(/^RM0*/i, "");
+  // Resolve the human-readable item name for a tank's item code.
+  function getItemName(itemCode: string | null): string {
+    if (!itemCode) return "";
+    const item = tankItems.find(
+      (ti) => ti.tank_item_code.toLowerCase() === itemCode.toLowerCase()
+    );
+    return item?.tank_item_name ?? "";
   }
 
   function handleExport() {
@@ -417,17 +419,55 @@ export default function TankDataPage() {
       toast.error("No tanks to export.");
       return;
     }
-    const rows = filteredTanks.map((t) => ({
-      "Tank Number": t.tank_code,
-      "Item Code": formatItemCode(t.item_code),
-      "Current Capacity (L)": t.current_capacity ? Number(t.current_capacity) : 0,
-    }));
+
+    // Sort by tank capacity (total quantity), descending.
+    const sorted = [...filteredTanks].sort(
+      (a, b) => Number(b.tank_capacity ?? 0) - Number(a.tank_capacity ?? 0)
+    );
+
+    const pct = (current: number, total: number) =>
+      total > 0 ? Math.round((current / total) * 10000) / 100 : 0;
+
+    const rows = sorted.map((t) => {
+      const total = Number(t.tank_capacity ?? 0);
+      const current = t.current_capacity ? Number(t.current_capacity) : 0;
+      const remaining = total - current;
+      return {
+        "Tank Number": t.tank_code,
+        "Item Name": getItemName(t.item_code),
+        "Current Capacity": current,
+        "Total Quantity": total,
+        "Remaining Qty": remaining,
+        "Percentage (%)": pct(current, total),
+      };
+    });
+
+    // Totals row for the numeric fields.
+    const totalCurrent = rows.reduce((s, r) => s + r["Current Capacity"], 0);
+    const totalCapacity = rows.reduce((s, r) => s + r["Total Quantity"], 0);
+    const totalRemaining = rows.reduce((s, r) => s + r["Remaining Qty"], 0);
+    rows.push({
+      "Tank Number": "TOTAL",
+      "Item Name": "",
+      "Current Capacity": totalCurrent,
+      "Total Quantity": totalCapacity,
+      "Remaining Qty": totalRemaining,
+      "Percentage (%)": pct(totalCurrent, totalCapacity),
+    });
+
     const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 20 }];
+    sheet["!cols"] = [
+      { wch: 16 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 14 },
+    ];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, "Tank Data");
     XLSX.writeFile(workbook, "tank-data.xlsx");
-    toast.success(`Exported ${rows.length} tanks.`);
+    toast.success(`Exported ${sorted.length} tanks.`);
   }
 
   /* ── render ──────────────────────────────────────── */
