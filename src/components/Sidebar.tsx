@@ -39,6 +39,8 @@ import {
   FileStack,
   FileClock,
   CalendarRange,
+  CandlestickChart,
+  Tags,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -130,6 +132,8 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     links: [
       { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee, modules: ["dailyprice"] },
       { to: "/commodity/jivo-rates",  label: "Jivo Rates",       icon: TrendingUp,  modules: ["jivorates"] },
+      { to: "/commodity/market-rates", label: "Market Rates",    icon: CandlestickChart, modules: ["dailyprice"] },
+      { to: "/commodity/our-rates",   label: "Our Rates",        icon: Tags,        modules: ["dailyprice"] },
     ],
   },
   {

@@ -85,12 +85,15 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [jobWorkOpen, setJobWorkOpen] = useState(false);
   const [eContractStart, setEContractStart] = useState("");
   const [eContractEnd, setEContractEnd] = useState("");
+  const [ePaymentStatus, setEPaymentStatus] = useState<"PAID" | "UNPAID" | "">("");
   const [step, setStep] = useState(0);
   const [editing, setEditing] = useState(false);
 
   // Job work vendor is locked once stock is already AT_REFINERY and has a job_work_vendor
   const jobWorkLocked = data?.status === "AT_REFINERY" && !!data?.job_work_vendor;
   const isOutsideFactory = eStatus === "OUT_SIDE_FACTORY";
+  // Payment status is only required when moving In Contract → Under Loading
+  const needsPaymentStatus = data?.status === "IN_CONTRACT" && eStatus === "UNDER_LOADING";
 
   // Filtered vendor list for job work combobox
   const filteredVendors = useMemo(() => {
@@ -122,6 +125,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setJobWorkSearch("");
       setEContractStart(data.contract_start ?? "");
       setEContractEnd(data.contract_end ?? "");
+      setEPaymentStatus("");
       setStep(0);
     }
   }, [data]);
@@ -148,6 +152,10 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
     const err = getZodError(result);
     if (err) {
       if (showToast) toast.error(err);
+      return false;
+    }
+    if (needsPaymentStatus && !ePaymentStatus) {
+      if (showToast) toast.error("Please select payment status.");
       return false;
     }
     return true;
@@ -199,6 +207,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             created_by: email,
             arrival_date: eStatus === "OUT_SIDE_FACTORY" ? eArrivalDate.trim() || todayISO() : undefined,
             location: eLocation.trim() || undefined,
+            payment_status: needsPaymentStatus && ePaymentStatus ? ePaymentStatus : undefined,
           });
           toast.success("Stock moved (Bulk).");
         } else if (eTransferType === "batch") {
@@ -212,6 +221,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             transporter: eTransporterName.trim() || undefined,
             location: eLocation.trim() || undefined,
             eta: eEta.trim() || undefined,
+            payment_status: needsPaymentStatus && ePaymentStatus ? ePaymentStatus : undefined,
           });
           toast.success("Stock dispatched (Batch).");
         }
@@ -418,6 +428,39 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                       <SelectItem value="TOLERATE">Tolerate</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {/* Payment Status — only when moving In Contract → Under Loading */}
+              {needsPaymentStatus && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Label>Payment Status *</Label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEPaymentStatus("PAID")}
+                      className={cn(
+                        "flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+                        ePaymentStatus === "PAID"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
+                      )}
+                    >
+                      Paid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEPaymentStatus("UNPAID")}
+                      className={cn(
+                        "flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+                        ePaymentStatus === "UNPAID"
+                          ? "border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-300"
+                          : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
+                      )}
+                    >
+                      Unpaid
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -658,6 +701,12 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
                         <p className="text-xs text-muted-foreground">Action</p>
                         <p className="font-medium">{eAction || "-"}</p>
                       </div>
+                      {needsPaymentStatus && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Payment Status</p>
+                          <p className="font-medium">{ePaymentStatus ? (ePaymentStatus === "PAID" ? "Paid" : "Unpaid") : "-"}</p>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
