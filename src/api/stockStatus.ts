@@ -200,6 +200,7 @@ export async function moveStock(data: {
   created_by: string;
   arrival_date?: string;
   location?: string;
+  payment_status?: "PAID" | "UNPAID";
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/move/", data);
   return res.data;
@@ -215,6 +216,7 @@ export async function dispatchStock(data: {
   transporter?: string;
   location?: string;
   eta?: string;
+  payment_status?: "PAID" | "UNPAID";
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/dispatch/", data);
   return res.data;
