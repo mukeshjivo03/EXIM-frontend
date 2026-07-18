@@ -33,6 +33,8 @@ import PlanningReportPage from "@/pages/reports/PlanningReportPage";
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
 import JivoRatesPage from "@/pages/commodity/JivoRatesPage";
+import MarketRatesPage from "@/pages/commodity/market-rates";
+import OurRatesPage from "@/pages/commodity/our-rates";
 
 // Accounts
 import EximAccountPage from "@/pages/accounts/CrDrOutstandingPage";
@@ -370,6 +372,22 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["jivorates"]}>
                   <JivoRatesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/commodity/market-rates"
+              element={
+                <ProtectedRoute requiredModules={["dailyprice"]}>
+                  <MarketRatesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/commodity/our-rates"
+              element={
+                <ProtectedRoute requiredModules={["dailyprice"]}>
+                  <OurRatesPage />
                 </ProtectedRoute>
               }
             />
