@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO, subDays } from "date-fns";
 import {
-  ClipboardEdit,
+  Plus,
   RefreshCw,
   TrendingUp,
   TrendingDown,
@@ -33,8 +33,8 @@ import {
 import { useMarketRates } from "./useMarketRates";
 import { fmtINR } from "./CommodityCard";
 import { GraphicalView } from "./GraphicalView";
-import { TabularView } from "./TabularView";
-import { RateLogDialog } from "./RateLogDialog";
+import { EditableRatesTable } from "./EditableRatesTable";
+import { AddCommodityDialog } from "./AddCommodityDialog";
 import { RatesHeatmap } from "./RatesHeatmap";
 import { RateLadderDrawer, type DrawerTarget } from "./RateLadderDrawer";
 
@@ -102,7 +102,7 @@ export default function MarketRatesPage() {
   );
   const [search, setSearch] = useState("");
   const [drawerTarget, setDrawerTarget] = useState<DrawerTarget | null>(null);
-  const [logOpen, setLogOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   // History range — refetches with an earlier start_date when the picker goes past the loaded window
   const [fromDate, setFromDate] = useState(format(subDays(new Date(), 14), "yyyy-MM-dd"));
@@ -146,9 +146,9 @@ export default function MarketRatesPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="btn-press" onClick={() => setLogOpen(true)}>
-            <ClipboardEdit className="h-4 w-4 mr-2" />
-            Log Today's Rates
+          <Button className="btn-press" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Commodity
           </Button>
           <Button className="btn-press" variant="outline" onClick={() => void reload()} disabled={loading}>
             <RefreshCw className={loading ? "h-4 w-4 mr-2 animate-spin" : "h-4 w-4 mr-2"} />
@@ -211,9 +211,11 @@ export default function MarketRatesPage() {
         <CardHeader>
           <CardTitle>Today's Rates</CardTitle>
           <CardDescription>
-            {todayRows.length > 0
-              ? `${todayRows.length} commodities logged for ${format(new Date(), "d MMM yyyy")}`
-              : "Rates logged today appear here with deltas and 7-day trends"}
+            {viewMode === "tabular"
+              ? "Type the factory ₹/Kg per commodity — packing, GST and per-litre prices compute automatically"
+              : todayRows.length > 0
+                ? `${todayRows.length} commodities logged for ${format(new Date(), "d MMM yyyy")}`
+                : "Rates logged today appear here with deltas and 7-day trends"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -226,13 +228,17 @@ export default function MarketRatesPage() {
                 onSelect={(row) => setDrawerTarget({ commodityId: row.commodityId, name: row.name })}
               />
             ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <TabularView
-                  rows={filteredRows}
-                  hasSearch={!!search}
-                  onSelect={(row) => setDrawerTarget({ commodityId: row.commodityId, name: row.name })}
-                />
-              </div>
+              <EditableRatesTable
+                commodities={commodities}
+                byCommodity={byCommodity}
+                todayByCommodity={todayByCommodity}
+                latestByCommodity={latestByCommodity}
+                idsAvailable={idsAvailable}
+                createdBy={email ?? "frontend"}
+                search={search}
+                onSaved={() => void reload()}
+                onSelect={(commodityId, name) => setDrawerTarget({ commodityId, name })}
+              />
             )}
           </div>
         </CardContent>
@@ -327,15 +333,12 @@ export default function MarketRatesPage() {
         </CardContent>
       </Card>
 
-      {/* Rate logging modal */}
-      <RateLogDialog
-        open={logOpen}
-        onOpenChange={setLogOpen}
+      {/* Add commodity dialog */}
+      <AddCommodityDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
         commodities={commodities}
-        todayByCommodity={todayByCommodity}
-        latestByCommodity={latestByCommodity}
         idsAvailable={idsAvailable}
-        loading={loading}
         createdBy={email ?? "frontend"}
         onSaved={() => void reload()}
       />

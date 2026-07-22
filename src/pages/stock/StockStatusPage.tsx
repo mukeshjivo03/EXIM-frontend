@@ -45,7 +45,7 @@ import { fmtDateTime, fmtNum } from "@/lib/formatters";
 import { getErrorMessage, toastApiError } from "@/lib/errors";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Pagination } from "@/components/Pagination";
-import { formatStatus, statusColorClass, getEtaCountdown, STATUS_ORDER } from "./stock-helpers";
+import { formatStatus, statusColorClass, getEtaCountdown, STATUS_ORDER, shouldShowPaymentBadge } from "./stock-helpers";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -855,9 +855,24 @@ export default function StockStatusPage() {
                           </TableCell>
                           <TableCell>{itemNameMap.get(row.item_code) ?? row.item_code}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
-                              {formatStatus(row.status).toLowerCase()}
-                            </Badge>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge variant="outline" className={cn("capitalize font-semibold shadow-none text-xs px-2.5 py-1", statusColorClass(row.status))}>
+                                {formatStatus(row.status).toLowerCase()}
+                              </Badge>
+                              {shouldShowPaymentBadge(row.status, row.payment_status) && (
+                                <span
+                                  title={row.payment_status === "PAID" ? "Paid" : "Unpaid"}
+                                  className={cn(
+                                    "inline-flex h-5 w-5 items-center justify-center rounded-full",
+                                    row.payment_status === "PAID"
+                                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                                  )}
+                                >
+                                  <IndianRupee className="h-3 w-3" />
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell font-medium">
                             {vendorNameMap.get(row.vendor_code) ?? row.vendor_code}

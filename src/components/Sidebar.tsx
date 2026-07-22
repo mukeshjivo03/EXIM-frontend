@@ -133,7 +133,8 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { to: "/commodity/daily-price", label: "Show Daily Price", icon: IndianRupee, modules: ["dailyprice"] },
       { to: "/commodity/jivo-rates",  label: "Jivo Rates",       icon: TrendingUp,  modules: ["jivorates"] },
       { to: "/commodity/market-rates", label: "Market Rates",    icon: CandlestickChart, modules: ["dailyprice"] },
-      { to: "/commodity/our-rates",   label: "Our Rates",        icon: Tags,        modules: ["dailyprice"] },
+      // 
+      //        modules: ["dailyprice"] },
     ],
   },
   {

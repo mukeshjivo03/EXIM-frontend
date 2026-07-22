@@ -28,6 +28,7 @@ export interface StockStatus {
   vendor_code: string;
   vendor_name?: string;
   status: StockStatusChoice;
+  payment_status?: "PAID" | "UNPAID";
   rate: string;
   total: string;
   quantity: string;
@@ -245,6 +246,7 @@ export interface VehicleReportItem {
   contract_end?: string | null;
   arrival_date?: string | null;
   status: string;
+  payment_status?: "PAID" | "UNPAID";
   job_work: string | null;
   rate?: number | null;
 }
