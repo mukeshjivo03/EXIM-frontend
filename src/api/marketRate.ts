@@ -3,9 +3,10 @@ import api from "./client";
 /**
  * Commodity Rates API (manual factory-rate logging architecture).
  * Derived prices are computed SERVER-SIDE (model properties):
- *   with_packing = factory_kg + 14
- *   with_gst_kg  = with_packing × 1.005
- *   with_gst_ltr = with_gst_kg ÷ 1.0989
+ *   factory_kg_freight = factory_kg + freight_rate   (landed factory price)
+ *   with_packing       = factory_kg + 14             (basic only, freight excluded)
+ *   with_gst_kg        = with_packing × 1.05
+ *   with_gst_ltr       = with_gst_kg ÷ 1.0989
  * The client never recomputes these — it displays what the API returns.
  *
  * The Django app is mounted under /rates/ — e.g. /rates/commodity/, /rates/packing/.
@@ -48,6 +49,17 @@ export interface CommodityMargin {
   id?: number;
   commodity: string;
   margin_rate: string | null;
+  /** per-commodity freight rate (optional) */
+  freight_rate?: string | null;
+  created_by: string;
+}
+
+/** Payload for POST /rates/commodity/ — note the API field is `margin` (not `margin_rate`). */
+export interface CommodityCreatePayload {
+  commodity: string;
+  margin: string | null;
+  /** optional per-commodity freight rate */
+  freight_rate?: string | null;
   created_by: string;
 }
 
@@ -56,9 +68,22 @@ export async function getCommodities(): Promise<CommodityMargin[]> {
   return data ?? [];
 }
 
-export async function createCommodity(payload: Omit<CommodityMargin, "id">): Promise<CommodityMargin> {
+export async function createCommodity(payload: CommodityCreatePayload): Promise<CommodityMargin> {
   const { data } = await api.post<CommodityMargin>(`${BASE}/commodity/`, payload);
   return data;
+}
+
+/** Update a commodity's margin / freight / name — PATCH /rates/commodity/:id/ */
+export async function updateCommodity(
+  id: number,
+  payload: Partial<Pick<CommodityCreatePayload, "commodity" | "margin" | "freight_rate">>
+): Promise<CommodityMargin> {
+  const { data } = await api.patch<CommodityMargin>(`${BASE}/commodity/${id}/`, payload);
+  return data;
+}
+
+export async function deleteCommodity(id: number): Promise<void> {
+  await api.delete(`${BASE}/commodity/${id}/`);
 }
 
 /* ── Market rates ────────────────────────────────────────── */
@@ -69,10 +94,17 @@ export interface MarketRate {
   commodity: number | null;
   /** decimals arrive as strings, computed properties may arrive as raw numbers */
   factory_kg: string | number;
+  /** landed factory price = factory_kg + freight_rate */
+  factory_kg_freight?: string | number;
   with_packing: string | number;
   with_gst_kg: string | number;
   with_gst_ltr: string | number;
-  date: string; // YYYY-MM-DD
+  /** per-commodity freight rate carried on each rate row (nullable) */
+  freight_rate?: string | number | null;
+  date: string; // YYYY-MM-DD (normalized client-side from date/created_at/created_on)
+  /** raw timestamp fields the backend may send instead of `date` */
+  created_at?: string | null;
+  created_on?: string | null;
 }
 
 export interface MarketRateCreatePayload {

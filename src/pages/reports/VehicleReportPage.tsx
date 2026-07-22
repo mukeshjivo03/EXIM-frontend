@@ -1,9 +1,10 @@
 ﻿import { Fragment, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown, FileDown, GripVertical } from "lucide-react";
+import { RefreshCw, Truck, PackageOpen, BarChart3, AlertTriangle, TrendingUp, ChevronDown, FileDown, GripVertical, IndianRupee } from "lucide-react";
 
 import { getVehicleReport, getStockStatuses, type VehicleReport } from "@/api/stockStatus";
+import { shouldShowPaymentBadge } from "@/pages/stock/stock-helpers";
 import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -164,6 +165,23 @@ function appendJsonSheet(workbook: XLSX.WorkBook, name: string, rows: Record<str
   XLSX.utils.book_append_sheet(workbook, sheet, name.slice(0, 31));
 }
 
+function PaymentIcon({ status, paymentStatus }: { status?: string | null; paymentStatus?: string }) {
+  if (!shouldShowPaymentBadge(status ?? "", paymentStatus)) return null;
+  return (
+    <span
+      title={paymentStatus === "PAID" ? "Paid" : "Unpaid"}
+      className={cn(
+        "inline-flex h-5 w-5 items-center justify-center rounded-full align-middle",
+        paymentStatus === "PAID"
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+      )}
+    >
+      <IndianRupee className="h-3 w-3" />
+    </span>
+  );
+}
+
 export default function VehicleReportPage() {
   const [activeTab, setActiveTab] = useState<StatusKey>("ON_THE_WAY");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -252,6 +270,7 @@ export default function VehicleReportPage() {
               contract_end: s.contract_end || null,
               arrival_date: s.arrival_date || null,
               status: s.status,
+              payment_status: s.payment_status,
               job_work: s.job_work_vendor || null,
               rate: Number.parseFloat(s.rate || "0"),
             },
@@ -539,7 +558,12 @@ export default function VehicleReportPage() {
                           </TableCell>
                           <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                           <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
-                          <TableCell>{item.item_name}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1.5">
+                              {item.item_name}
+                              <PaymentIcon status={item.status || activeTab} paymentStatus={item.payment_status} />
+                            </span>
+                          </TableCell>
                           <TableCell className="text-right tabular-nums">{fmtRate(item.rate)}</TableCell>
                           <TableCell className="text-right tabular-nums">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                           {daysCell}
@@ -580,7 +604,12 @@ export default function VehicleReportPage() {
                             <TableCell className="pl-10 text-xs text-muted-foreground font-mono">{v.vehicle_number || "-"}</TableCell>
                             <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                             <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
-                            <TableCell className="text-sm">{item.item_name}</TableCell>
+                            <TableCell className="text-sm">
+                              <span className="inline-flex items-center gap-1.5">
+                                {item.item_name}
+                                <PaymentIcon status={item.status || activeTab} paymentStatus={item.payment_status} />
+                              </span>
+                            </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">{fmtRate(item.rate)}</TableCell>
                             <TableCell className="text-right tabular-nums text-sm">{fmtMts(item.total_quantity_in_mts)}</TableCell>
                             <TableCell className="tabular-nums">

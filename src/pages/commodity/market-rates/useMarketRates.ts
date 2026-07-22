@@ -9,6 +9,16 @@ import {
   type MarketRate,
 } from "@/api/marketRate";
 
+/**
+ * The backend may send the rate's day as `date`, or as a `created_at` / `created_on`
+ * timestamp (possibly a full datetime). Normalize everything to a YYYY-MM-DD string
+ * so the grouping / today-detection / history filters have a stable key.
+ */
+function normalizeRateDate(r: MarketRate): string {
+  const raw = r.date ?? r.created_at ?? r.created_on ?? "";
+  return String(raw).slice(0, 10);
+}
+
 /** Today's rate joined with commodity name + history-derived fields. */
 export interface EnrichedRate {
   /** MarketRate row id — undefined until the backend exposes id */
@@ -55,8 +65,8 @@ export function useMarketRates() {
         getLatestMarketRates().catch(() => [] as MarketRate[]), // non-critical
       ]);
       setCommodities(commoditiesData);
-      setRates(ratesData);
-      setLatest(latestData);
+      setRates(ratesData.map((r) => ({ ...r, date: normalizeRateDate(r) })));
+      setLatest(latestData.map((r) => ({ ...r, date: normalizeRateDate(r) })));
     } catch {
       setError(true);
     } finally {

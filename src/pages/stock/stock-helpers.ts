@@ -46,6 +46,24 @@ export function statusColorClass(s: string): string {
   }
 }
 
+/** Statuses (after In Contract → Under Loading) where the paid/unpaid badge is relevant. */
+export const PAYMENT_BADGE_STATUSES: string[] = [
+  "ON_THE_WAY",
+  "UNDER_LOADING",
+  "OTW_TO_REFINERY",
+  "OUT_SIDE_FACTORY",
+];
+
+export function shouldShowPaymentBadge(status: string, paymentStatus?: string): boolean {
+  return !!paymentStatus && PAYMENT_BADGE_STATUSES.includes(status);
+}
+
+export function paymentColorClass(paymentStatus: string): string {
+  return paymentStatus === "PAID"
+    ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800"
+    : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+}
+
 export function getEtaCountdown(eta: string) {
   if (!eta) return null;
   const target = new Date(eta);

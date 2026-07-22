@@ -15,6 +15,13 @@ import { fmtINR, LADDER_COLORS } from "./CommodityCard";
 
 const LTR_COLOR = "#64748b"; // slate-500
 
+/** Format a rate's date safely — the API may omit it, leaving an empty/invalid string. */
+function safeDateLabel(date: string | undefined | null, fmt: string, fallback: string): string {
+  if (!date) return fallback;
+  const d = parseISO(date);
+  return isNaN(d.getTime()) ? fallback : format(d, fmt);
+}
+
 function useIsMobile() {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches);
   useEffect(() => {
@@ -110,15 +117,15 @@ export function RateLadderDrawer({ target, history, onClose }: RateLadderDrawerP
         packing: Number(entry.with_packing),
         gstKg: Number(entry.with_gst_kg),
         gstLtr: Number(entry.with_gst_ltr),
-        dateLabel: format(parseISO(entry.date), "d MMM yyyy"),
+        dateLabel: safeDateLabel(entry.date, "d MMM yyyy", "latest"),
       }
     : null;
 
   // Last 30 logged days for the line chart
   const chartData = useMemo(
     () =>
-      history.slice(-30).map((h) => ({
-        date: format(parseISO(h.date), "d MMM"),
+      history.slice(-30).map((h, i) => ({
+        date: safeDateLabel(h.date, "d MMM", `#${i + 1}`),
         price: Number(h.factory_kg),
       })),
     [history]
