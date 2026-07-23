@@ -1,9 +1,9 @@
-import { BRANCHES, type Branch } from "@/api/bankAccounts";
+import { BRANCH_FILTERS, type BranchFilter } from "@/api/bankAccounts";
 import { cn } from "@/lib/utils";
 
 interface BranchToggleProps {
-  value: Branch;
-  onChange: (branch: Branch) => void;
+  value: BranchFilter;
+  onChange: (branch: BranchFilter) => void;
 }
 
 /**
@@ -17,7 +17,7 @@ export default function BranchToggle({ value, onChange }: BranchToggleProps) {
       aria-label="Branch"
       className="inline-flex items-center gap-1 rounded-lg border bg-muted p-1"
     >
-      {BRANCHES.map((branch) => {
+      {BRANCH_FILTERS.map((branch) => {
         const active = branch === value;
         return (
           <button
