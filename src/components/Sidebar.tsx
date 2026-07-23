@@ -119,6 +119,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Accounts",
     links: [
       { to: "/exim-account",        label: "Oil Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
+      { to: "/accounts/bank-loan/dashboard", label: "Finance Dashboard", icon: LayoutDashboard, modules: ["bank_accounts"] },
       { to: "/accounts/bank-loan",  label: "Bank & Loan Accounts", icon: Landmark, modules: ["bank_accounts"] },
       { to: "/accounts/vendor-outstanding", label: "Vendor Outstanding", icon: Handshake,   modules: ["debitentry", "party"] },
       { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: UserCheck, modules: ["customer_balance_sheet"] },

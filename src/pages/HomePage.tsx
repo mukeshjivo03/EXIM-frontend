@@ -118,6 +118,7 @@ const quickLinks: QuickLink[] = [
   { to: "/contracts/domestic-2627", label: "Contracts (26-27)", icon: FileText, desc: "Active orders", category: "Commercials", modules: ["domesticcontract"] },
   { to: "/exim-rates", label: "Exchange Rates", icon: Globe, desc: "FX rates & conversion", category: "Commercials", modules: ["exim_rates"] },
   { to: "/exim-account", label: "Oil  CR/DR Outstanding", icon: BookOpen, desc: "Account & balance", category: "Commercials", modules: ["debitentry"] },
+  { to: "/accounts/bank-loan/dashboard", label: "Finance Dashboard", icon: LayoutDashboard, desc: "Bank, FD & loan overview", category: "Commercials", modules: ["bank_accounts"] },
   { to: "/accounts/bank-loan", label: "Bank & Loan Accounts", icon: Landmark, desc: "Bank, FD & loan balances", category: "Commercials", modules: ["bank_accounts"] },
   { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: ReceiptText, desc: "Customer balance sheet", category: "Commercials", modules: ["customer_balance_sheet"] },
   { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, desc: "Customer aging balance", category: "Commercials", modules: ["customer_balance_sheet"] },

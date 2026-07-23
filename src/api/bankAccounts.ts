@@ -14,8 +14,17 @@ const BASE = "/hana/accounts";
 
 /* ── Types ───────────────────────────────────────────────── */
 
-export type Branch = "OIL" | "BEVERAGES";
-export const BRANCHES: Branch[] = ["OIL", "BEVERAGES"];
+/** Real API branches — the values the backend endpoints accept. */
+export type Branch = "OIL" | "BEVERAGES" | "MART";
+export const BRANCHES: Branch[] = ["OIL", "BEVERAGES", "MART"];
+
+/**
+ * Branch selector shown in the UI. "ALL" is a client-side pseudo-branch: it is
+ * never sent to the API; instead the list is aggregated across every real
+ * branch (see {@link fetchAllAccounts}).
+ */
+export type BranchFilter = Branch | "ALL";
+export const BRANCH_FILTERS: BranchFilter[] = ["ALL", "OIL", "BEVERAGES", "MART"];
 
 /** Account category as returned by HANA. */
 export type AccountCategory = "Bank" | "FD" | "Loan";
@@ -44,6 +53,20 @@ export interface Account {
   U_Bank_Name?: string | null;
   U_Account_Number?: string | null;
   U_IFSC?: string | null;
+  /**
+   * The branch this row was fetched from. Tagged client-side so the "ALL" view
+   * can group/label rows and query the correct branch for closing balances.
+   */
+  sourceBranch: Branch;
+}
+
+/**
+ * Stable identity for an account across branches. AcctCode alone is NOT unique
+ * in the aggregated "ALL" view (the same code can exist under multiple
+ * branches), so we qualify it with the source branch.
+ */
+export function accountKey(account: Account): string {
+  return `${account.sourceBranch}:${account.AcctCode}`;
 }
 
 /** One row from GET /hana/accounts/closing-balances/ */
@@ -56,6 +79,46 @@ export interface AccountBalance {
    * despite the endpoint/field name.
    */
   ClosingBalance: number;
+}
+
+/** One journal row from GET /hana/accounts/ledger */
+export interface LedgerEntry {
+  TransId: number;
+  Line_ID: number;
+  /** ISO datetime, e.g. "2026-02-05T00:00:00". */
+  RefDate: string;
+  Account: string;
+  AcctName: string;
+  /** Money into the account (increases a bank balance). */
+  Debit: number;
+  /** Money out of the account. */
+  Credit: number;
+  LineMemo: string;
+  ShortName: string;
+  HeaderMemo: string;
+  /** HANA transaction-type code (e.g. "46" = outgoing payment, "30" = journal). */
+  TransType: string;
+  Ref1: string;
+  Ref2: string;
+}
+
+/** One row from GET /hana/accounts/summary/ (grouped by category + currency). */
+export interface AccountsSummaryRow {
+  Category: AccountCategory;
+  AccountCount: number;
+  TotalBalance: number;
+  ActCurr: string;
+  /** Source branch — tagged client-side so the "ALL" summary can be branch-aware. */
+  sourceBranch: Branch;
+}
+
+/** One row from GET /hana/accounts/monthly-trend/ */
+export interface MonthlyTrendRow {
+  Year: number;
+  Month: number;
+  TotalDebit: number;
+  TotalCredit: number;
+  NetMovement: number;
 }
 
 /** The `{ "error": "..." }` shape both endpoints return for 400 / 502. */
@@ -94,14 +157,25 @@ export function toApiError(err: unknown): BankAccountsApiError {
 
 /* ── Fetchers ────────────────────────────────────────────── */
 
-/** GET /hana/accounts/?branch=OIL|BEVERAGES */
+/** GET /hana/accounts/?branch=OIL|BEVERAGES|MART */
 export async function fetchAccounts(branch: Branch): Promise<Account[]> {
   try {
     const { data } = await api.get<Account[]>(`${BASE}/`, { params: { branch } });
-    return data ?? [];
+    // Tag every row with its source branch so the UI can carry it around.
+    return (data ?? []).map((account) => ({ ...account, sourceBranch: branch }));
   } catch (err) {
     throw toApiError(err);
   }
+}
+
+/**
+ * Aggregate the account lists of every real branch into one, tagging each row
+ * with its {@link Account.sourceBranch}. Backs the "ALL" view. Branches are
+ * fetched in parallel; if any one fails the whole call rejects with its error.
+ */
+export async function fetchAllAccounts(): Promise<Account[]> {
+  const perBranch = await Promise.all(BRANCHES.map((branch) => fetchAccounts(branch)));
+  return perBranch.flat();
 }
 
 export interface BalanceParams {
@@ -128,6 +202,69 @@ export async function fetchAccountBalance(
       },
     });
     return data?.[0] ?? null;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/**
+ * GET /hana/accounts/ledger?branch=&acct_code=&from_date=&to_date=
+ * Returns the journal rows (debits/credits) for one account over a date range.
+ * The backend does NOT include a running balance — the UI derives it.
+ */
+export async function fetchLedger(params: BalanceParams): Promise<LedgerEntry[]> {
+  try {
+    const { data } = await api.get<LedgerEntry[]>(`${BASE}/ledger`, {
+      params: {
+        branch: params.branch,
+        acct_code: params.acctCode,
+        from_date: params.fromDate,
+        to_date: params.toDate,
+      },
+    });
+    return data ?? [];
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/** GET /hana/accounts/summary/?branch= — KPI totals per category + currency. */
+export async function fetchAccountsSummary(
+  branch: Branch
+): Promise<AccountsSummaryRow[]> {
+  try {
+    const { data } = await api.get<AccountsSummaryRow[]>(`${BASE}/summary/`, {
+      params: { branch },
+    });
+    return (data ?? []).map((row) => ({ ...row, sourceBranch: branch }));
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/** Aggregate summaries across every real branch (backs the "ALL" dashboard). */
+export async function fetchAllAccountsSummary(): Promise<AccountsSummaryRow[]> {
+  const perBranch = await Promise.all(BRANCHES.map((b) => fetchAccountsSummary(b)));
+  return perBranch.flat();
+}
+
+/**
+ * GET /hana/accounts/monthly-trend/?branch=&acct_code=&from_date=&to_date=
+ * Monthly debit/credit/net series for a single account.
+ */
+export async function fetchMonthlyTrend(
+  params: BalanceParams
+): Promise<MonthlyTrendRow[]> {
+  try {
+    const { data } = await api.get<MonthlyTrendRow[]>(`${BASE}/monthly-trend/`, {
+      params: {
+        branch: params.branch,
+        acct_code: params.acctCode,
+        from_date: params.fromDate,
+        to_date: params.toDate,
+      },
+    });
+    return data ?? [];
   } catch (err) {
     throw toApiError(err);
   }

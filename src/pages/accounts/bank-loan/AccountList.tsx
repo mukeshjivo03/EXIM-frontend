@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { Search } from "lucide-react";
 import {
   CATEGORY_ORDER,
   categoryLabel,
+  accountKey,
   type Account,
   type AccountCategory,
 } from "@/api/bankAccounts";
@@ -17,10 +18,12 @@ interface AccountListProps {
   isError: boolean;
   errorMessage?: string;
   onRetry: () => void;
-  selectedCode: string | null;
+  selectedKey: string | null;
   onSelect?: (account: Account) => void;
   /** When false, rows are read-only (user lacks the bank-closing permission). */
   canSelect?: boolean;
+  /** When true (the "ALL" view), each row shows a branch badge. */
+  showBranch?: boolean;
 }
 
 export default function AccountList({
@@ -29,9 +32,10 @@ export default function AccountList({
   isError,
   errorMessage,
   onRetry,
-  selectedCode,
+  selectedKey,
   onSelect,
   canSelect = true,
+  showBranch = false,
 }: AccountListProps) {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<AccountCategory>(CATEGORY_ORDER[0]);
@@ -88,8 +92,12 @@ export default function AccountList({
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div role="tablist" aria-label="Account category" className="flex border-b">
+      {/* Category tabs — bubble stickers */}
+      <div
+        role="tablist"
+        aria-label="Account category"
+        className="flex flex-wrap gap-2 border-b p-3"
+      >
         {tabs.map((tab) => {
           const active = tab === activeTab;
           const count = counts.get(tab) ?? 0;
@@ -101,17 +109,19 @@ export default function AccountList({
               aria-selected={active}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-primary bg-primary text-primary-foreground shadow-primary/25"
+                  : "border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               {categoryLabel(tab)}
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.5 text-xs",
-                  active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                  active
+                    ? "bg-white/20 text-primary-foreground"
+                    : "bg-background text-muted-foreground"
                 )}
               >
                 {count}
@@ -141,45 +151,73 @@ export default function AccountList({
             }
           />
         ) : (
-          <ul className="space-y-1 p-2">
-            {rows.map((account) => {
-              const active = account.AcctCode === selectedCode;
-              const Row = canSelect ? "button" : "div";
-              return (
-                <li key={account.AcctCode}>
-                  <Row
-                    {...(canSelect
-                      ? { type: "button" as const, onClick: () => onSelect?.(account), "aria-current": active }
+          <table className="w-full border-collapse text-sm">
+            <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+              <tr className="border-b text-[11px] uppercase tracking-wider text-muted-foreground">
+                {showBranch && (
+                  <th className="px-3 py-2.5 text-left font-semibold">Branch</th>
+                )}
+                <th className="px-3 py-2.5 text-left font-semibold">Account</th>
+                <th className="px-3 py-2.5 text-left font-semibold">Bank</th>
+                <th className="px-3 py-2.5 text-right font-semibold">
+                  Current Balance
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {rows.map((account) => {
+                const key = accountKey(account);
+                const active = key === selectedKey;
+                const select = canSelect ? () => onSelect?.(account) : undefined;
+                return (
+                  <tr
+                    key={key}
+                    {...(select
+                      ? {
+                          onClick: select,
+                          onKeyDown: (e: KeyboardEvent) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              select();
+                            }
+                          },
+                          tabIndex: 0,
+                          "aria-current": active,
+                        }
                       : {})}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      canSelect
-                        ? active
-                          ? "border-primary bg-primary/10 ring-1 ring-primary"
-                          : "cursor-pointer border-transparent hover:border-border hover:bg-accent"
-                        : "border-transparent"
+                      "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                      active
+                        ? "bg-primary/10"
+                        : canSelect
+                          ? "cursor-pointer hover:bg-accent"
+                          : ""
                     )}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">
-                        {account.AcctName}
-                      </div>
+                    {showBranch && (
+                      <td className="px-3 py-2.5 align-top">
+                        <span className="inline-flex rounded-full border bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {account.sourceBranch}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-3 py-2.5 align-top">
+                      <div className="truncate font-medium">{account.AcctName}</div>
                       <div className="truncate text-xs text-muted-foreground">
                         {account.AcctCode}
-                        {account.U_Bank_Name ? ` · ${account.U_Bank_Name}` : ""}
                       </div>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="text-sm font-medium tabular-nums">
-                        {formatMoney(account.CurrTotal, account.ActCurr)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Current balance</div>
-                    </div>
-                  </Row>
-                </li>
-              );
-            })}
-          </ul>
+                    </td>
+                    <td className="max-w-[10rem] truncate px-3 py-2.5 align-top text-muted-foreground">
+                      {account.U_Bank_Name || "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right align-top font-medium tabular-nums">
+                      {formatMoney(account.CurrTotal, account.ActCurr)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

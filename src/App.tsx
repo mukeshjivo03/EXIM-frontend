@@ -50,6 +50,8 @@ import CustomerAgingPage from "@/pages/accounts/CustomerAgingPage";
 import VendorOutstandingPage from "@/pages/accounts/VendorOutstandingPage";
 import VendorLedgerPage from "@/pages/accounts/VendorLedgerPage";
 import BankLoanAccountsPage from "@/pages/accounts/bank-loan/BankLoanAccountsPage";
+import BankLedgerPage from "@/pages/accounts/bank-loan/BankLedgerPage";
+import FinanceDashboardPage from "@/pages/accounts/bank-loan/FinanceDashboardPage";
 
 //custom Exchange
 import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRatesPage";
@@ -360,6 +362,22 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["bank_accounts"]}>
                   <BankLoanAccountsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/bank-loan/dashboard"
+              element={
+                <ProtectedRoute requiredModules={["bank_accounts"]}>
+                  <FinanceDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/bank-loan/ledger/:branch/:acctCode"
+              element={
+                <ProtectedRoute requiredModules={["bank_closing"]}>
+                  <BankLedgerPage />
                 </ProtectedRoute>
               }
             />
