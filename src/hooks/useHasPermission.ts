@@ -19,6 +19,10 @@ const RESOURCE_ALIASES: Record<string, string[]> = {
   directorreport: ["director_report"],
   customer_balance_sheet: ["view_customer_balance_sheet"],
   view_customer_balance_sheet: ["customer_balance_sheet"],
+  bank_accounts: ["view_bank_accounts"],
+  view_bank_accounts: ["bank_accounts"],
+  bank_closing: ["view_bank_closing"],
+  view_bank_closing: ["bank_closing"],
 };
 
 export function useHasPermission() {

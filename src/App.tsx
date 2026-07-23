@@ -358,7 +358,7 @@ function App() {
             <Route
               path="/accounts/bank-loan"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredModules={["bank_accounts"]}>
                   <BankLoanAccountsPage />
                 </ProtectedRoute>
               }
