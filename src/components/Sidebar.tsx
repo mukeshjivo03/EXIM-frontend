@@ -23,6 +23,7 @@ import {
   BarChart3,
   Crown,
   Scale,
+  Landmark,
   Clock,
   FileText,
   FileCheck,
@@ -118,6 +119,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Accounts",
     links: [
       { to: "/exim-account",        label: "Oil Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
+      { to: "/accounts/bank-loan",  label: "Bank & Loan Accounts", icon: Landmark },
       { to: "/accounts/vendor-outstanding", label: "Vendor Outstanding", icon: Handshake,   modules: ["debitentry", "party"] },
       { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: UserCheck, modules: ["customer_balance_sheet"] },
       { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, modules: ["customer_balance_sheet"] },
