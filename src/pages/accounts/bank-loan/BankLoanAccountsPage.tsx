@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { type Account, type Branch } from "@/api/bankAccounts";
 import { useAccounts } from "@/hooks/useBankAccounts";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import BranchToggle from "./BranchToggle";
 import AccountList from "./AccountList";
 import AccountDetail from "./AccountDetail";
 
 export default function BankLoanAccountsPage() {
+  const { hasPermission } = useHasPermission();
+  // "view_bank_closing" gates the date-range net-movement (closing balance) panel.
+  const canViewClosing = hasPermission("bank_closing");
+
   const [branch, setBranch] = useState<Branch>("OIL");
   const [selected, setSelected] = useState<Account | null>(null);
 
@@ -50,7 +55,8 @@ export default function BankLoanAccountsPage() {
           errorMessage={error?.message}
           onRetry={() => refetch()}
           selectedCode={selected?.AcctCode ?? null}
-          onSelect={setSelected}
+          onSelect={canViewClosing ? setSelected : undefined}
+          canSelect={canViewClosing}
         />
       </section>
 

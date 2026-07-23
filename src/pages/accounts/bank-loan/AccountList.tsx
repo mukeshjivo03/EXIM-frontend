@@ -18,7 +18,9 @@ interface AccountListProps {
   errorMessage?: string;
   onRetry: () => void;
   selectedCode: string | null;
-  onSelect: (account: Account) => void;
+  onSelect?: (account: Account) => void;
+  /** When false, rows are read-only (user lacks the bank-closing permission). */
+  canSelect?: boolean;
 }
 
 export default function AccountList({
@@ -29,6 +31,7 @@ export default function AccountList({
   onRetry,
   selectedCode,
   onSelect,
+  canSelect = true,
 }: AccountListProps) {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<AccountCategory>(CATEGORY_ORDER[0]);
@@ -141,17 +144,20 @@ export default function AccountList({
           <ul className="space-y-1 p-2">
             {rows.map((account) => {
               const active = account.AcctCode === selectedCode;
+              const Row = canSelect ? "button" : "div";
               return (
                 <li key={account.AcctCode}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(account)}
-                    aria-current={active}
+                  <Row
+                    {...(canSelect
+                      ? { type: "button" as const, onClick: () => onSelect?.(account), "aria-current": active }
+                      : {})}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      active
-                        ? "border-primary bg-primary/10 ring-1 ring-primary"
-                        : "border-transparent hover:border-border hover:bg-accent"
+                      canSelect
+                        ? active
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "cursor-pointer border-transparent hover:border-border hover:bg-accent"
+                        : "border-transparent"
                     )}
                   >
                     <div className="min-w-0 flex-1">
@@ -169,7 +175,7 @@ export default function AccountList({
                       </div>
                       <div className="text-xs text-muted-foreground">Current balance</div>
                     </div>
-                  </button>
+                  </Row>
                 </li>
               );
             })}
