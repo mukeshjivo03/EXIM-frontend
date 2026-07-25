@@ -344,7 +344,7 @@ function App() {
             <Route
               path="/accounts/vendor-outstanding"
               element={
-                <ProtectedRoute requiredModules={["debitentry", "party"]}>
+                <ProtectedRoute requiredModules={["balance_sheet", "debitentry", "party"]}>
                   <VendorOutstandingPage />
                 </ProtectedRoute>
               }
@@ -352,7 +352,7 @@ function App() {
             <Route
               path="/accounts/vendor-outstanding/:vendorCode"
               element={
-                <ProtectedRoute requiredModules={["debitentry", "party"]}>
+                <ProtectedRoute requiredModules={["balance_sheet", "debitentry", "party"]}>
                   <VendorLedgerPage />
                 </ProtectedRoute>
               }

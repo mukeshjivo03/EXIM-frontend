@@ -1,30 +1,33 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, Landmark, PiggyBank } from "lucide-react";
-import {
-  categoryLabel,
-  type Account,
-  type AccountCategory,
-  type BranchFilter,
-} from "@/api/bankAccounts";
+import { Banknote, Landmark, Lock, PiggyBank, Scale, Wallet } from "lucide-react";
+import { type Account, type BranchFilter } from "@/api/bankAccounts";
 import { useAccounts } from "@/hooks/useBankAccounts";
 import { useHasPermission } from "@/hooks/useHasPermission";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import BranchToggle from "./BranchToggle";
 import AccountList from "./AccountList";
-import { accountCategoryKpis, formatMoney, type CategoryKpi } from "./helpers";
+import { formatMoney, portfolioSummary } from "./helpers";
+import { CATEGORY_TINT, useChartPalette } from "./chartTheme";
+import {
+  displayCategoryLabel,
+  DISPLAY_CATEGORY_ORDER,
+  type DisplayCategory,
+} from "./grouping";
+import {
+  CompositionMeter,
+  LegendRow,
+  MagnitudeBar,
+  PageHeader,
+  SectionCard,
+  StatTile,
+} from "./ui";
 
-const CATEGORY_ICONS: Record<AccountCategory, typeof Landmark> = {
+const CATEGORY_ICONS: Record<DisplayCategory, typeof Landmark> = {
   Bank: Landmark,
+  Wallet: Wallet,
   FD: PiggyBank,
   Loan: Banknote,
-};
-
-const CATEGORY_ACCENT: Record<AccountCategory, string> = {
-  Bank: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-  FD: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-  Loan: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
 };
 
 export default function BankLoanAccountsPage() {
@@ -32,6 +35,7 @@ export default function BankLoanAccountsPage() {
   const { hasPermission } = useHasPermission();
   // "view_bank_closing" gates the ledger (date-range net-movement) view.
   const canViewClosing = hasPermission("bank_closing");
+  const palette = useChartPalette();
 
   const [branch, setBranch] = useState<BranchFilter>("OIL");
 
@@ -43,7 +47,25 @@ export default function BankLoanAccountsPage() {
     refetch,
   } = useAccounts(branch);
 
-  const kpis = useMemo(() => accountCategoryKpis(accounts), [accounts]);
+  const summary = useMemo(() => portfolioSummary(accounts), [accounts]);
+
+  // Only tile the categories this branch actually holds — a branch with no
+  // wallet accounts shouldn't show an empty Wallets card.
+  const presentCategories = useMemo(
+    () => DISPLAY_CATEGORY_ORDER.filter((c) => summary.byCategory[c].count > 0),
+    [summary]
+  );
+
+  // Category shares are measured against gross magnitude, so a loan (a
+  // liability) still contributes its full weight to the mix.
+  const grossTotal = useMemo(
+    () =>
+      DISPLAY_CATEGORY_ORDER.reduce(
+        (sum, c) => sum + Math.abs(summary.byCategory[c].total),
+        0
+      ),
+    [summary]
+  );
 
   const handleBranchChange = (next: BranchFilter) => {
     if (next === branch) return;
@@ -62,32 +84,99 @@ export default function BankLoanAccountsPage() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-4 p-4 sm:p-6">
-      {/* Header */}
-      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
-            Bank &amp; Loan Accounts
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Browse SAP bank, FD and loan accounts, and open an account to view its
-            ledger over a date range.
-          </p>
-        </div>
-        <BranchToggle value={branch} onChange={handleBranchChange} />
-      </header>
+    <div className="animate-page flex w-full flex-col gap-5 p-4 sm:p-6">
+      <PageHeader
+        icon={Landmark}
+        title="Bank & Loan Accounts"
+        description="Bank, wallet, FD and loan accounts grouped by institution and SAP group. Open an account to read its ledger over any date range."
+        actions={<BranchToggle value={branch} onChange={handleBranchChange} />}
+      />
 
-      {/* Per-category KPI cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))
-          : kpis.map((kpi) => <CategoryKpiCard key={kpi.category} kpi={kpi} />)}
+      {/* Category KPIs + net position */}
+      <div
+        className={cnGrid(presentCategories.length + 1)}
+      >
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[7.5rem] rounded-xl" />
+          ))
+        ) : (
+          <>
+            {presentCategories.map((category) => {
+              const { count, total } = summary.byCategory[category];
+              const share = grossTotal > 0 ? Math.abs(total) / grossTotal : 0;
+              return (
+                <StatTile
+                  key={category}
+                  label={displayCategoryLabel(category)}
+                  value={formatMoney(total, summary.currency)}
+                  hint={`${count} ${count === 1 ? "account" : "accounts"} · ${(share * 100).toFixed(0)}% of portfolio`}
+                  icon={CATEGORY_ICONS[category]}
+                  chipClassName={CATEGORY_TINT[category]}
+                  footer={
+                    <MagnitudeBar
+                      ratio={share}
+                      color={palette.category[category]}
+                      track={palette.track}
+                    />
+                  }
+                />
+              );
+            })}
+            <StatTile
+              label="Net Position"
+              value={formatMoney(summary.net, summary.currency)}
+              hint={
+                summary.excludedAccounts > 0
+                  ? `${summary.currency} only · ${summary.excludedAccounts} account${summary.excludedAccounts === 1 ? "" : "s"} in other currencies excluded`
+                  : `Assets − loans · ${summary.currency}`
+              }
+              icon={Scale}
+              tone={summary.net >= 0 ? "positive" : "negative"}
+              footer={
+                <div className="space-y-1.5">
+                  <CompositionMeter
+                    segments={presentCategories.map((c) => ({
+                      key: c,
+                      label: displayCategoryLabel(c),
+                      value: summary.byCategory[c].total,
+                      color: palette.category[c],
+                    }))}
+                  />
+                  <LegendRow
+                    className="gap-x-2.5"
+                    items={presentCategories.map((c) => ({
+                      key: c,
+                      label: displayCategoryLabel(c),
+                      color: palette.category[c],
+                    }))}
+                  />
+                </div>
+              }
+            />
+          </>
+        )}
       </div>
 
-      {/* Full-width account list */}
-      <section className="h-[calc(100dvh-19rem)] min-h-[22rem] w-full overflow-hidden rounded-xl border bg-card">
+      {/* Account list */}
+      <SectionCard
+        flush
+        title="Accounts"
+        description={
+          canViewClosing
+            ? "Grouped by bank, wallet provider or SAP loan group — select an account to open its ledger."
+            : "Read-only — opening an account ledger needs the bank-closing permission."
+        }
+        action={
+          !canViewClosing ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+              <Lock className="size-3" />
+              Read-only
+            </span>
+          ) : undefined
+        }
+        bodyClassName="h-[calc(100dvh-27rem)] min-h-[26rem]"
+      >
         <AccountList
           accounts={accounts}
           isLoading={isLoading}
@@ -99,44 +188,18 @@ export default function BankLoanAccountsPage() {
           canSelect={canViewClosing}
           showBranch={branch === "ALL"}
         />
-      </section>
+      </SectionCard>
     </div>
   );
 }
 
-/* ── Category KPI card ────────────────────────────────────── */
-
-function CategoryKpiCard({ kpi }: { kpi: CategoryKpi }) {
-  const Icon = CATEGORY_ICONS[kpi.category];
-  return (
-    <div className="flex items-center gap-4 rounded-xl border bg-card p-4">
-      <div
-        className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-lg",
-          CATEGORY_ACCENT[kpi.category]
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold">{categoryLabel(kpi.category)}</p>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-            {kpi.count}
-          </span>
-        </div>
-        <p
-          className="mt-0.5 truncate text-lg font-bold tabular-nums"
-          title={formatMoney(kpi.total, kpi.currency)}
-        >
-          {formatMoney(kpi.total, kpi.currency)}
-        </p>
-        {kpi.mixedCurrency && (
-          <p className="text-[10px] text-muted-foreground">
-            {kpi.currency} shown · other currencies excluded
-          </p>
-        )}
-      </div>
-    </div>
-  );
+/** Tile grid that widens with the number of categories the branch holds. */
+function cnGrid(tiles: number): string {
+  const wide =
+    tiles >= 5
+      ? "xl:grid-cols-5"
+      : tiles === 4
+        ? "xl:grid-cols-4"
+        : "xl:grid-cols-3";
+  return `grid grid-cols-1 gap-3 sm:grid-cols-2 ${wide}`;
 }

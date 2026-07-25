@@ -1,0 +1,129 @@
+{
+  "sbi": {
+    "source": "Wikimedia Commons",
+    "file": "SBI-logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:SBI-logo.svg",
+    "license": "Public domain",
+    "bytes": 143
+  },
+  "icici": {
+    "source": "Wikimedia Commons",
+    "file": "ICICI Bank Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:ICICI_Bank_Logo.svg",
+    "license": "Public domain",
+    "bytes": 126458
+  },
+  "hdfc": {
+    "source": "Wikimedia Commons",
+    "file": "HDFC Bank Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:HDFC_Bank_Logo.svg",
+    "license": "Public domain",
+    "bytes": 6953
+  },
+  "axis": {
+    "source": "Wikimedia Commons",
+    "file": "Axis Bank logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Axis_Bank_logo.svg",
+    "license": "Public domain",
+    "bytes": 7032
+  },
+  "yes": {
+    "source": "Wikimedia Commons",
+    "file": "Yes Bank SVG Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Yes_Bank_SVG_Logo.svg",
+    "license": "Public domain",
+    "bytes": 8743
+  },
+  "indusind": {
+    "source": "Wikimedia Commons",
+    "file": "IndusInd Bank SVG Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:IndusInd_Bank_SVG_Logo.svg",
+    "license": "Public domain",
+    "bytes": 9452
+  },
+  "pnb": {
+    "source": "Wikimedia Commons",
+    "file": "Punjab National Bank new logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Punjab_National_Bank_new_logo.svg",
+    "license": "Public domain",
+    "bytes": 2350
+  },
+  "canara": {
+    "source": "Wikimedia Commons",
+    "file": "Canara Bank Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Canara_Bank_Logo.svg",
+    "license": "Public domain",
+    "bytes": 24774
+  },
+  "bandhan": {
+    "source": "Wikimedia Commons",
+    "file": "Bandhan Bank Svg Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Bandhan_Bank_Svg_Logo.svg",
+    "license": "Public domain",
+    "bytes": 18488
+  },
+  "au": {
+    "source": "Wikimedia Commons",
+    "file": "Aubank.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Aubank.svg",
+    "license": "Public domain",
+    "bytes": 7774
+  },
+  "kvb": {
+    "source": "Wikimedia Commons",
+    "file": "Karur Vysya Bank.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Karur_Vysya_Bank.svg",
+    "license": "Public domain",
+    "bytes": 39279
+  },
+  "bom": {
+    "source": "Wikimedia Commons",
+    "file": "Bank of Maharashtra logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Bank_of_Maharashtra_logo.svg",
+    "license": "Public domain",
+    "bytes": 71474
+  },
+  "scb": {
+    "source": "Wikimedia Commons",
+    "file": "Standard Chartered (2021).svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Standard_Chartered_(2021).svg",
+    "license": "Public domain",
+    "bytes": 5691
+  },
+  "citi": {
+    "source": "Wikimedia Commons",
+    "file": "Citibank.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Citibank.svg",
+    "license": "Public domain",
+    "bytes": 4747
+  },
+  "phonepe": {
+    "source": "Wikimedia Commons",
+    "file": "PhonePe Logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:PhonePe_Logo.svg",
+    "license": "Public domain",
+    "bytes": 7499
+  },
+  "gpay": {
+    "source": "Wikimedia Commons",
+    "file": "Google Pay Logo (2020).svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Google_Pay_Logo_(2020).svg",
+    "license": "Public domain",
+    "bytes": 4772
+  },
+  "amazonpay": {
+    "source": "Wikimedia Commons",
+    "file": "Amazon Pay logo.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Amazon_Pay_logo.svg",
+    "license": "Public domain",
+    "bytes": 8639
+  },
+  "barclays": {
+    "source": "Simple Icons",
+    "file": "barclays.svg",
+    "page": "https://simpleicons.org/",
+    "license": "CC0-1.0",
+    "bytes": 2316,
+    "monochrome": true
+  }
+}
