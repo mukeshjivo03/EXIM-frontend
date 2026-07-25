@@ -99,6 +99,9 @@ export default function SyncVendorDataPage() {
     hasPermission("party", "add") ||
     hasPermission("party", "change");
   const canDelete = hasPermission("party", "delete");
+  // Creating a temp vendor is guarded by sap_sync.add_party on the backend, so
+  // it needs "add" specifically — not the wider sync/fetch/change bundle above.
+  const canCreateTemp = hasPermission("party", "add");
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [count, setCount] = useState(0);
@@ -419,16 +422,18 @@ export default function SyncVendorDataPage() {
               >
                 {syncing ? "Syncing..." : "Sync"}
               </Button>
-              <Button
-                variant="outline"
-                className="btn-press"
-                onClick={openTempDialog}
-                title="Create a placeholder vendor that isn't in SAP yet"
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                Create Temp Vendor
-              </Button>
             </>
+          )}
+          {canCreateTemp && (
+            <Button
+              variant="outline"
+              className="btn-press"
+              onClick={openTempDialog}
+              title="Create a placeholder vendor that isn't in SAP yet"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Create Temp Vendor
+            </Button>
           )}
           <Button
             variant="outline"
@@ -790,7 +795,7 @@ export default function SyncVendorDataPage() {
 
       {/* Create Temp Vendor Dialog */}
       <Dialog
-        open={tempOpen && canSync}
+        open={tempOpen && canCreateTemp}
         onOpenChange={(open) => {
           if (!creatingTemp) setTempOpen(open);
         }}
