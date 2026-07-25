@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import api from "./client";
 
 export interface SapItem {
@@ -171,6 +172,40 @@ export async function getVendor(vendorCode: string): Promise<Vendor> {
 
 export async function deleteVendor(vendorCode: string): Promise<void> {
   await api.delete(`/party/${vendorCode}/`);
+}
+
+interface CreateTempVendorResponse {
+  success: boolean;
+  party?: Vendor;
+  error?: string;
+}
+
+/**
+ * Create a placeholder ("temp") vendor that does not exist in SAP yet. The
+ * backend assigns the card code (TEMP0001, …) and stamps state / main group /
+ * country as "TMP".
+ */
+export async function createTempVendor(cardName: string): Promise<Vendor> {
+  try {
+    const res = await api.post<CreateTempVendorResponse>("/party/temp/create/", {
+      card_name: cardName,
+    });
+    const body = res.data;
+    if (!body?.success || !body.party) {
+      throw new Error(body?.error || "Failed to create temporary vendor");
+    }
+    return body.party;
+  } catch (err) {
+    // This endpoint reports failures as { success: false, error: "…" }, which
+    // getErrorMessage() can't read — it looks for `detail`. Surface it here so
+    // the caller shows the backend's own message ("Please Provide Card Name").
+    if (err instanceof AxiosError) {
+      const apiError = (err.response?.data as CreateTempVendorResponse | undefined)
+        ?.error;
+      if (apiError) throw new Error(apiError);
+    }
+    throw err;
+  }
 }
 
 // Purchase Orders (Domestic Contracts)

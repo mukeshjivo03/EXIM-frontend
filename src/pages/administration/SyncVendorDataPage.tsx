@@ -7,6 +7,7 @@ import {
   Globe,
   Landmark,
   MapPin,
+  Plus,
   RefreshCw,
   Search,
   Trash2,
@@ -17,6 +18,7 @@ import {
   getVendors,
   syncVendor,
   deleteVendor,
+  createTempVendor,
   type Vendor,
 } from "@/api/sapSync";
 import Guard from "@/components/Guard";
@@ -128,6 +130,12 @@ export default function SyncVendorDataPage() {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Vendor | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Temp vendor creation
+  const [tempOpen, setTempOpen] = useState(false);
+  const [tempName, setTempName] = useState("");
+  const [tempError, setTempError] = useState("");
+  const [creatingTemp, setCreatingTemp] = useState(false);
 
   /* ── Derived data ────────────────────────────────────────── */
 
@@ -328,6 +336,44 @@ export default function SyncVendorDataPage() {
     }
   }
 
+  /* ── Create temp vendor ──────────────────────────────────── */
+
+  function openTempDialog() {
+    setTempName("");
+    setTempError("");
+    setTempOpen(true);
+  }
+
+  async function handleCreateTemp() {
+    const name = tempName.trim();
+    if (!name) {
+      setTempError("Please provide a vendor name.");
+      return;
+    }
+    setCreatingTemp(true);
+    setTempError("");
+    try {
+      const party = await createTempVendor(name);
+      toast.success(`Temporary vendor "${party.card_name}" created as ${party.card_code}.`);
+      setTempOpen(false);
+      setTempName("");
+      await fetchVendors();
+
+      // Highlight the new row, and clear filters that would hide it.
+      setSearch("");
+      setGroupFilter("ALL");
+      setPage(1);
+      setHighlightedCode(party.card_code);
+      clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setHighlightedCode(null), 3000);
+    } catch (err) {
+      // Keep the dialog open so the name isn't lost and can be corrected.
+      setTempError(getErrorMessage(err, "Failed to create temporary vendor"));
+    } finally {
+      setCreatingTemp(false);
+    }
+  }
+
   /* ── Clear filters ───────────────────────────────────────── */
 
   function clearFilters() {
@@ -372,6 +418,15 @@ export default function SyncVendorDataPage() {
                 disabled={syncing || !vendorCode.trim()}
               >
                 {syncing ? "Syncing..." : "Sync"}
+              </Button>
+              <Button
+                variant="outline"
+                className="btn-press"
+                onClick={openTempDialog}
+                title="Create a placeholder vendor that isn't in SAP yet"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Create Temp Vendor
               </Button>
             </>
           )}
@@ -732,6 +787,66 @@ export default function SyncVendorDataPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Temp Vendor Dialog */}
+      <Dialog
+        open={tempOpen && canSync}
+        onOpenChange={(open) => {
+          if (!creatingTemp) setTempOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Temporary Vendor</DialogTitle>
+            <DialogDescription>
+              Add temporary Vendor
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="temp-vendor-name" className="text-sm font-medium">
+              Vendor Name
+            </label>
+            <Input
+              id="temp-vendor-name"
+              autoFocus
+              value={tempName}
+              onChange={(e) => {
+                setTempName(e.target.value);
+                if (tempError) setTempError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !creatingTemp) handleCreateTemp();
+              }}
+              placeholder="e.g. ABC Traders Pvt Ltd"
+              aria-invalid={!!tempError}
+              aria-describedby={tempError ? "temp-vendor-error" : undefined}
+            />
+            {tempError && (
+              <p id="temp-vendor-error" className="text-sm text-destructive">
+                {tempError}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTempOpen(false)}
+              disabled={creatingTemp}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="btn-press"
+              onClick={handleCreateTemp}
+              disabled={creatingTemp || !tempName.trim()}
+            >
+              {creatingTemp ? "Creating..." : "Create Vendor"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget && canDelete} onOpenChange={() => setDeleteTarget(null)}>

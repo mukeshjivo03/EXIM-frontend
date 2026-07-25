@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   CircleUser,
@@ -26,8 +26,8 @@ import {
   Landmark,
   Clock,
   FileText,
-  FileCheck,
   ShieldCheck,
+
   Globe,
   Warehouse,
   Activity,
@@ -41,7 +41,6 @@ import {
   FileClock,
   CalendarRange,
   CandlestickChart,
-  Tags,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +120,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { to: "/exim-account",        label: "Oil Dr/Cr Outstanding", icon: Scale,   modules: ["debitentry"] },
       { to: "/accounts/bank-loan/dashboard", label: "Finance Dashboard", icon: LayoutDashboard, modules: ["bank_accounts"] },
       { to: "/accounts/bank-loan",  label: "Bank & Loan Accounts", icon: Landmark, modules: ["bank_accounts"] },
-      { to: "/accounts/vendor-outstanding", label: "Vendor Outstanding", icon: Handshake,   modules: ["debitentry", "party"] },
+      { to: "/accounts/vendor-outstanding", label: "Vendor Outstanding", icon: Handshake,   modules: ["balance_sheet", "debitentry", "party"] },
       { to: "/accounts/customer-outstanding", label: "Customer Outstanding", icon: UserCheck, modules: ["customer_balance_sheet"] },
       { to: "/accounts/customer-aging", label: "Customer Aging", icon: Clock, modules: ["customer_balance_sheet"] },
       { to: "/accounts/open-ars",   label: "Open ARs",          icon: ArrowUpRight, modules: ["customer_balance_sheet"] },
@@ -232,8 +231,32 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
     return links.filter(isLinkVisible);
   }
 
+  /**
+   * The single link that owns the current URL.
+   *
+   * NavLink's own `isActive` marks a link active for any descendant path, so
+   * nested routes lit up their parent too — on /accounts/bank-loan/dashboard
+   * both "Finance Dashboard" and "Bank & Loan Accounts" appeared selected.
+   * Adding `end` would fix that but break the other direction, leaving nothing
+   * highlighted on a detail route like /accounts/bank-loan/ledger/OIL/1104100.
+   *
+   * So: match every link that owns the path, then keep only the longest — the
+   * most specific one wins, and exactly one link is ever active.
+   */
+  const activeTo = useMemo(() => {
+    const path = location.pathname;
+    const owns = SIDEBAR_SECTIONS.flatMap((section) => section.links)
+      .filter(isLinkVisible)
+      .filter((link) => path === link.to || path.startsWith(`${link.to}/`));
+    if (owns.length === 0) return null;
+    return owns.reduce((best, link) =>
+      link.to.length > best.to.length ? link : best
+    ).to;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, permissions]);
+
   function isSectionActive(links: SidebarLink[]) {
-    return links.some((link) => location.pathname.startsWith(link.to));
+    return links.some((link) => link.to === activeTo);
   }
 
   async function handleLogout() {
@@ -293,7 +316,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }: SidebarProp
                     key={link.to}
                     to={link.to}
                     title={link.label}
-                    className={({ isActive }) => linkClass(isActive, collapsed)}
+                    className={() => linkClass(link.to === activeTo, collapsed)}
                   >
                     <link.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && <span>{link.label}</span>}

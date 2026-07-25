@@ -1,12 +1,12 @@
 /** Shared helpers for the Bank & Loan Accounts screen. */
 
-import { CATEGORY_ORDER } from "@/api/bankAccounts";
+import { groupName } from "@/api/bankAccounts";
 import type {
   Account,
-  AccountCategory,
   AccountsSummaryRow,
   LedgerEntry,
 } from "@/api/bankAccounts";
+import { displayCategory, type DisplayCategory } from "./grouping";
 
 /** Format a value with Indian digit grouping in the account's currency. */
 export function formatMoney(value: number, currency = "INR"): string {
@@ -154,21 +154,33 @@ export interface CategoryTotal {
   balance: number;
 }
 
+/** One SAP sub-group (OACT parent) within a category. */
+export interface GroupTotal {
+  key: string;
+  label: string;
+  category: DisplayCategory;
+  count: number;
+  balance: number;
+}
+
 export interface CurrencySummary {
   currency: string;
-  byCategory: Record<AccountCategory, CategoryTotal>;
+  byCategory: Record<DisplayCategory, CategoryTotal>;
+  /** SAP sub-group totals, largest first. */
+  byGroup: GroupTotal[];
   totalAccounts: number;
   /** Raw sum of every category balance in this currency. */
   netBalance: number;
-  /** Bank + FD (treated as asset accounts). */
+  /** Bank + Wallet + FD (treated as asset accounts). */
   assets: number;
   /** Loan balances. */
   liabilities: number;
 }
 
-function emptyCategoryMap(): Record<AccountCategory, CategoryTotal> {
+function emptyCategoryMap(): Record<DisplayCategory, CategoryTotal> {
   return {
     Bank: { count: 0, balance: 0 },
+    Wallet: { count: 0, balance: 0 },
     FD: { count: 0, balance: 0 },
     Loan: { count: 0, balance: 0 },
   };
@@ -178,9 +190,14 @@ function emptyCategoryMap(): Record<AccountCategory, CategoryTotal> {
  * Collapse summary rows into one entry per currency (balances across currencies
  * must never be summed together). Sorted with the currency holding the most
  * accounts first, so the UI can lead with the dominant one.
+ *
+ * The backend groups one level below Category (by OACT parent), so several rows
+ * can share a category — they are summed here, and also kept separately in
+ * `byGroup` for the sub-group breakdown.
  */
 export function summariseByCurrency(rows: AccountsSummaryRow[]): CurrencySummary[] {
   const map = new Map<string, CurrencySummary>();
+  const groups = new Map<string, Map<string, GroupTotal>>();
 
   for (const row of rows) {
     if (!row.Category) continue;
@@ -190,20 +207,48 @@ export function summariseByCurrency(rows: AccountsSummaryRow[]): CurrencySummary
       entry = {
         currency,
         byCategory: emptyCategoryMap(),
+        byGroup: [],
         totalAccounts: 0,
         netBalance: 0,
         assets: 0,
         liabilities: 0,
       };
       map.set(currency, entry);
+      groups.set(currency, new Map());
     }
-    const bucket = entry.byCategory[row.Category];
+
+    const category = displayCategory(row);
+    const bucket = entry.byCategory[category];
     bucket.count += row.AccountCount;
     bucket.balance += row.TotalBalance ?? 0;
     entry.totalAccounts += row.AccountCount;
     entry.netBalance += row.TotalBalance ?? 0;
-    if (row.Category === "Loan") entry.liabilities += row.TotalBalance ?? 0;
+    if (category === "Loan") entry.liabilities += row.TotalBalance ?? 0;
     else entry.assets += row.TotalBalance ?? 0;
+
+    // Sub-group roll-up. Backends that predate the OACT self-join send no
+    // FatherNum, in which case there is exactly one group per category.
+    const groupMap = groups.get(currency)!;
+    const key = row.FatherNum || category;
+    const existing = groupMap.get(key);
+    if (existing) {
+      existing.count += row.AccountCount;
+      existing.balance += row.TotalBalance ?? 0;
+    } else {
+      groupMap.set(key, {
+        key,
+        label: groupName(row),
+        category,
+        count: row.AccountCount,
+        balance: row.TotalBalance ?? 0,
+      });
+    }
+  }
+
+  for (const [currency, entry] of map) {
+    entry.byGroup = [...(groups.get(currency)?.values() ?? [])].sort(
+      (a, b) => Math.abs(b.balance) - Math.abs(a.balance)
+    );
   }
 
   return [...map.values()].sort((a, b) => b.totalAccounts - a.totalAccounts);
@@ -227,37 +272,63 @@ export function primaryCurrency(accounts: Account[]): string {
   return best;
 }
 
-export interface CategoryKpi {
-  category: AccountCategory;
-  count: number;
-  /** Total balance of the primary-currency accounts in this category. */
-  total: number;
+export interface PortfolioSummary {
+  /** The currency every total below is expressed in. */
   currency: string;
-  /** True when the category holds accounts in more than one currency. */
-  mixedCurrency: boolean;
+  byCategory: Record<DisplayCategory, { count: number; total: number }>;
+  /** Bank + Wallet + FDR balances. */
+  assets: number;
+  /** Loan balances. */
+  liabilities: number;
+  /** assets − |liabilities|. */
+  net: number;
+  totalAccounts: number;
+  /** Accounts held in another currency, and so excluded from the totals. */
+  excludedAccounts: number;
 }
 
 /**
- * Per-category KPI totals (Bank / FD / Loan) for the account list. Balances are
- * summed only within the branch's primary currency — accounts in other
- * currencies still count toward `count` and flag `mixedCurrency`.
+ * Whole-portfolio totals for the account list, in the branch's primary
+ * currency. Balances across currencies must never be added together, so
+ * accounts in any other currency are counted in `excludedAccounts` and left
+ * out of every total.
  */
-export function accountCategoryKpis(accounts: Account[]): CategoryKpi[] {
+export function portfolioSummary(accounts: Account[]): PortfolioSummary {
   const currency = primaryCurrency(accounts);
-  return CATEGORY_ORDER.map((category) => {
-    const inCat = accounts.filter((a) => a.Category === category);
-    const currencies = new Set(inCat.map((a) => a.ActCurr || "INR"));
-    const total = inCat
-      .filter((a) => (a.ActCurr || "INR") === currency)
-      .reduce((sum, a) => sum + a.CurrTotal, 0);
-    return {
-      category,
-      count: inCat.length,
-      total,
-      currency,
-      mixedCurrency: currencies.size > 1,
-    };
-  });
+  const byCategory = {
+    Bank: { count: 0, total: 0 },
+    Wallet: { count: 0, total: 0 },
+    FD: { count: 0, total: 0 },
+    Loan: { count: 0, total: 0 },
+  } as Record<DisplayCategory, { count: number; total: number }>;
+
+  let assets = 0;
+  let liabilities = 0;
+  let excludedAccounts = 0;
+
+  for (const a of accounts) {
+    if ((a.ActCurr || "INR") !== currency) {
+      excludedAccounts += 1;
+      continue;
+    }
+    const category = displayCategory(a);
+    const bucket = byCategory[category];
+    if (!bucket) continue;
+    bucket.count += 1;
+    bucket.total += a.CurrTotal;
+    if (category === "Loan") liabilities += a.CurrTotal;
+    else assets += a.CurrTotal;
+  }
+
+  return {
+    currency,
+    byCategory,
+    assets,
+    liabilities,
+    net: assets - Math.abs(liabilities),
+    totalAccounts: accounts.length,
+    excludedAccounts,
+  };
 }
 
 /** "Feb 2026" from a year + 1-based month. */

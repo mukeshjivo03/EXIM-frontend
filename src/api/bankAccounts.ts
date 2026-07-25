@@ -54,10 +54,44 @@ export interface Account {
   U_Account_Number?: string | null;
   U_IFSC?: string | null;
   /**
+   * Name of the SAP group/sub-group this account sits under — the AcctName of
+   * the OACT row that {@link Account.FatherNum} points at (e.g. "Wallets",
+   * "Vehicle Loans", "Director Loans"). Optional: older backends that predate
+   * the self-join don't send it, and the UI falls back to {@link FATHER_GROUPS}.
+   */
+  GroupName?: string | null;
+  /**
    * The branch this row was fetched from. Tagged client-side so the "ALL" view
    * can group/label rows and query the correct branch for closing balances.
    */
   sourceBranch: Branch;
+}
+
+/**
+ * Fallback display names for the OACT parent groups the accounts query allows,
+ * used when the backend sends no `GroupName`. Keep in step with the FatherNum
+ * whitelist in `hana/services/connection.py`.
+ */
+export const FATHER_GROUPS: Record<string, string> = {
+  "1104100": "Bank Accounts",
+  "1104200": "Bank Accounts",
+  "1106100": "Fixed Deposits",
+  "2201100": "Bank OD / Cash Credit",
+  "2201200": "Term Loans",
+  "2201300": "Credit Cards",
+  "2201400": "Vehicle Loans",
+  "2202100": "Unsecured Loans — Individual",
+  "2202300": "Unsecured Loans — Corporate",
+};
+
+/** Display name of the SAP group an account belongs to. */
+export function groupName(account: {
+  GroupName?: string | null;
+  FatherNum?: string | null;
+}): string {
+  const fromApi = (account.GroupName ?? "").trim();
+  if (fromApi) return fromApi;
+  return FATHER_GROUPS[account.FatherNum ?? ""] ?? "Other";
 }
 
 /**
@@ -105,6 +139,10 @@ export interface LedgerEntry {
 /** One row from GET /hana/accounts/summary/ (grouped by category + currency). */
 export interface AccountsSummaryRow {
   Category: AccountCategory;
+  /** OACT parent code — the summary is grouped one level below Category. */
+  FatherNum?: string | null;
+  /** Name of that parent group, e.g. "Wallets" or "Vehicle Loans". */
+  GroupName?: string | null;
   AccountCount: number;
   TotalBalance: number;
   ActCurr: string;
