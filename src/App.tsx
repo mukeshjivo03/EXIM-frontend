@@ -59,6 +59,7 @@ import CustomExchangeRatesPage from "@/pages/Custom-Exchange/CustomExchangeRates
 // Contracts
 import DomesticContracts2526Page from "@/pages/contracts/DomesticContracts2526Page";
 import DomesticContracts2627Page from "@/pages/contracts/DomesticContracts2627Page";
+import DomesticContractDetailsPage from "@/pages/contracts/DomesticContractDetailsPage";
 
 // License
 import AdvanceLicensePage from "@/pages/license/AdvanceLicensePage";
@@ -242,6 +243,14 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["domesticcontract"]}>
                   <DomesticContracts2627Page />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contracts/dc-details"
+              element={
+                <ProtectedRoute requiredModules={["domesticcontractdetails"]}>
+                  <DomesticContractDetailsPage />
                 </ProtectedRoute>
               }
             />
