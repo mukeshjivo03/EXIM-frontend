@@ -39,6 +39,7 @@ import {
   History as HistoryIcon,
   FileStack,
   FileClock,
+  Receipt,
   CalendarRange,
   CandlestickChart,
 } from "lucide-react";
@@ -112,6 +113,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     links: [
       { to: "/domestic-contracts",       label: "FY 2025-2026", icon: FileStack, modules: ["domesticcontract"] },
       { to: "/contracts/domestic-2627",  label: "FY 2026-2027", icon: FileClock, modules: ["domesticcontract"] },
+      { to: "/contracts/dc-details",     label: "DC Details",   icon: Receipt,   modules: ["domesticcontractdetails"] },
     ],
   },
   {
