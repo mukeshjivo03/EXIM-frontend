@@ -50,6 +50,7 @@ import { TOOLTIP_STYLE, useChartPalette } from "./chartTheme";
 import { ErrorState } from "./states";
 import BankLogo from "./BankLogo";
 import { resolveBrand } from "./brands";
+import Guard from "@/components/Guard";
 
 type LedgerRouteState = { account?: Account };
 
@@ -143,6 +144,11 @@ export default function BankLedgerPage() {
   }
 
   return (
+    <Guard
+      resource="bank_ledger"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view the Bank Ledger.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -460,5 +466,6 @@ export default function BankLedgerPage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }

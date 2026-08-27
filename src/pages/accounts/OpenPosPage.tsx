@@ -159,7 +159,7 @@ export default function OpenPosPage() {
   }
 
   return (
-    <Guard resource="balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open POS.</div>}>
+    <Guard resource="open_pos" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open POS.</div>}>
       <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page open-pos-print-root">
         <div className="flex items-start justify-between gap-3 sm:items-center print:hidden">
           <div className="flex items-start gap-2 sm:items-center">

@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import {
   Card,
   CardContent,
@@ -69,6 +71,7 @@ let lastSyncTime: Date | null = null;
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function VendorOutstandingPage() {
+  const { hasPermission } = useHasPermission();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<VendorOutstandingEntry[]>(cachedEntries);
@@ -254,11 +257,20 @@ export default function VendorOutstandingPage() {
     setTypeFilter("ALL");
   }
 
+  // The ledger is a separate permission - without it the row is not a link.
+  const canViewLedger = hasPermission("vendor_ledger");
+
   function handleVendorRowClick(entry: VendorOutstandingEntry) {
+    if (!canViewLedger) return;
     navigate(`/accounts/vendor-outstanding/${encodeURIComponent(entry.CardCode)}`, { state: { entry } });
   }
 
   return (
+    <Guard
+      resource="vendor_outstanding"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Vendor Outstanding.</div>}
+    >
     <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -766,5 +778,6 @@ export default function VendorOutstandingPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </Guard>
   );
 }

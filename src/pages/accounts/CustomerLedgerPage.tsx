@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
+import Guard from "@/components/Guard";
 import {
   Card,
   CardContent,
@@ -161,6 +162,11 @@ export default function CustomerLedgerPage() {
   };
 
   return (
+    <Guard
+      resource="customer_ledger"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Customer Ledger.</div>}
+    >
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
@@ -439,5 +445,6 @@ export default function CustomerLedgerPage() {
         </CardContent>
       </Card>
     </div>
+    </Guard>
   );
 }

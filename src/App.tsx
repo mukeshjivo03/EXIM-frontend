@@ -119,7 +119,7 @@ function App() {
             <Route
               path="/reports/planning"
               element={
-                <ProtectedRoute requiredModules={["domesticreports", "stockstatus"]}>
+                <ProtectedRoute requiredModules={["planningupload"]}>
                   <PlanningReportPage />
                 </ProtectedRoute>
               }
@@ -305,7 +305,7 @@ function App() {
             <Route
               path="/accounts/open-aps"
               element={
-                <ProtectedRoute requiredModules={["balance_sheet"]}>
+                <ProtectedRoute requiredModules={["open_aps"]}>
                   <OpenApsPage />
                 </ProtectedRoute>
               }
@@ -313,7 +313,7 @@ function App() {
             <Route
               path="/accounts/open-ars"
               element={
-                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                <ProtectedRoute requiredModules={["open_ars"]}>
                   <OpenArsPage />
                 </ProtectedRoute>
               }
@@ -321,7 +321,7 @@ function App() {
             <Route
               path="/accounts/open-pos"
               element={
-                <ProtectedRoute requiredModules={["balance_sheet"]}>
+                <ProtectedRoute requiredModules={["open_pos"]}>
                   <OpenPosPage />
                 </ProtectedRoute>
               }
@@ -329,7 +329,7 @@ function App() {
             <Route
               path="/accounts/customer-outstanding"
               element={
-                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                <ProtectedRoute requiredModules={["customer_outstanding"]}>
                   <CustomerOutstandingPage />
                 </ProtectedRoute>
               }
@@ -337,7 +337,7 @@ function App() {
             <Route
               path="/accounts/customer-outstanding/:customerCode"
               element={
-                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                <ProtectedRoute requiredModules={["customer_ledger"]}>
                   <CustomerLedgerPage />
                 </ProtectedRoute>
               }
@@ -345,7 +345,7 @@ function App() {
             <Route
               path="/accounts/customer-aging"
               element={
-                <ProtectedRoute requiredModules={["customer_balance_sheet"]}>
+                <ProtectedRoute requiredModules={["customer_aging"]}>
                   <CustomerAgingPage />
                 </ProtectedRoute>
               }
@@ -353,7 +353,7 @@ function App() {
             <Route
               path="/accounts/vendor-outstanding"
               element={
-                <ProtectedRoute requiredModules={["balance_sheet", "debitentry", "party"]}>
+                <ProtectedRoute requiredModules={["vendor_outstanding"]}>
                   <VendorOutstandingPage />
                 </ProtectedRoute>
               }
@@ -361,7 +361,7 @@ function App() {
             <Route
               path="/accounts/vendor-outstanding/:vendorCode"
               element={
-                <ProtectedRoute requiredModules={["balance_sheet", "debitentry", "party"]}>
+                <ProtectedRoute requiredModules={["vendor_ledger"]}>
                   <VendorLedgerPage />
                 </ProtectedRoute>
               }
@@ -377,7 +377,7 @@ function App() {
             <Route
               path="/accounts/bank-loan/dashboard"
               element={
-                <ProtectedRoute requiredModules={["bank_accounts"]}>
+                <ProtectedRoute requiredModules={["finance_dashboard"]}>
                   <FinanceDashboardPage />
                 </ProtectedRoute>
               }
@@ -385,7 +385,7 @@ function App() {
             <Route
               path="/accounts/bank-loan/ledger/:branch/:acctCode"
               element={
-                <ProtectedRoute requiredModules={["bank_closing"]}>
+                <ProtectedRoute requiredModules={["bank_ledger"]}>
                   <BankLedgerPage />
                 </ProtectedRoute>
               }

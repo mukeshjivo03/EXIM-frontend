@@ -180,7 +180,7 @@ export default function CustomerAgingPage() {
   }
 
   return (
-    <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer aging.</div>}>
+    <Guard resource="customer_aging" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer aging.</div>}>
       <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>

@@ -9,6 +9,7 @@ import BranchToggle from "./BranchToggle";
 import AccountList from "./AccountList";
 import { formatMoney, portfolioSummary } from "./helpers";
 import { CATEGORY_TINT, useChartPalette } from "./chartTheme";
+import Guard from "@/components/Guard";
 import {
   displayCategoryLabel,
   DISPLAY_CATEGORY_ORDER,
@@ -34,7 +35,7 @@ export default function BankLoanAccountsPage() {
   const navigate = useNavigate();
   const { hasPermission } = useHasPermission();
   // "view_bank_closing" gates the ledger (date-range net-movement) view.
-  const canViewClosing = hasPermission("bank_closing");
+  const canViewClosing = hasPermission("bank_ledger");
   const palette = useChartPalette();
 
   const [branch, setBranch] = useState<BranchFilter>("OIL");
@@ -84,6 +85,11 @@ export default function BankLoanAccountsPage() {
   };
 
   return (
+    <Guard
+      resource="bank_accounts"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Bank & Loan Accounts.</div>}
+    >
     <div className="animate-page flex w-full flex-col gap-5 p-4 sm:p-6">
       <PageHeader
         icon={Landmark}
@@ -190,6 +196,7 @@ export default function BankLoanAccountsPage() {
         />
       </SectionCard>
     </div>
+    </Guard>
   );
 }
 

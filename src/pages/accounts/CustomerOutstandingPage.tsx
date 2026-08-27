@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
+import { useHasPermission } from "@/hooks/useHasPermission";
 
 const COLS = 14;
 type SortKey =
@@ -76,6 +77,7 @@ function getRowId(row: CustomerOutstandingEntry): string {
 }
 
 export default function CustomerOutstandingPage() {
+  const { hasPermission } = useHasPermission();
   const [rows, setRows] = useState<CustomerOutstandingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -239,7 +241,7 @@ export default function CustomerOutstandingPage() {
   const isInvalidRange = !!balanceStartDate && !!balanceEndDate && balanceStartDate > balanceEndDate;
 
   return (
-    <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer outstanding.</div>}>
+    <Guard resource="customer_outstanding" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view customer outstanding.</div>}>
     <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div>
@@ -467,6 +469,8 @@ export default function CustomerOutstandingPage() {
                     
                     const handleNavigate = (e: React.MouseEvent) => {
                       e.stopPropagation();
+                      // Customer Ledger is its own permission now
+                      if (!hasPermission("customer_ledger")) return;
                       navigate(`/accounts/customer-outstanding/${encodeURIComponent(row.CardCode)}`, {
                         state: {
                           entry: {
