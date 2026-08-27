@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import BranchToggle from "./BranchToggle";
 import { ErrorState } from "./states";
+import Guard from "@/components/Guard";
 import {
   CATEGORY_TINT,
   TOOLTIP_STYLE,
@@ -106,7 +107,7 @@ const CATEGORY_ICONS: Record<DisplayCategory, typeof Landmark> = {
 export default function FinanceDashboardPage() {
   const navigate = useNavigate();
   const { hasPermission } = useHasPermission();
-  const canViewClosing = hasPermission("bank_closing");
+  const canViewClosing = hasPermission("bank_ledger");
   const palette = useChartPalette();
 
   const [branch, setBranch] = useState<BranchFilter>("OIL");
@@ -139,6 +140,11 @@ export default function FinanceDashboardPage() {
   const active = currencies.find((c) => c.currency === currency) ?? currencies[0];
 
   return (
+    <Guard
+      resource="finance_dashboard"
+      action="view"
+      fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view the Finance Dashboard.</div>}
+    >
     <div className="animate-page flex w-full flex-col gap-5 p-4 sm:p-6">
       <PageHeader
         icon={LayoutDashboard}
@@ -228,6 +234,7 @@ export default function FinanceDashboardPage() {
         </>
       )}
     </div>
+    </Guard>
   );
 }
 

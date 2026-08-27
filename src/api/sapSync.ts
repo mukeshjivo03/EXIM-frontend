@@ -550,6 +550,8 @@ export async function getOpenPos(): Promise<OpenPosEntry[]> {
 // Planning
 
 export interface PlannedMonth {
+  /** Which company's forecast this month came from — "OIL" or "MART". */
+  Company: string;
   AbsID: number;
   Code: string;
   Name: string;

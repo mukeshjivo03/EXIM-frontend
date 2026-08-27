@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import Guard from "@/components/Guard";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import {
   Card,
   CardContent,
@@ -90,6 +92,12 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function UsersPage() {
+  const { hasPermission } = useHasPermission();
+  // Creating, editing and deleting a user are three separate rights on the
+  // backend, so the UI only offers what this user can actually carry out.
+  const canCreate = hasPermission("user", "add");
+  const canEdit = hasPermission("user", "change");
+  const canDelete = hasPermission("user", "delete");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -286,6 +294,7 @@ export default function UsersPage() {
   const pwStrength = getPasswordStrength(form.password);
 
   return (
+    <Guard resource="user" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view users.</div>}>
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -295,10 +304,12 @@ export default function UsersPage() {
             Manage user accounts
           </p>
         </div>
+        {canCreate && (
         <Button onClick={openCreate} className="btn-press gap-2">
           <Plus className="h-4 w-4" />
           Create User
         </Button>
+        )}
       </div>
 
       {/* Error */}
@@ -404,7 +415,7 @@ export default function UsersPage() {
                               ? "Try adjusting your search."
                               : "Create your first user to get started."}
                           </p>
-                          {!hasFilters && (
+                          {!hasFilters && canCreate && (
                             <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreate}>
                               <Plus className="h-3.5 w-3.5" />
                               Create User
@@ -431,6 +442,7 @@ export default function UsersPage() {
                         <TableCell className="text-muted-foreground">{user.email}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            {canEdit && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -440,6 +452,8 @@ export default function UsersPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
+                            )}
+                            {canDelete && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -449,6 +463,10 @@ export default function UsersPage() {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            )}
+                            {!canEdit && !canDelete && (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -576,5 +594,6 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Guard>
   );
 }

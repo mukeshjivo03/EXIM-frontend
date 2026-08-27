@@ -85,7 +85,7 @@ export default function OpenArsPage() {
   );
 
   return (
-    <Guard resource="customer_balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open ARs.</div>}>
+    <Guard resource="open_ars" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open ARs.</div>}>
       <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
         <div className="flex items-start gap-2 sm:items-center">
           <ReceiptText className="h-5 w-5 text-muted-foreground" />

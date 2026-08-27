@@ -128,7 +128,7 @@ export default function OpenApsPage() {
   }
 
   return (
-    <Guard resource="balance_sheet" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open APs.</div>}>
+    <Guard resource="open_aps" action="view" fallback={<div className="p-6 text-sm text-muted-foreground">You do not have permission to view Open APs.</div>}>
     <div className="p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 animate-page">
       <div className="flex items-start gap-2 sm:items-center">
         <ReceiptText className="h-5 w-5 text-muted-foreground" />
