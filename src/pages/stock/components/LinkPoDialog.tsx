@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 /** Statuses whose stock entries can be linked to a PO number. */
-export const PO_LINKABLE_STATUSES = ["UNDER_LOADING", "ON_THE_WAY", "OUT_SIDE_FACTORY"] as const;
+export const PO_LINKABLE_STATUSES = ["IN_CONTRACT", "UNDER_LOADING", "ON_THE_WAY", "OUT_SIDE_FACTORY", "IN_TANK"] as const;
 
 export function isPoLinkableStatus(status: string) {
   return (PO_LINKABLE_STATUSES as readonly string[]).includes(status);

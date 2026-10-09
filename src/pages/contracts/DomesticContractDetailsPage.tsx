@@ -15,6 +15,7 @@ import {
   ArrowDownToLine,
   Truck,
   MapPin,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { UploadDcDialog } from "./UploadDcDialog";
 
 const COLS = 10;
 const PER_PAGE = 20;
@@ -357,19 +359,21 @@ export default function DomesticContractDetailsPage() {
   const [item, setItem] = useState<string>(ALL);
   const [supplier, setSupplier] = useState<string>(ALL);
   const [selected, setSelected] = useState<DomesticContractDetail | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      setRows(await getDomesticContractDetails());
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to load domestic contract details"));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        setRows(await getDomesticContractDetails());
-      } catch (err) {
-        setError(getErrorMessage(err, "Failed to load domestic contract details"));
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
   }, []);
 
@@ -501,18 +505,38 @@ export default function DomesticContractDetailsPage() {
               </p>
             </div>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={loading || filtered.length === 0}
-            className="h-8 px-2 text-xs shrink-0 sm:h-9 sm:px-3 sm:text-sm"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Export
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Guard
+              allOf={[
+                { resource: "domesticcontractdetails", action: "add" },
+                { resource: "domesticcontractdetails", action: "change" },
+              ]}
+            >
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setUploadOpen(true)}
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+              >
+                <Upload className="h-4 w-4 mr-1" />
+                Upload Excel
+              </Button>
+            </Guard>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={loading || filtered.length === 0}
+              className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+          </div>
         </div>
+
+        <UploadDcDialog open={uploadOpen} onOpenChange={setUploadOpen} onImported={load} />
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 

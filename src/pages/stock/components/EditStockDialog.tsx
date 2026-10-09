@@ -198,6 +198,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             status: eStatus,
             bility_number: eBilityNumber.trim() || undefined,
             grpo_number: eGrpoNumber.trim() || undefined,
+            po_number: showPoNumber ? ePoNumber.trim() || undefined : undefined,
             quantity: String(newQty),
             created_by: email,
           });
