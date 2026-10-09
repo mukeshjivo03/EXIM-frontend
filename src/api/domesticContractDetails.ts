@@ -66,3 +66,42 @@ export async function getDomesticContractDetails(year?: number): Promise<Domesti
   );
   return data ?? [];
 }
+
+/** Result of checking / importing a DC workbook (see contracts/services.py). */
+export interface DcImportResult {
+  source_file: string;
+  parsed: number;
+  created: number;
+  updated: number;
+  written: boolean;
+  keep_partial: boolean;
+  skipped: string[];
+  mismatches: string[];
+  errors: string[];
+  detail?: string;
+}
+
+/**
+ * Upload the DC workbook. `dryRun` only checks it and writes nothing.
+ * When some rows can't be read the server answers 400 with the same report —
+ * that report is returned (not thrown) so the dialog can list the bad rows.
+ */
+export async function uploadDomesticContractDetails(
+  file: File,
+  options: { dryRun: boolean; keepPartial: boolean }
+): Promise<DcImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("dry_run", String(options.dryRun));
+  form.append("keep_partial", String(options.keepPartial));
+  try {
+    const { data } = await api.post<DcImportResult>("/dc/details/upload/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  } catch (err) {
+    const report = (err as { response?: { data?: Partial<DcImportResult> } }).response?.data;
+    if (report && Array.isArray(report.errors)) return report as DcImportResult;
+    throw err;
+  }
+}
