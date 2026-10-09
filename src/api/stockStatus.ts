@@ -42,6 +42,7 @@ export interface StockStatus {
   job_work_vendor?: string;
   bility_number?: string;
   grpo_number?: string;
+  po_number?: string | null;
   contract_start?: string;
   contract_end?: string;
   created_at: string;
@@ -63,6 +64,7 @@ export interface StockStatusPayload {
   transporter?: string;
   bility_number?: string;
   grpo_number?: string;
+  po_number?: string | null;
   contract_start?: string;
   contract_end?: string;
 }
@@ -202,6 +204,7 @@ export async function moveStock(data: {
   arrival_date?: string;
   location?: string;
   payment_status?: "PAID" | "UNPAID";
+  po_number?: string;
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/move/", data);
   return res.data;
@@ -218,6 +221,7 @@ export async function dispatchStock(data: {
   location?: string;
   eta?: string;
   payment_status?: "PAID" | "UNPAID";
+  po_number?: string;
 }): Promise<StockStatus> {
   const res = await api.post<StockStatus>("/stock-status/dispatch/", data);
   return res.data;
@@ -249,6 +253,7 @@ export interface VehicleReportItem {
   payment_status?: "PAID" | "UNPAID";
   job_work: string | null;
   rate?: number | null;
+  po_number?: string | null;
 }
 
 export interface VehicleReport {
@@ -339,4 +344,77 @@ export interface ContractualHistoryEntry {
 export async function getContractualHistory(): Promise<ContractualHistoryEntry[]> {
   const res = await api.get<ContractualHistoryEntry[]>("/stock-status/contractual-history/");
   return res.data ?? [];
+}
+
+/* ── PO Flow (SAP relationship map) ─────────────────────────── */
+
+export interface SapDoc {
+  doc_entry: number;
+  doc_num: number;
+  doc_date: string;
+  status: "OPEN" | "CLOSED" | "CANCELLED";
+  cancelled: boolean;
+  total?: number | null;
+}
+
+export interface SapTransfer extends SapDoc {
+  from_whs: string | null;
+  to_whs: string | null;
+  quantity: number | null;
+}
+
+export interface SapApInvoice extends SapDoc {
+  vendor_ref: string | null;
+  credit_memos: SapDoc[];
+}
+
+export interface SapGrpo extends SapDoc {
+  quantity: number | null;
+  uom: string | null;
+  vendor_ref: string | null;
+  vehicle_number: string | null;
+  bilty_number: string | null;
+  landed_costs: SapDoc[];
+  inventory_transfers: SapTransfer[];
+  ap_invoices: SapApInvoice[];
+  credit_memos: SapDoc[];
+}
+
+export type SapPoFlow =
+  | (SapDoc & {
+      found: true;
+      vendor_code: string;
+      vendor_name: string;
+      lines: { item_code: string; item_name: string; uom: string | null; quantity: number | null; open_quantity: number | null }[];
+      grpos: SapGrpo[];
+      ap_invoices: SapApInvoice[];
+    })
+  | { found: false; doc_num: string };
+
+export interface PoFlowEntry {
+  id: number;
+  status: string;
+  po_number: string;
+  vehicle_number: string | null;
+  transporter: string | null;
+  quantity: string;
+  rate: string;
+  eta: string | null;
+  arrival_date: string | null;
+  item_code: string;
+  item_name: string | null;
+  vendor: string | null;
+  vendor_name: string | null;
+  matched_grpos: number[];
+}
+
+export interface PoFlowReport {
+  entries: PoFlowEntry[];
+  po_flows: Record<string, SapPoFlow>;
+  sap_error: string | null;
+}
+
+export async function getPoFlowReport(po?: string): Promise<PoFlowReport> {
+  const res = await api.get<PoFlowReport>("/stock-status/po-flow/", { params: po ? { po } : undefined });
+  return res.data;
 }

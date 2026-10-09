@@ -12,6 +12,7 @@ import {
   type StockStatus,
   type StockStatusChoice,
 } from "@/api/stockStatus";
+import { isPoLinkableStatus } from "./LinkPoDialog";
 import type { TankItem } from "@/api/tank";
 import type { Vendor } from "@/api/sapSync";
 import { fmtNum } from "@/lib/formatters";
@@ -81,6 +82,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const [eJobWorkVendor, setEJobWorkVendor] = useState("");
   const [eBilityNumber, setEBilityNumber] = useState("");
   const [eGrpoNumber, setEGrpoNumber] = useState("");
+  const [ePoNumber, setEPoNumber] = useState("");
   const [jobWorkSearch, setJobWorkSearch] = useState("");
   const [jobWorkOpen, setJobWorkOpen] = useState(false);
   const [eContractStart, setEContractStart] = useState("");
@@ -94,6 +96,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
   const isOutsideFactory = eStatus === "OUT_SIDE_FACTORY";
   // Payment status is only required when moving In Contract → Under Loading
   const needsPaymentStatus = data?.status === "IN_CONTRACT" && eStatus === "UNDER_LOADING";
+  const showPoNumber = isPoLinkableStatus(eStatus);
 
   // Filtered vendor list for job work combobox
   const filteredVendors = useMemo(() => {
@@ -122,6 +125,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
       setEJobWorkVendor(data.job_work_vendor ?? "");
       setEBilityNumber(data.bility_number ?? "");
       setEGrpoNumber(data.grpo_number ?? "");
+      setEPoNumber(data.po_number ?? "");
       setJobWorkSearch("");
       setEContractStart(data.contract_start ?? "");
       setEContractEnd(data.contract_end ?? "");
@@ -208,6 +212,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             arrival_date: eStatus === "OUT_SIDE_FACTORY" ? eArrivalDate.trim() || todayISO() : undefined,
             location: eLocation.trim() || undefined,
             payment_status: needsPaymentStatus && ePaymentStatus ? ePaymentStatus : undefined,
+            po_number: showPoNumber ? ePoNumber.trim() || undefined : undefined,
           });
           toast.success("Stock moved (Bulk).");
         } else if (eTransferType === "batch") {
@@ -222,6 +227,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             location: eLocation.trim() || undefined,
             eta: eEta.trim() || undefined,
             payment_status: needsPaymentStatus && ePaymentStatus ? ePaymentStatus : undefined,
+            po_number: showPoNumber ? ePoNumber.trim() || undefined : undefined,
           });
           toast.success("Stock dispatched (Batch).");
         }
@@ -237,6 +243,7 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
           created_by: email,
           bility_number: eBilityNumber.trim() || undefined,
           grpo_number: eGrpoNumber.trim() || undefined,
+          po_number: showPoNumber ? ePoNumber.trim() || null : undefined,
           contract_start: eStatus === "IN_CONTRACT" ? eContractStart || undefined : undefined,
           contract_end: eStatus === "IN_CONTRACT" ? eContractEnd || undefined : undefined,
         });
@@ -614,6 +621,17 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
             <>
           <Separator />
           <div className="grid grid-cols-2 gap-4">
+            {showPoNumber && (
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="e-po">PO Number</Label>
+                <Input
+                  id="e-po"
+                  placeholder="e.g. 24001234"
+                  value={ePoNumber}
+                  onChange={(e) => setEPoNumber(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="e-vehicle">Vehicle Number</Label>
               <Input
@@ -753,6 +771,12 @@ export function EditStockDialog({ data, tankItems, vendors, email, onClose, onSa
               <div className="rounded-md border bg-muted/30 p-4">
                 <h3 className="mb-3 text-sm font-semibold">Vehicle & Location</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
+                  {showPoNumber && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-muted-foreground">PO Number</p>
+                      <p className="font-medium">{ePoNumber || "-"}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-muted-foreground">Vehicle Number</p>
                     <p className="font-medium">{eVehicleNumber || "-"}</p>

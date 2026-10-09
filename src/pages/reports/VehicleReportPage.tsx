@@ -131,6 +131,11 @@ function autosizeColumns(rows: Record<string, unknown>[]) {
   }));
 }
 
+function PoCell({ po }: { po?: string | null }) {
+  if (!po) return <span className="text-sm text-muted-foreground">-</span>;
+  return <span className="font-mono text-sm">{po}</span>;
+}
+
 function buildExcelRows(statusLabel: string, statusKey: StatusKey, vehicles: VehicleReport[]) {
   return vehicles.flatMap((vehicle, vehicleIndex) =>
     vehicle.items.map((item, itemIndex) => {
@@ -144,6 +149,7 @@ function buildExcelRows(statusLabel: string, statusKey: StatusKey, vehicles: Veh
         Transporter: vehicle.transporter || "-",
         "Vendor Code": item.vendor_code || "-",
         Vendor: item.vendor_name || "-",
+        "PO No.": item.po_number || "-",
         "Item Code": item.item_code || "-",
         Item: item.item_name || "-",
         Rate: item.rate ?? "",
@@ -273,6 +279,7 @@ export default function VehicleReportPage() {
               payment_status: s.payment_status,
               job_work: s.job_work_vendor || null,
               rate: Number.parseFloat(s.rate || "0"),
+              po_number: s.po_number ?? null,
             },
           ],
         }));
@@ -508,6 +515,7 @@ export default function VehicleReportPage() {
                     <TableHead>Vehicle No.</TableHead>
                     <TableHead>Transporter</TableHead>
                     <TableHead>Vendor</TableHead>
+                    <TableHead>PO No.</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Rate</TableHead>
                     <TableHead className="text-right">Qty (MTS)</TableHead>
@@ -528,6 +536,7 @@ export default function VehicleReportPage() {
                       return new Date(date) < new Date(worst) ? date : worst;
                     }, null);
                     const worstDays = daysRemaining(worstDate);
+                    const vehiclePos = [...new Set(v.items.map((i) => i.po_number).filter(Boolean))];
 
                     const daysCell = (
                       <TableCell className="tabular-nums">
@@ -558,6 +567,7 @@ export default function VehicleReportPage() {
                           </TableCell>
                           <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                           <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
+                          <TableCell><PoCell po={item.po_number} /></TableCell>
                           <TableCell>
                             <span className="inline-flex items-center gap-1.5">
                               {item.item_name}
@@ -592,6 +602,11 @@ export default function VehicleReportPage() {
                           </TableCell>
                           <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{v.items.length} vendors</TableCell>
+                          <TableCell>
+                            {vehiclePos.length > 1
+                              ? <span className="text-sm text-muted-foreground">{vehiclePos.length} POs</span>
+                              : <PoCell po={vehiclePos[0]} />}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">Mixed Items / Rates</TableCell>
                           <TableCell className="text-right text-sm text-muted-foreground">-</TableCell>
                           <TableCell className="text-right tabular-nums font-medium">{fmtMts(vehicleTotalMts)}</TableCell>
@@ -604,6 +619,7 @@ export default function VehicleReportPage() {
                             <TableCell className="pl-10 text-xs text-muted-foreground font-mono">{v.vehicle_number || "-"}</TableCell>
                             <TableCell className="text-sm">{v.transporter || "-"}</TableCell>
                             <TableCell className="text-sm">{item.vendor_name || "-"}</TableCell>
+                            <TableCell><PoCell po={item.po_number} /></TableCell>
                             <TableCell className="text-sm">
                               <span className="inline-flex items-center gap-1.5">
                                 {item.item_name}
@@ -638,7 +654,7 @@ export default function VehicleReportPage() {
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 bg-muted/40 font-medium">
-                    <td colSpan={6} className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-[10px] sm:text-sm uppercase tracking-wide sm:tracking-wider">Grand Total</td>
+                    <td colSpan={7} className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-[10px] sm:text-sm uppercase tracking-wide sm:tracking-wider">Grand Total</td>
                     <td className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-right tabular-nums text-[10px] sm:text-sm">{fmtMts(totalMts)}</td>
                     <td colSpan={2} />
                   </tr>

@@ -147,6 +147,12 @@ export function ViewStockSheet({ data, loading, tankItems, vendors, onClose, onE
                   <h3 className="text-sm font-bold uppercase tracking-wider">Logistics Info</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-3 pl-2">
+                  {data.po_number && (
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">PO Number</p>
+                      <p className="text-sm font-medium">{data.po_number}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Vehicle / Transporter</p>
                     <p className="text-sm font-medium">{data.vehicle_number || "—"} / {data.transporter || "—"}</p>

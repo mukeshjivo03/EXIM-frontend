@@ -31,6 +31,8 @@ import VehicleReportPage from "@/pages/reports/VehicleReportPage";
 import DirectorDashboardPage from "@/pages/reports/DirectorDashboardPage";
 import ContractsReportPage from "@/pages/reports/ContractsReportPage";
 import PlanningReportPage from "@/pages/reports/PlanningReportPage";
+import PoFlowReportPage from "@/pages/reports/PoFlowReportPage";
+import PoFlowDetailPage from "@/pages/reports/PoFlowDetailPage";
 
 // Commodity
 import DailyPricePage from "@/pages/commodity/DailyPricePage";
@@ -113,6 +115,22 @@ function App() {
               element={
                 <ProtectedRoute requiredModules={["stockstatus"]}>
                   <ContractsReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/po-flow"
+              element={
+                <ProtectedRoute requiredModules={["stockstatus"]}>
+                  <PoFlowReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/po-flow/:poNumber"
+              element={
+                <ProtectedRoute requiredModules={["stockstatus"]}>
+                  <PoFlowDetailPage />
                 </ProtectedRoute>
               }
             />
