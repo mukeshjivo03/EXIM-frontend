@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { CalendarClock, Check, ChevronLeft, ChevronRight, ClipboardList, X } from "lucide-react";
 
 import { createStockStatus, STATUS_CHOICES, type StockStatusChoice } from "@/api/stockStatus";
+import { isPoLinkableStatus } from "./LinkPoDialog";
 import type { TankItem } from "@/api/tank";
 import type { Vendor } from "@/api/sapSync";
 import { toastApiError } from "@/lib/errors";
@@ -60,6 +61,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
   const [cEta, setCEta] = useState("");
   const [cArrivalDate, setCArrivalDate] = useState("");
   const [cTransporterName, setCTransporterName] = useState("");
+  const [cPoNumber, setCPoNumber] = useState("");
   const [cContractStart, setCContractStart] = useState("");
   const [cContractEnd, setCContractEnd] = useState("");
   const [step, setStep] = useState(0);
@@ -67,6 +69,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
 
   const isContract = cStatus === "IN_CONTRACT";
   const isOutsideFactory = cStatus === "OUT_SIDE_FACTORY";
+  const showPoNumber = isPoLinkableStatus(cStatus);
 
   // Reset form when opened
   useEffect(() => {
@@ -85,6 +88,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
       setCEta("");
       setCArrivalDate("");
       setCTransporterName("");
+      setCPoNumber("");
       setCContractStart("");
       setCContractEnd("");
       setStep(0);
@@ -160,6 +164,7 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
         eta: isOutsideFactory ? undefined : cEta.trim() || undefined,
         arrival_date: isOutsideFactory ? cArrivalDate.trim() || undefined : undefined,
         transporter: cTransporterName.trim() || undefined,
+        po_number: showPoNumber ? cPoNumber.trim() || undefined : undefined,
         contract_start: isContract ? cContractStart || undefined : undefined,
         contract_end: isContract ? cContractEnd || undefined : undefined,
       });
@@ -417,6 +422,17 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
             <>
           <Separator />
           <div className="grid grid-cols-2 gap-4">
+            {showPoNumber && (
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="c-po">PO Number</Label>
+                <Input
+                  id="c-po"
+                  placeholder="e.g. 24001234"
+                  value={cPoNumber}
+                  onChange={(e) => setCPoNumber(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="c-vehicle">Vehicle Number</Label>
               <Input
@@ -520,6 +536,12 @@ export function CreateStockDialog({ open, onOpenChange, tankItems, vendors, emai
               <div className="rounded-md border bg-muted/30 p-4">
                 <h3 className="mb-3 text-sm font-semibold">Vehicle & Location</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
+                  {showPoNumber && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-muted-foreground">PO Number</p>
+                      <p className="font-medium">{cPoNumber || "-"}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-muted-foreground">Vehicle Number</p>
                     <p className="font-medium">{cVehicleNumber || "-"}</p>

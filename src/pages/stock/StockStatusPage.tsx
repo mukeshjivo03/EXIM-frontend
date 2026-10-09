@@ -23,6 +23,7 @@ import {
   Trash2,
   Container,
   Search,
+  Link2,
 } from "lucide-react";
 
 import {
@@ -65,6 +66,7 @@ import { CreateStockDialog } from "./components/CreateStockDialog";
 import { ViewStockSheet } from "./components/ViewStockSheet";
 import { EditStockDialog } from "./components/EditStockDialog";
 import { DeleteStockDialog } from "./components/DeleteStockDialog";
+import { LinkPoDialog, canLinkPo } from "./components/LinkPoDialog";
 
 type StockStatusPageFilters = Omit<StockStatusFilters, "status" | "vendor" | "item"> & {
   status?: string[];
@@ -115,6 +117,7 @@ export default function StockStatusPage() {
   const [viewLoading, setViewLoading] = useState(false);
   const [editData, setEditData] = useState<StockStatus | null>(null);
   const [deleteData, setDeleteData] = useState<StockStatus | null>(null);
+  const [linkPoData, setLinkPoData] = useState<StockStatus | null>(null);
 
   // Bulk Actions
   const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -143,6 +146,7 @@ export default function StockStatusPage() {
         formatStatus(row.status).toLowerCase().includes(q) ||
         vendorName.includes(q) ||
         (row.vehicle_number ?? "").toLowerCase().includes(q) ||
+        (row.po_number ?? "").toLowerCase().includes(q) ||
         String(row.rate).includes(q) ||
         String(row.quantity).includes(q) ||
         (row.eta ?? "").toLowerCase().includes(q) ||
@@ -150,6 +154,9 @@ export default function StockStatusPage() {
       );
     });
   }, [rows, search, itemNameMap, vendorNameMap]);
+
+  // PO column only appears once some entry in the current list is linked to a PO
+  const showPoColumn = useMemo(() => filteredRows.some((r) => r.po_number), [filteredRows]);
 
   // pagination
   const [page, setPage] = useState(1);
@@ -785,6 +792,7 @@ export default function StockStatusPage() {
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
+                    {showPoColumn && <TableHead className="hidden md:table-cell">PO No.</TableHead>}
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
                     <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
@@ -794,7 +802,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: canBulk ? 10 : 9 }).map((_, j) => (
+                      {Array.from({ length: (canBulk ? 10 : 9) + (showPoColumn ? 1 : 0) }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-16" />
                         </TableCell>
@@ -820,6 +828,7 @@ export default function StockStatusPage() {
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden sm:table-cell">Party Name</TableHead>
                     <TableHead className="hidden md:table-cell">Vehicle No</TableHead>
+                    {showPoColumn && <TableHead className="hidden md:table-cell">PO No.</TableHead>}
                     <TableHead className="hidden md:table-cell">Rate (&#8377;)</TableHead>
                     <TableHead className="hidden md:table-cell">Qty (KG)</TableHead>
                     <TableHead className="hidden lg:table-cell">ETA / Arrival</TableHead>
@@ -829,7 +838,7 @@ export default function StockStatusPage() {
                 <TableBody>
                   {paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={canBulk ? 10 : 9} className="py-16 text-center">
+                      <TableCell colSpan={(canBulk ? 10 : 9) + (showPoColumn ? 1 : 0)} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <ClipboardList className="h-10 w-10 stroke-1" />
                           <p className="text-sm font-medium">No stock statuses found</p>
@@ -880,6 +889,11 @@ export default function StockStatusPage() {
                           <TableCell className="hidden md:table-cell font-medium">
                             {row.vehicle_number || "—"}
                           </TableCell>
+                          {showPoColumn && (
+                            <TableCell className="hidden md:table-cell font-mono text-sm">
+                              {row.po_number || <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                          )}
                           <TableCell className="hidden md:table-cell tabular-nums">
                             ₹{Number(row.rate).toLocaleString("en-IN")}
                           </TableCell>
@@ -953,6 +967,18 @@ export default function StockStatusPage() {
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                               )}
+                              {canEdit && canLinkPo(row) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn("h-8 w-8", row.po_number && "text-emerald-600 hover:text-emerald-700")}
+                                  title={row.po_number ? `PO ${row.po_number} — click to change` : "Link PO number"}
+                                  aria-label={row.po_number ? `Change PO number (${row.po_number})` : "Link PO number"}
+                                  onClick={() => setLinkPoData(row)}
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1000,6 +1026,12 @@ export default function StockStatusPage() {
         onClose={() => setEditData(null)}
         onSaved={refreshAll}
         onDelete={(row) => { if (canDelete) { setEditData(null); setDeleteData(row); } }}
+      />
+
+      <LinkPoDialog
+        data={linkPoData}
+        onClose={() => setLinkPoData(null)}
+        onSaved={refreshAll}
       />
 
       <DeleteStockDialog

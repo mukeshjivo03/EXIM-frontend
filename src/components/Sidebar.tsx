@@ -42,6 +42,7 @@ import {
   Receipt,
   CalendarRange,
   CandlestickChart,
+  GitBranch,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +92,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { to: "/reports/director-dashboard",label: "Director Dashboard",  icon: Crown,           modules: ["director_report", "director_inventory", "director_inventorty", "domesticreports"] },
       { to: "/stock/warehouse-inventory", label: "Warehouse Inventory", icon: Warehouse,       modules: ["inventory", "stockstatus"] },
       { to: "/reports/vehicle-report",    label: "Vehicle Report",      icon: Truck,           modules: ["vehicle_report"] },
+      { to: "/reports/po-flow",           label: "PO Flow (SAP)",       icon: GitBranch,       modules: ["stockstatus"] },
       { to: "/reports/contracts",         label: "Contracts",           icon: FileText,        modules: ["stockstatus"] },
       { to: "/reports/planning",          label: "Planning",            icon: CalendarRange,   modules: ["planningupload"] },
     ],
